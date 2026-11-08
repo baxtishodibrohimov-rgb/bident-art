@@ -215,3 +215,31 @@ def test_start_date_env(monkeypatch):
     monkeypatch.setenv("BOSHLANISH_SANA", "xato")
     with pytest.raises(ValueError):
         start_date_from_env()
+
+
+def test_date_range(svc):
+    from report import Period
+    # 1-4 noyabr: madina (3-noyabr) va belgilanmagan rentgen (1-noyabr), Bobur (5-noyabr) kirmaydi
+    rep = svc.month_report(Period(date(2026, 11, 1), date(2026, 11, 4)))
+    assert rep.doctor("501").total == Decimal("500000")
+    assert rep.doctor("502") is None
+    assert rep.oy == "01.11.2026 – 04.11.2026"
+    # oktabr-noyabr: Bobur ikki to'lovi
+    rep = svc.month_report(Period(date(2026, 10, 1), date(2026, 11, 30)))
+    assert rep.doctor("502").total == Decimal("2000000")
+    assert Period.month("2026-11").label == "noyabr 2026" and Period.month("2026-11").query == "oy=2026-11"
+
+
+def test_web_date_range(svc, monkeypatch):
+    c = _client(svc, monkeypatch)
+    c.post("/login", data={"login": "admin", "parol": "maxfiy"})
+    r = c.get("/?dan=2026-10-01&gacha=2026-11-30")
+    assert r.status_code == 200 and "01.10.2026 – 30.11.2026" in r.text
+    assert "/shifokor/502?dan=2026-10-01&amp;gacha=2026-11-30" in r.text
+    assert "Shu yil" in r.text and 'type="date"' in r.text
+    r = c.get("/shifokor/502?dan=2026-10-01&gacha=2026-11-30")
+    assert "2 000 000" in r.text
+    x = c.get("/excel?dan=2026-10-01&gacha=2026-11-30")
+    assert x.content[:2] == b"PK" and "2026-10-01_2026-11-30" in x.headers["content-disposition"]
+    assert c.get("/?dan=2026-11-30&gacha=2026-11-01").status_code == 400
+    assert c.get("/?dan=xato&gacha=2026-11-01").status_code == 400

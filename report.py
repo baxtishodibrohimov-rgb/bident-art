@@ -51,6 +51,52 @@ def month_ranges(start: date, end: date, step: int = 3) -> list[tuple[date, date
     return out
 
 
+MONTH_NAMES = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust",
+               "sentabr", "oktabr", "noyabr", "dekabr"]
+
+
+@dataclass(frozen=True)
+class Period:
+    """Hisobot davri: bitta oy yoki istalgan sana oralig'i (ikkala chekka ham kiradi)."""
+    start: date
+    end: date
+
+    @classmethod
+    def month(cls, oy: str) -> "Period":
+        return cls(*parse_month(oy))
+
+    @property
+    def is_month(self) -> bool:
+        return self.start.day == 1 and self.end == parse_month(self.start.strftime("%Y-%m"))[1]
+
+    @property
+    def oy(self) -> str:
+        return self.start.strftime("%Y-%m")
+
+    @property
+    def label(self) -> str:
+        if self.is_month:
+            return f"{MONTH_NAMES[self.start.month - 1]} {self.start.year}"
+        if self.start == self.end:
+            return self.start.strftime("%d.%m.%Y")
+        return f"{self.start:%d.%m.%Y} – {self.end:%d.%m.%Y}"
+
+    @property
+    def query(self) -> str:
+        return f"oy={self.oy}" if self.is_month else f"dan={self.start}&gacha={self.end}"
+
+    @property
+    def key(self) -> str:
+        return self.oy if self.is_month else f"{self.start}_{self.end}"
+
+    def contains(self, value) -> bool:
+        return self.start.isoformat() <= str(value or "")[:10] <= self.end.isoformat()
+
+
+def as_period(period) -> Period:
+    return period if isinstance(period, Period) else Period.month(period)
+
+
 def staff_name(s: dict) -> str:
     return " ".join(p for p in (s.get("lastname"), s.get("firstname")) if p).strip() or f"#{s.get('doctor_id')}"
 
@@ -95,9 +141,14 @@ class DoctorReport:
 
 @dataclass
 class MonthReport:
-    oy: str
+    period: Period
     doctors: list[DoctorReport]
     kassa_total: Decimal | None = None  # GET /payments bo'yicha jami (tekshiruv uchun)
+
+    @property
+    def oy(self) -> str:
+        """Sarlavhalar uchun davr nomi (masalan, «noyabr 2026» yoki «01.11.2026 – 15.11.2026»)."""
+        return self.period.label
 
     @property
     def total(self) -> Decimal:
@@ -122,15 +173,16 @@ def dedupe_items(items: list[dict]) -> list[dict]:
     return list(seen.values())
 
 
-def build_report(items: list[dict], oy: str, staff: list[dict],
+def build_report(items: list[dict], period, staff: list[dict],
                  percents: dict[str, float], patients: dict[str, str],
                  default_percent: float = 0) -> MonthReport:
+    period = as_period(period)
     staff_by_id = {str(s.get("doctor_id")): s for s in staff}
     doctors: dict[str, DoctorReport] = {}
 
     for it in dedupe_items(items):
         month_payments = [p for p in (it.get("payments") or [])
-                          if str(p.get("date") or "")[:7] == oy]
+                          if period.contains(p.get("date"))]
         month_paid = sum((money(p.get("amount")) for p in month_payments), Decimal(0))
         if month_paid == 0:
             continue
@@ -163,7 +215,7 @@ def build_report(items: list[dict], oy: str, staff: list[dict],
     for d in doctors.values():
         d.rows.sort(key=lambda r: (r.patient.lower(), r.done_date))
     ordered = sorted(doctors.values(), key=lambda d: (d.doctor_id == NO_DOCTOR, -d.total))
-    return MonthReport(oy=oy, doctors=ordered)
+    return MonthReport(period=period, doctors=ordered)
 
 
 @dataclass

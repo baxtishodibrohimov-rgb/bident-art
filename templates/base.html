@@ -28,6 +28,12 @@
   .toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
   .btn, button, input[type=month], input[type=number] { font:inherit; padding:6px 12px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--text); text-decoration:none; cursor:pointer; }
   .btn.primary, button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .period { display:flex; flex-wrap:wrap; gap:4px 20px; align-items:center; margin-bottom:12px; }
+  .period .toolbar { margin-bottom:0; }
+  input[type=date] { font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--text); }
+  .chip { font-size:13px; padding:4px 11px; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--text); text-decoration:none; }
+  .chip:hover { border-color:var(--accent); }
+  .chip.on { background:var(--accent); border-color:var(--accent); color:#fff; }
   .stats { display:flex; gap:12px; flex-wrap:wrap; }
   .stat { flex:1 1 180px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 16px; }
   .stat b { display:block; font-size:22px; font-variant-numeric:tabular-nums; }
@@ -43,7 +49,7 @@
 <body>
 <header>
   <strong>Maosh hisoboti</strong>
-  <a href="/?oy={{ oy }}">Shifokorlar</a>
+  <a href="/?{{ q }}">Shifokorlar</a>
   <a href="/qarzdorlar">Qarzdorlar</a>
   <a href="/sozlamalar">Foizlar</a>
   <form method="post" action="/logout" style="margin:0"><button class="logout" type="submit">Chiqish</button></form>

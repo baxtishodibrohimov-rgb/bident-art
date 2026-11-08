@@ -20,6 +20,7 @@ import auth as sessions
 
 from client import CliniccardsClient, CliniccardsError
 from excel import report_xlsx
+from report import Period
 from service import HERE, Percents, Service, load_env, start_date_from_env
 
 load_env()
@@ -47,6 +48,32 @@ def check_month(oy: str | None) -> str:
     if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", oy):
         raise HTTPException(400, "Oy YYYY-MM ko'rinishida bo'lishi kerak")
     return oy
+
+
+def get_period(oy: str | None = None, dan: str | None = None, gacha: str | None = None) -> Period:
+    """?oy=YYYY-MM (bitta oy) yoki ?dan=YYYY-MM-DD&gacha=YYYY-MM-DD (sana oralig'i)."""
+    if dan or gacha:
+        try:
+            start = date.fromisoformat(dan or gacha)
+            end = date.fromisoformat(gacha or dan)
+        except ValueError:
+            raise HTTPException(400, "Sana YYYY-MM-DD ko'rinishida bo'lishi kerak")
+        if start > end:
+            raise HTTPException(400, "«Dan» sanasi «Gacha» sanasidan keyin bo'lmasligi kerak")
+        return Period(start, end)
+    return Period.month(check_month(oy))
+
+
+def period_context(p: Period) -> dict:
+    today = date.today()
+    this_month = Period.month(today.strftime("%Y-%m"))
+    prev = date.fromordinal(this_month.start.toordinal() - 1)
+    return {"p": p, "oy": p.oy, "q": p.query, "presets": [
+        ("Bugun", Period(today, today)),
+        ("Shu oy", this_month),
+        ("O'tgan oy", Period.month(prev.strftime("%Y-%m"))),
+        ("Shu yil", Period(date(today.year, 1, 1), today)),
+    ]}
 
 
 def make_service() -> Service:
@@ -153,38 +180,35 @@ def health():
 
 
 @app.get("/")
-def index(request: Request, oy: str | None = None, _=Depends(auth)):
-    oy = check_month(oy)
-    rep = service().month_report(oy)
-    return templates.TemplateResponse(request, "index.html", {"rep": rep, "oy": oy})
+def index(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
+    rep = service().month_report(p)
+    return templates.TemplateResponse(request, "index.html", {"rep": rep, **period_context(p)})
 
 
 @app.get("/shifokor/{doctor_id}")
-def doctor(request: Request, doctor_id: str, oy: str | None = None, _=Depends(auth)):
-    oy = check_month(oy)
-    rep = service().month_report(oy, with_kassa=False)
+def doctor(request: Request, doctor_id: str, p: Period = Depends(get_period), _=Depends(auth)):
+    rep = service().month_report(p, with_kassa=False)
     d = rep.doctor(doctor_id)
     if d is None:
         staff = {str(s.get("doctor_id")): s for s in service().staff()}
         if doctor_id not in staff:
             raise HTTPException(404, "Shifokor topilmadi")
-    return templates.TemplateResponse(request, "doctor.html", {"d": d, "oy": oy, "doctor_id": doctor_id})
+    return templates.TemplateResponse(request, "doctor.html", {"d": d, "doctor_id": doctor_id, **period_context(p)})
 
 
 @app.get("/excel")
-def excel(oy: str | None = None, shifokor: str | None = None, _=Depends(auth)):
-    oy = check_month(oy)
-    rep = service().month_report(oy, with_kassa=shifokor is None)
+def excel(p: Period = Depends(get_period), shifokor: str | None = None, _=Depends(auth)):
+    rep = service().month_report(p, with_kassa=shifokor is None)
     data = report_xlsx(rep, shifokor)
-    name = f"maosh_{oy}" + (f"_{shifokor}" if shifokor else "") + ".xlsx"
+    name = f"maosh_{p.key}" + (f"_{shifokor}" if shifokor else "") + ".xlsx"
     return Response(data, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
 @app.get("/qarzdorlar")
 def debts(request: Request, _=Depends(auth)):
-    groups = service().debts(current_month())
-    return templates.TemplateResponse(request, "debts.html", {"groups": groups, "oy": current_month()})
+    groups = service().debts()
+    return templates.TemplateResponse(request, "debts.html", {"groups": groups})
 
 
 @app.get("/sozlamalar")

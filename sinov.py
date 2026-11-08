@@ -3,6 +3,7 @@
 Misol:
     python sinov.py --oy 2026-11 --shifokor madina
     python sinov.py --oy 2026-11 --shifokor madina --foiz 25    # foizlar.json bo'lmasa ham
+    python sinov.py --dan 2026-11-01 --gacha 2026-11-15       # sana oralig'i
     python sinov.py --xodimlar                                  # xodimlar ro'yxati va ID'lari
 
 Kutilgan natija (xulosadagi tekshiruv): madina, noyabr 2026 -> tushgan 500 000, maosh 125 000.
@@ -16,7 +17,7 @@ from datetime import date
 from pathlib import Path
 
 from client import CliniccardsClient
-from report import staff_name
+from report import Period, staff_name
 from service import HERE, Percents, Service, load_env, start_date_from_env
 
 
@@ -28,6 +29,8 @@ def main() -> int:
     load_env()
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--oy", help="YYYY-MM, masalan 2026-11")
+    ap.add_argument("--dan", help="Sana oralig'i boshi, YYYY-MM-DD (--gacha bilan)")
+    ap.add_argument("--gacha", help="Sana oralig'i oxiri, YYYY-MM-DD")
     ap.add_argument("--shifokor", help="Shifokor ismi (qismi) yoki doctor_id")
     ap.add_argument("--foiz", type=float, help="Shu shifokor uchun foizni vaqtincha berish")
     ap.add_argument("--xodimlar", action="store_true", help="Xodimlar ro'yxatini chiqarish")
@@ -40,7 +43,7 @@ def main() -> int:
                   start_date=date.fromisoformat(a.boshlanish) if a.boshlanish else start_date_from_env())
     staff = svc.staff()
 
-    if a.xodimlar or not a.oy:
+    if a.xodimlar or not (a.oy or a.dan or a.gacha):
         for s in staff:
             print(f"{s.get('doctor_id'):>10}  {s.get('role', ''):<10} {staff_name(s)}")
         return 0
@@ -59,7 +62,12 @@ def main() -> int:
             svc.percents.load = lambda: ({**orig()[0], target: a.foiz}, orig()[1])
 
     print(f"Ma'lumot yuklanmoqda ({svc.start_date} dan bugungacha, daqiqasiga 60 so'rov limiti bilan)...", file=sys.stderr)
-    rep = svc.month_report(a.oy)
+    if a.dan or a.gacha:
+        period = Period(date.fromisoformat(a.dan or a.gacha), date.fromisoformat(a.gacha or a.dan))
+    else:
+        period = Period.month(a.oy)
+    a.oy = period.label
+    rep = svc.month_report(period)
     doctors = [rep.doctor(target)] if target else rep.doctors
     for d in doctors:
         if d is None:

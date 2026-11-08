@@ -29,11 +29,11 @@ def _widths(ws, widths):
 def _doctor_sheet(wb, d: DoctorReport, oy: str):
     title = re.sub(r"[\[\]:*?/\\]", "-", d.name)[:28] or d.doctor_id
     ws = wb.create_sheet(title)
-    ws.append([f"{d.name} — {oy}: shu oy tushgan pul bo'yicha hisobot"])
+    ws.append([f"{d.name} — {oy}: shu davrda tushgan pul bo'yicha hisobot"])
     ws["A1"].font = Font(bold=True, size=13)
     ws.append([])
     _header(ws, ["Bemor", "Ish", "Ish sanasi", "Narx", "Jami to'langan",
-                 "Shu oy tushgan", "To'lov sanalari", f"Ulush ({d.percent}%)"])
+                 "Tushgan", "To'lov sanalari", f"Ulush ({d.percent}%)"])
     for r in d.rows:
         ws.append([r.patient, r.work, r.done_date, float(r.price), float(r.paid_total),
                    float(r.month_paid), ", ".join(r.payment_dates), float(r.share)])
@@ -56,7 +56,7 @@ def report_xlsx(rep: MonthReport, doctor_id: str | None = None) -> bytes:
         ws.append([f"Barcha shifokorlar — {rep.oy}"])
         ws["A1"].font = Font(bold=True, size=13)
         ws.append([])
-        _header(ws, ["Shifokor", "Bemorlar", "Shu oy tushgan", "Foiz", "Maosh"])
+        _header(ws, ["Shifokor", "Bemorlar", "Tushgan", "Foiz", "Maosh"])
         for d in rep.doctors:
             ws.append([d.name, d.patients, float(d.total), float(d.percent), float(d.salary)])
         ws.append(["JAMI", "", float(rep.total), "", float(rep.salary)])

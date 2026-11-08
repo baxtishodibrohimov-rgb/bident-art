@@ -9,8 +9,8 @@ from datetime import date
 from pathlib import Path
 
 from client import CliniccardsClient
-from report import (DONE_STATUSES, MonthReport, build_debts, build_report, money,
-                    month_ranges, parse_month, patient_name)
+from report import (DONE_STATUSES, MonthReport, as_period, build_debts, build_report,
+                    money, month_ranges, patient_name)
 
 DEFAULT_START = "2015-01-01"
 
@@ -86,12 +86,12 @@ class Service:
     def staff(self) -> list[dict]:
         return self._cached("staff", self.client.staff)
 
-    def items(self, oy: str) -> list[dict]:
-        """Butun davr: `start_date` dan bugungacha (yoki tanlangan oy oxirigacha) barcha ishlar.
+    def items(self, until: date | None = None) -> list[dict]:
+        """Butun davr: `start_date` dan bugungacha (yoki tanlangan davr oxirigacha) barcha ishlar.
 
-        Kalit oyga bog'liq emas, shuning uchun bir marta yuklangan ma'lumot hamma oylar uchun ishlatiladi."""
+        Kalit davrga bog'liq emas, shuning uchun bir marta yuklangan ma'lumot hamma davrlar uchun ishlatiladi."""
         start = self.start_date
-        end = max(date.today(), parse_month(oy)[1])
+        end = max(date.today(), until or date.today())
 
         def fetch():
             out: list[dict] = []
@@ -110,24 +110,27 @@ class Service:
             names[str(p.get("patient_id"))] = patient_name(p)
         return names
 
-    def kassa_total(self, oy: str):
-        a, b = parse_month(oy)
-        return self._cached(f"payments:{oy}",
-                            lambda: sum((money(p.get("amount")) for p in self.client.payments(a, b)), money(0)))
+    def kassa_total(self, period):
+        p = as_period(period)
+        return self._cached(f"payments:{p.start}:{p.end}",
+                            lambda: sum((money(x.get("amount")) for x in self.client.payments(p.start, p.end)),
+                                        money(0)))
 
     # --- hisobotlar ------------------------------------------------------
-    def month_report(self, oy: str, with_kassa: bool = True) -> MonthReport:
-        items = self.items(oy)
-        relevant = [it for it in items if any(str(p.get("date") or "")[:7] == oy for p in (it.get("payments") or []))]
+    def month_report(self, period, with_kassa: bool = True) -> MonthReport:
+        """`period`: Period yoki 'YYYY-MM' (bitta oy)."""
+        period = as_period(period)
+        items = self.items(period.end)
+        relevant = [it for it in items if any(period.contains(p.get("date")) for p in (it.get("payments") or []))]
         names = self.patient_names(it.get("patient_id") for it in relevant)
         percents, default = self.percents.load()
-        rep = build_report(relevant, oy, self.staff(), percents, names, default)
+        rep = build_report(relevant, period, self.staff(), percents, names, default)
         if with_kassa:
-            rep.kassa_total = self.kassa_total(oy)
+            rep.kassa_total = self.kassa_total(period)
         return rep
 
-    def debts(self, oy: str):
-        items = self.items(oy)
+    def debts(self, _period=None):
+        items = self.items()
         unpaid = [it for it in items if money(it.get("price_with_discount")) > money(it.get("paid"))]
         names = self.patient_names(it.get("patient_id") for it in unpaid)
         return build_debts(unpaid, self.staff(), names)

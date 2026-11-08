@@ -1,0 +1,20 @@
+{# Davr tanlash: bitta oy yoki sana oralig'i. `action` — forma yuboriladigan manzil. #}
+<div class="period noprint">
+  <form class="toolbar" method="get" action="{{ action }}">
+    <label class="muted" for="oy">Oy</label>
+    <input type="month" id="oy" name="oy" value="{{ oy }}">
+    <button type="submit">Ko'rsatish</button>
+  </form>
+  <form class="toolbar" method="get" action="{{ action }}">
+    <label class="muted" for="dan">Sana oralig'i</label>
+    <input type="date" id="dan" name="dan" value="{{ p.start }}" required>
+    <span class="muted">—</span>
+    <input type="date" id="gacha" name="gacha" value="{{ p.end }}" required>
+    <button class="primary" type="submit">Ko'rsatish</button>
+  </form>
+  <div class="toolbar presets">
+    {% for name, x in presets %}
+      <a class="chip{% if x == p %} on{% endif %}" href="{{ action }}?{{ x.query }}">{{ name }}</a>
+    {% endfor %}
+  </div>
+</div>
