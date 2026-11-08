@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 import re
+import threading
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -19,7 +20,7 @@ import auth as sessions
 
 from client import CliniccardsClient, CliniccardsError
 from excel import report_xlsx
-from service import HERE, Percents, Service, load_env
+from service import HERE, Percents, Service, load_env, start_date_from_env
 
 load_env()
 
@@ -51,7 +52,7 @@ def check_month(oy: str | None) -> str:
 def make_service() -> Service:
     client = CliniccardsClient(os.environ.get("CLINICCARDS_TOKEN", ""))
     percents = Percents(Path(os.environ.get("FOIZLAR_FAYL", HERE / "foizlar.json")))
-    return Service(client, percents, months_back=int(os.environ.get("ORQAGA_OY", "24")))
+    return Service(client, percents, start_date=start_date_from_env())
 
 
 app = FastAPI(title="Cliniccards maosh hisoboti")
@@ -129,6 +130,21 @@ def logout():
 @app.exception_handler(CliniccardsError)
 def api_error(request: Request, exc: CliniccardsError):
     return templates.TemplateResponse(request, "error.html", {"error": str(exc)}, status_code=502)
+
+
+@app.on_event("startup")
+def warm_cache():
+    """Server ishga tushganda butun davr ma'lumotini fonda yuklab qo'yadi, birinchi sahifa tez ochilsin."""
+    if not os.environ.get("CLINICCARDS_TOKEN"):
+        return
+
+    def run():
+        try:
+            service().month_report(current_month())
+        except Exception as e:  # sahifa ochilganda xato baribir ko'rsatiladi
+            print(f"Oldindan yuklash bajarilmadi: {e}", flush=True)
+
+    threading.Thread(target=run, daemon=True).start()
 
 
 @app.get("/health")

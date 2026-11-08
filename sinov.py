@@ -12,11 +12,12 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from datetime import date
 from pathlib import Path
 
 from client import CliniccardsClient
 from report import staff_name
-from service import HERE, Percents, Service, load_env
+from service import HERE, Percents, Service, load_env, start_date_from_env
 
 
 def fmt(v) -> str:
@@ -30,13 +31,13 @@ def main() -> int:
     ap.add_argument("--shifokor", help="Shifokor ismi (qismi) yoki doctor_id")
     ap.add_argument("--foiz", type=float, help="Shu shifokor uchun foizni vaqtincha berish")
     ap.add_argument("--xodimlar", action="store_true", help="Xodimlar ro'yxatini chiqarish")
-    ap.add_argument("--orqaga", type=int, default=int(os.environ.get("ORQAGA_OY", "24")),
-                    help="Necha oy orqadagi ishlarni ko'rish (standart 24)")
+    ap.add_argument("--boshlanish", default=None,
+                    help="Shu sanadan (YYYY-MM-DD) boshlab ishlar olinadi; standart: BOSHLANISH_SANA yoki 2015-01-01")
     a = ap.parse_args()
 
     client = CliniccardsClient(os.environ.get("CLINICCARDS_TOKEN", ""))
     svc = Service(client, Percents(Path(os.environ.get("FOIZLAR_FAYL", HERE / "foizlar.json"))),
-                  months_back=a.orqaga)
+                  start_date=date.fromisoformat(a.boshlanish) if a.boshlanish else start_date_from_env())
     staff = svc.staff()
 
     if a.xodimlar or not a.oy:
@@ -57,7 +58,7 @@ def main() -> int:
             orig = svc.percents.load
             svc.percents.load = lambda: ({**orig()[0], target: a.foiz}, orig()[1])
 
-    print(f"Ma'lumot yuklanmoqda ({a.orqaga} oy orqaga, daqiqasiga 60 so'rov limiti bilan)...", file=sys.stderr)
+    print(f"Ma'lumot yuklanmoqda ({svc.start_date} dan bugungacha, daqiqasiga 60 so'rov limiti bilan)...", file=sys.stderr)
     rep = svc.month_report(a.oy)
     doctors = [rep.doctor(target)] if target else rep.doctors
     for d in doctors:

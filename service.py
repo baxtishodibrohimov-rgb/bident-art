@@ -10,7 +10,18 @@ from pathlib import Path
 
 from client import CliniccardsClient
 from report import (DONE_STATUSES, MonthReport, build_debts, build_report, money,
-                    month_ranges, parse_month, patient_name, shift_months)
+                    month_ranges, parse_month, patient_name)
+
+DEFAULT_START = "2015-01-01"
+
+
+def start_date_from_env() -> date:
+    """BOSHLANISH_SANA: shu sanadan boshlab barcha ishlar olinadi (Cliniccards'ning butun davri)."""
+    raw = (os.environ.get("BOSHLANISH_SANA") or DEFAULT_START).strip()
+    try:
+        return date.fromisoformat(raw)
+    except ValueError:
+        raise ValueError(f"BOSHLANISH_SANA YYYY-MM-DD ko'rinishida bo'lishi kerak, berilgan: {raw!r}")
 
 HERE = Path(__file__).resolve().parent
 
@@ -49,10 +60,11 @@ class Percents:
 
 class Service:
     def __init__(self, client: CliniccardsClient, percents: Percents,
-                 months_back: int = 24, cache_ttl: int = 900):
+                 start_date: date | None = None, cache_ttl: int = 900, chunk_months: int = 6):
         self.client = client
         self.percents = percents
-        self.months_back = months_back
+        self.start_date = start_date or date.fromisoformat(DEFAULT_START)
+        self.chunk_months = chunk_months
         self.cache_ttl = cache_ttl
         self._cache: dict[str, tuple[float, object]] = {}
         self._lock = threading.Lock()
@@ -75,13 +87,15 @@ class Service:
         return self._cached("staff", self.client.staff)
 
     def items(self, oy: str) -> list[dict]:
-        """Tanlangan oydan `months_back` oy oldingi ishlardan bugungacha."""
-        start = shift_months(parse_month(oy)[0], -self.months_back)
+        """Butun davr: `start_date` dan bugungacha (yoki tanlangan oy oxirigacha) barcha ishlar.
+
+        Kalit oyga bog'liq emas, shuning uchun bir marta yuklangan ma'lumot hamma oylar uchun ishlatiladi."""
+        start = self.start_date
         end = max(date.today(), parse_month(oy)[1])
 
         def fetch():
             out: list[dict] = []
-            for a, b in month_ranges(start, end):
+            for a, b in month_ranges(start, end, self.chunk_months):
                 for status in DONE_STATUSES:
                     out.extend(self.client.plan_items(status, a, b))
             return out

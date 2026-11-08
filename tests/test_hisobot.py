@@ -35,6 +35,10 @@ ITEMS = {
         {"plan_item_id": "3", "patient_id": "900", "name": "Rentgen", "price_with_discount": "50000",
          "done_by_doctor_id": None, "marked_done_date": "2026-11-01 00:00:00", "paid": "50000",
          "payments": [{"date": "2026-11-01 09:00:00", "amount": 50000, "payment_id": 4}]},
+        # 2017-yilgi eski ish, to'lov 2026-noyabrda: butun davr bo'yicha qidirilgani uchun topilishi kerak
+        {"plan_item_id": "5", "patient_id": "901", "name": "Protez", "price_with_discount": "300000",
+         "done_by_doctor_id": "503", "done_by": "Eski Shifokor", "marked_done_date": "2017-05-10 00:00:00",
+         "paid": "300000", "payments": [{"date": "2026-11-10 10:00:00", "amount": 300000, "payment_id": 5}]},
         # pul tushmagan ish — hisobotda chiqmasligi kerak
         {"plan_item_id": "4", "patient_id": "901", "name": "Konsultatsiya", "price_with_discount": "100000",
          "done_by_doctor_id": "501", "marked_done_date": "2026-11-02 00:00:00", "paid": "0", "payments": None},
@@ -52,13 +56,14 @@ def fake_api(request: httpx.Request) -> httpx.Response:
         return ok(STAFF)
     if path.startswith("/planItems/"):
         status = path.split("/")[2]
-        # har bir bo'lakda faqat bir marta qaytaramiz: so'rov oralig'i 2026-10..2026-12 ga tushsa
-        frm = request.url.params["from"]
-        return ok(ITEMS[status] if frm <= "2026-10-01" <= request.url.params["to"] else [])
+        # haqiqiy API kabi: ish sanasi so'rov oralig'iga tushgan ishlarni qaytaramiz
+        frm, to = request.url.params["from"], request.url.params["to"]
+        return ok([it for it in ITEMS[status] if frm <= it["marked_done_date"][:10] <= to])
     if path.startswith("/patients/"):
         return ok([PATIENTS[i] for i in path.split("/")[2].split(",") if i in PATIENTS])
     if path == "/payments":
-        return ok([{"amount": "500000"}, {"amount": "1000000"}, {"amount": "50000"}, {"amount": "200000"}])
+        return ok([{"amount": "500000"}, {"amount": "1000000"}, {"amount": "50000"}, {"amount": "200000"},
+                   {"amount": "300000"}])
     return httpx.Response(404, json={"data": None, "result": "fail", "error": "not found"})
 
 
@@ -68,7 +73,7 @@ def svc(tmp_path):
                                transport=httpx.MockTransport(fake_api), limiter=RateLimiter(1000, 1))
     p = Percents(tmp_path / "foizlar.json")
     p.save({"501": 25, "502": 30})
-    return Service(client, p, months_back=24)
+    return Service(client, p, start_date=date(2015, 1, 1))
 
 
 def test_madina_november(svc):
@@ -93,8 +98,8 @@ def test_installments_and_unassigned(svc):
     assert rep.doctor("0").total == Decimal("50000")
     assert rep.doctor("0").salary == 0
     assert rep.doctors[-1].doctor_id == "0"
-    assert rep.total == Decimal("1550000")
-    assert rep.kassa_total == Decimal("1750000")
+    assert rep.total == Decimal("1850000")
+    assert rep.kassa_total == Decimal("2050000")
     assert rep.difference == Decimal("200000")
 
 
@@ -131,7 +136,7 @@ def test_excel(svc):
     from openpyxl import load_workbook
     import io
     wb = load_workbook(io.BytesIO(report_xlsx(svc.month_report("2026-11"))))
-    assert wb.sheetnames[0] == "Jami" and len(wb.sheetnames) == 4
+    assert wb.sheetnames[0] == "Jami" and len(wb.sheetnames) == 5
 
 
 def _client(svc, monkeypatch):
@@ -192,3 +197,21 @@ def test_web(svc, tmp_path, monkeypatch):
     assert r.status_code == 303
     assert json.loads((tmp_path / "foizlar.json").read_text())["doctors"] == {"501": 20.0}
     assert c.get("/?oy=2026-13").status_code == 400
+
+
+def test_full_history_finds_old_work(svc):
+    rep = svc.month_report("2026-11")
+    old = rep.doctor("503")
+    assert old is not None and old.name == "Eski Shifokor"
+    assert old.rows[0].done_date == "2017-05-10" and old.total == Decimal("300000")
+
+
+def test_start_date_env(monkeypatch):
+    from service import start_date_from_env
+    monkeypatch.delenv("BOSHLANISH_SANA", raising=False)
+    assert start_date_from_env() == date(2015, 1, 1)
+    monkeypatch.setenv("BOSHLANISH_SANA", "2012-03-01")
+    assert start_date_from_env() == date(2012, 3, 1)
+    monkeypatch.setenv("BOSHLANISH_SANA", "xato")
+    with pytest.raises(ValueError):
+        start_date_from_env()

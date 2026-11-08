@@ -25,7 +25,8 @@ Yuqoridagi «Chiqish» tugmasi sessiyani tugatadi.
 
 ## Qanday hisoblaydi
 
-1. `GET /planItems/DONE` va `GET /planItems/INVOICED`: tanlangan oydan `ORQAGA_OY` (standart 24) oy oldingi ishlardan bugungacha, 3 oylik bo'laklarda.
+1. `GET /planItems/DONE` va `GET /planItems/INVOICED`: Cliniccards'ning **butun davri** bo'yicha, `BOSHLANISH_SANA` (standart 2015-01-01) dan bugungacha, 6 oylik bo'laklarda.
+   Server ishga tushganda bu ma'lumot fonda yuklanadi (taxminan 1 daqiqa), keyin barcha oylar uchun ishlatiladi.
 2. Har bir ishning `payments` ro'yxatidan sanasi tanlangan oyga tushganlari yig'iladi.
 3. `done_by_doctor_id` bo'yicha guruhlanadi va foiz qo'llanadi.
 4. `GET /payments` bilan kassa jami olinadi. Farq ishga bog'lanmagan pulni ko'rsatadi: avans, depozit yoki hali bajarilmagan ish uchun to'lov.
