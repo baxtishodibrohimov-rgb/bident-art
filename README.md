@@ -22,6 +22,34 @@ Masalan, martda qo'yilgan breket uchun noyabrda tushgan 1 000 000 noyabr maoshig
 «Shifokor belgilanmagan» qatori: ishda `done_by_doctor_id` bo'sh, ya'ni Cliniccards'da «Работы выполнил» to'ldirilmagan.
 Bunday ishni Cliniccards'da tuzatish kerak.
 
+## Sklad va Telegram bot
+
+«Sklad» bo'limi (`/sklad`) har bir mahsulot qoldig'ini yuritadi va bot orqali kunlik hisobot oladi.
+
+**Qoldiq qanday hisoblanadi**
+- «Cliniccards'dan yangilash» birinchi marta bosilganda qoldiq Cliniccards'dagi barcha sklad nakladnoylaridan hisoblanadi
+  (kirim +, chiqim/hisobdan chiqarish −, skladlar orasidagi ko'chirish hisobga olinmaydi).
+- Keyingi yangilashlarda faqat **yangi kirim** nakladnoylari qo'shiladi. Chiqim bot orqali yoziladi, shuning uchun
+  Cliniccards'ga keyin kiritilgan chiqim nakladnoylari qayta ayrilmaydi.
+
+**Kunlik tartib**
+1. `SKLAD_SOROV_VAQTI` da (standart 18:00) bot «Oladi» xodimlardan so'raydi: «Bugun skladdan narsa oldingizmi?»
+   Xodim istalgan vaqtda `/oldim` deb ham yozishi mumkin.
+2. Xodim mahsulot nomini yozadi, ro'yxatdan tanlaydi va sonini kiritadi.
+3. «Tekshiradi» xodimga: «Skladda shuncha qolishi kerak, to'g'rimi?» Noto'g'ri bo'lsa, haqiqiy sonni yozadi va
+   qoldiq shunga tenglashtiriladi.
+4. «Admin»ga: «Cliniccards'dan chiqaring: ...» — [Chiqarildi].
+5. Qoldiq «chegara»dan kam bo'lsa, adminga taklif: «Sotuvchiga N ta, ~summa, yuborilsinmi?» — [Yuborish] → sotuvchiga
+   buyurtma xabari — [Qabul qildim].
+
+**Sozlash**
+1. Railway Variables: `TELEGRAM_BOT_TOKEN`, `DB_FAYL=/data/hisobot.db` (ixtiyoriy: `SKLAD_SOROV_VAQTI`, `KLINIKA_NOMI`).
+   Bot boshqa dasturda ishlatilmasligi kerak: bitta botdan faqat bitta dastur xabar o'qiy oladi.
+2. «Sklad» → «Cliniccards'dan yangilash».
+3. Har bir mahsulotga chegara va sotuvchini belgilang.
+4. «Xodimlar va bot»: xodimlarni qo'shing, har biriga havolasini yuboring. «Sotuvchilar»: har bir sotuvchiga havolasini yuboring.
+   Telegram boti odamga birinchi bo'lib yoza olmaydi, shuning uchun havolani ochib «Start» bosish shart.
+
 ## Kirish
 
 Sahifa ochilganda dasturning o'z kirish oynasi chiqadi (`/login`): login, parol va «Eslab qolish (30 kun)».

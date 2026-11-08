@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Sotuvchilar{% endblock %}
+{% block content %}
+<h1>Sotuvchilar</h1>
+{% include "_sklad_nav.html" %}
+<p class="muted">Har bir sotuvchiga uning havolasini yuboring (masalan, WhatsApp yoki SMS orqali). U havolani ochib «Start» bossa, bot unga buyurtma yubora oladi. Cliniccards nakladnoylaridagi sotuvchilar avtomatik qo'shiladi.</p>
+<form method="post" class="card toolbar">
+  <input type="text" name="name" placeholder="Sotuvchi nomi" required>
+  <input type="tel" name="phone" placeholder="Telefon">
+  <button class="primary" type="submit">Qo'shish</button>
+</form>
+<div class="card">
+<table>
+  <thead><tr><th>Sotuvchi</th><th>Telefon</th><th class="n">Mahsulotlar</th><th>Telegram</th><th></th></tr></thead>
+  <tbody>
+  {% for s in rows %}
+    <tr>
+      <td><input form="fs{{ s.id }}" type="text" name="name" value="{{ s.name }}" required></td>
+      <td><input form="fs{{ s.id }}" type="tel" name="phone" value="{{ s.phone or '' }}" style="width:140px"></td>
+      <td class="n">{{ s.n }}</td>
+      <td>{% if s.chat_id %}<span class="tag yetarli">ulangan</span> <label class="muted"><input form="fs{{ s.id }}" type="checkbox" name="unlink" value="1"> uzish</label>
+          {% elif bot %}<span class="linkbox">{{ bot.link(s.token) }}</span>{% else %}<span class="muted">bot ulanmagan</span>{% endif %}</td>
+      <td><form id="fs{{ s.id }}" method="post" action="/sotuvchilar/{{ s.id }}"></form><button form="fs{{ s.id }}" type="submit">Saqlash</button></td>
+    </tr>
+  {% else %}<tr><td colspan="5" class="muted">Sotuvchi yo'q.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

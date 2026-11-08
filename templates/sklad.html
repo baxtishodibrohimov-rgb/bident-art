@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Sklad{% endblock %}
+{% block content %}
+<h1>Sklad</h1>
+{% include "_sklad_nav.html" %}
+<form class="toolbar noprint" method="post" action="/sklad/sinxron">
+  <button class="primary" type="submit">Cliniccards'dan yangilash</button>
+  <span class="muted">{% if synced %}Oxirgi yangilanish: {{ synced }}{% else %}Hali yangilanmagan. Birinchi marta bosganda qoldiq Cliniccards'dagi barcha nakladnoylardan hisoblanadi (1–2 daqiqa).{% endif %}</span>
+</form>
+<div class="toolbar noprint">
+  <a class="chip{{ ' on' if not f }}" href="/sklad">Hammasi</a>
+  <a class="chip{{ ' on' if f == 'tugagan' }}" href="/sklad?f=tugagan">Tugagan: {{ counts.tugagan }}</a>
+  <a class="chip{{ ' on' if f == 'kam' }}" href="/sklad?f=kam">Kam qolgan: {{ counts.kam }}</a>
+  <a class="chip{{ ' on' if f == 'yetarli' }}" href="/sklad?f=yetarli">Yetarli: {{ counts.yetarli }}</a>
+</div>
+<div class="card">
+<table>
+  <thead><tr><th>Mahsulot</th><th>Toifa</th><th class="n">Qoldiq</th><th class="n">Chegara</th><th>Holat</th><th>Sotuvchi</th><th class="n">Oxirgi narx</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr><td><a href="/sklad/mahsulot/{{ r.id }}">{{ r.name }}</a></td><td class="muted">{{ r.category }}</td>
+      <td class="n">{{ r.qty|son }} {{ r.unit }}</td><td class="n">{{ r.min_qty|son if r.min_qty else '—' }}</td>
+      <td><span class="tag {{ status(r) }}">{{ status(r) }}</span></td>
+      <td>{{ r.supplier_name or '—' }}{% if r.supplier_name and not r.supplier_chat %} <span class="tag off">botga ulanmagan</span>{% endif %}</td>
+      <td class="n">{{ r.last_price|pul if r.last_price else '—' }}</td></tr>
+  {% else %}
+    <tr><td colspan="7" class="muted">Mahsulotlar yo'q. «Cliniccards'dan yangilash» tugmasini bosing.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="muted">«Chegara» — shu songa tushganda bot sizga buyurtma taklif qiladi. Uni har bir mahsulot sahifasida belgilang. Qoldiq: boshlang'ich (Cliniccards nakladnoylari) + yangi kirimlar − bot orqali tasdiqlangan chiqimlar.</p>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Kunlik hisobotlar{% endblock %}
+{% block content %}
+<h1>Kunlik sklad hisobotlari</h1>
+{% include "_sklad_nav.html" %}
+<div class="card">
+<table>
+  <thead><tr><th>Kun</th><th>Xodim</th><th>Nima oldi</th><th>Holat</th><th>Tekshirdi</th></tr></thead>
+  <tbody>
+  {% for r in reps %}
+    <tr><td>{{ r.day }}</td><td>{{ r.person }}</td>
+      <td>{% for it in items.get(r.id, []) %}{{ it.name }} — {{ it.qty|son }} {{ it.unit }}{% if it.actual_after is not none and it.actual_after != it.expected_after %} <span class="warn">(kutilgan qoldiq {{ it.expected_after|son }}, haqiqatda {{ it.actual_after|son }})</span>{% endif %}<br>{% else %}<span class="muted">—</span>{% endfor %}</td>
+      <td><span class="tag {{ 'yetarli' if r.status in ('tasdiqlandi','cc_chiqarildi','olinmadi') else ('kam' if r.status in ('farq','tekshiruvda') else 'off') }}">{{ holat.get(r.status, r.status) }}</span></td>
+      <td>{{ r.checker or '' }}{% if r.checked_at %}<br><span class="muted">{{ r.checked_at }}</span>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">Hali hisobot yo'q.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

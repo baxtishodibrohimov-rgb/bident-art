@@ -1,0 +1,7 @@
+<nav class="subnav noprint">
+  {% for href, name in [("/sklad", "Qoldiq"), ("/sklad/hisobotlar", "Kunlik hisobotlar"), ("/buyurtmalar", "Buyurtmalar"), ("/sotuvchilar", "Sotuvchilar"), ("/xodimlar", "Xodimlar va bot")] %}
+    <a href="{{ href }}" class="{{ 'on' if request.url.path == href else '' }}">{{ name }}</a>
+  {% endfor %}
+</nav>
+{% if not bot %}<div class="card warn" style="padding:10px 14px">Telegram bot ulanmagan: Railway Variables'ga <b>TELEGRAM_BOT_TOKEN</b> qo'shing. Hozircha sklad hisobini faqat shu sahifada ko'rish mumkin.</div>
+{% elif bot.last_error %}<div class="card warn" style="padding:10px 14px">Bot xatosi: {{ bot.last_error }}</div>{% endif %}

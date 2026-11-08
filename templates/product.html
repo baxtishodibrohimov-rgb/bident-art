@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ p.name }}{% endblock %}
+{% block content %}
+<div class="toolbar noprint"><a class="btn" href="/sklad">← Sklad</a></div>
+<h1>{{ p.name }} <span class="tag {{ status }}">{{ status }}</span></h1>
+<p class="muted">{{ p.category }} · Cliniccards ID {{ p.id }}</p>
+{% if request.query_params.get('saqlandi') %}<div class="flash">Saqlandi.</div>{% endif %}
+<div class="stats" style="margin-bottom:16px">
+  <div class="stat"><span class="muted">Qoldiq</span><b>{{ p.qty|son }} {{ p.unit }}</b></div>
+  <div class="stat"><span class="muted">Chegara</span><b>{{ p.min_qty|son }}</b></div>
+  <div class="stat"><span class="muted">Oxirgi narx</span><b>{{ p.last_price|pul }}</b></div>
+</div>
+<form method="post" class="card grid2">
+  <label>Chegara (shundan kam bo'lsa buyurtma taklif qilinadi)<br><input type="number" step="0.01" min="0" name="min_qty" value="{{ p.min_qty|son }}"></label>
+  <label>Buyurtma miqdori (bo'sh/0 bo'lsa: chegara × 2 − qoldiq)<br><input type="number" step="0.01" min="0" name="order_qty" value="{{ p.order_qty|son }}"></label>
+  <label>Sotuvchi<br><select name="supplier_id"><option value="">— belgilanmagan —</option>
+    {% for s in suppliers %}<option value="{{ s.id }}" {{ 'selected' if s.id == p.supplier_id }}>{{ s.name }}</option>{% endfor %}</select></label>
+  <label>Qoldiqni qo'lda tuzatish (inventarizatsiya)<br><input type="number" step="0.01" min="0" name="actual" placeholder="haqiqiy son"></label>
+  <div><button class="primary" type="submit">Saqlash</button></div>
+</form>
+<div class="card">
+<h2>Harakatlar tarixi</h2>
+<table>
+  <thead><tr><th>Sana</th><th>Turi</th><th class="n">O'zgarish</th><th>Manba</th><th>Izoh</th></tr></thead>
+  <tbody>{% for m in moves %}<tr><td>{{ m.created_at }}</td><td>{{ m.kind }}</td><td class="n">{{ '+' if m.delta > 0 }}{{ m.delta|son }}</td><td class="muted">{{ m.ref }}</td><td class="muted">{{ m.note }}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">Harakat yo'q.</td></tr>{% endfor %}</tbody>
+</table>
+</div>
+{% endblock %}

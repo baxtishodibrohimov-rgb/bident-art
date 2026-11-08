@@ -273,6 +273,11 @@ async def settings_save(request: Request, default: float = Form(0), klinika: flo
     return RedirectResponse("/sozlamalar?saved=1", status_code=303)
 
 
+import sklad_routes  # noqa: E402
+
+sklad_routes.setup(app, templates, auth, service)
+
+
 @app.post("/yangilash")
 def refresh(request: Request, _=Depends(auth)):
     service().clear_cache()

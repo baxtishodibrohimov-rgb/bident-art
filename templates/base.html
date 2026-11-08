@@ -43,6 +43,17 @@
   .kpi .k { color:var(--muted); font-size:13px; }
   .kpi b { font-size:22px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
   .kpi .hint { color:var(--accent); font-size:12px; }
+  .flash { background:#ecfdf3; color:#067647; border:1px solid #abefc6; border-radius:10px; padding:10px 14px; margin-bottom:14px; }
+  .subnav { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 14px; }
+  .subnav a { padding:6px 12px; border-radius:8px; text-decoration:none; color:var(--text); border:1px solid var(--line); background:#fff; }
+  .subnav a.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .tag { display:inline-block; font-size:12px; font-weight:600; padding:1px 8px; border-radius:999px; white-space:nowrap; }
+  .tag.tugagan { background:#fef3f2; color:#b42318; } .tag.kam { background:#fffaeb; color:#b54708; } .tag.yetarli { background:#ecfdf3; color:#067647; }
+  .tag.off { background:#f2f4f7; color:#667085; }
+  .linkbox { font:12px/1.4 ui-monospace, Menlo, monospace; background:#f2f4f7; padding:4px 8px; border-radius:6px; word-break:break-all; display:inline-block; max-width:100%; }
+  input[type=text], input[type=tel] { font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--text); }
+  select { font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--text); }
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; }
   .stats { display:flex; gap:12px; flex-wrap:wrap; }
   .stat { flex:1 1 180px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 16px; }
   .stat b { display:block; font-size:22px; font-variant-numeric:tabular-nums; }
@@ -61,10 +72,12 @@
   <a href="/?{{ q }}">Bosh ekran</a>
   <a href="/shifokorlar?{{ q }}">Shifokorlar</a>
   <a href="/qarzdorlar">Qarzdorlar</a>
+  <a href="/sklad">Sklad</a>
   <a href="/sozlamalar">Foizlar</a>
   <form method="post" action="/logout" style="margin:0"><button class="logout" type="submit">Chiqish</button></form>
 </header>
 <main>
+{% if request.query_params.get('xabar') %}<div class="flash">{{ request.query_params.get('xabar') }}</div>{% endif %}
 {% block content %}{% endblock %}
 </main>
 </body>

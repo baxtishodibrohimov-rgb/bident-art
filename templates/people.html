@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Xodimlar va bot{% endblock %}
+{% block content %}
+<h1>Xodimlar va bot</h1>
+{% include "_sklad_nav.html" %}
+<div class="card">
+  <p style="margin:0 0 8px"><b>Vazifalar:</b> <b>Oladi</b> — har kuni bot «skladdan narsa oldingizmi?» deb so'raydi. <b>Tekshiradi</b> — skladga borib qoldiqni tasdiqlaydi.
+  <b>Admin</b> — «Cliniccards'dan chiqaring» xabari va buyurtma takliflari keladi.</p>
+  <p class="muted" style="margin:0">Har bir xodimga uning havolasini yuboring: ochib «Start» bossa, botga ulanadi. Kunlik so'rov vaqti: <b>{{ ask_time }}</b> (Toshkent vaqti, SKLAD_SOROV_VAQTI o'zgaruvchisi).</p>
+</div>
+<form method="post" class="card toolbar">
+  <input type="text" name="name" placeholder="Xodim ismi" required>
+  <label><input type="checkbox" name="is_taker" value="1"> Oladi</label>
+  <label><input type="checkbox" name="is_checker" value="1"> Tekshiradi</label>
+  <label><input type="checkbox" name="is_admin" value="1"> Admin</label>
+  <button class="primary" type="submit">Qo'shish</button>
+</form>
+<div class="card">
+<table>
+  <thead><tr><th>Ism</th><th>Oladi</th><th>Tekshiradi</th><th>Admin</th><th>Telegram</th><th></th></tr></thead>
+  <tbody>
+  {% for x in rows %}
+    <tr>
+      <td><input form="fx{{ x.id }}" type="text" name="name" value="{{ x.name }}" required></td>
+      <td><input form="fx{{ x.id }}" type="checkbox" name="is_taker" value="1" {{ 'checked' if x.is_taker }} aria-label="Oladi"></td>
+      <td><input form="fx{{ x.id }}" type="checkbox" name="is_checker" value="1" {{ 'checked' if x.is_checker }} aria-label="Tekshiradi"></td>
+      <td><input form="fx{{ x.id }}" type="checkbox" name="is_admin" value="1" {{ 'checked' if x.is_admin }} aria-label="Admin"></td>
+      <td>{% if x.chat_id %}<span class="tag yetarli">ulangan</span> <label class="muted"><input form="fx{{ x.id }}" type="checkbox" name="unlink" value="1"> uzish</label>
+          {% elif bot %}<span class="linkbox">{{ bot.link(x.token) }}</span>{% else %}<span class="muted">bot ulanmagan</span>{% endif %}</td>
+      <td class="n"><form id="fx{{ x.id }}" method="post" action="/xodimlar/{{ x.id }}"></form>
+        <button form="fx{{ x.id }}" type="submit">Saqlash</button> <button form="fx{{ x.id }}" type="submit" name="delete" value="1">O'chirish</button></td>
+    </tr>
+  {% else %}<tr><td colspan="6" class="muted">Xodim yo'q. Kamida bitta «Oladi», bitta «Tekshiradi» va bitta «Admin» qo'shing.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{% if bot %}<form method="post" action="/bot/sorash" class="toolbar noprint"><button type="submit">Kunlik so'rovni hozir yuborish</button>
+  <span class="muted">Sinab ko'rish uchun: «Oladi» xodimlarga darhol savol ketadi.</span></form>{% endif %}
+{% endblock %}

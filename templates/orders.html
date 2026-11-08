@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Buyurtmalar{% endblock %}
+{% block content %}
+<h1>Sotuvchilarga buyurtmalar</h1>
+{% include "_sklad_nav.html" %}
+{% if bot %}<form method="post" action="/bot/buyurtma-tekshir" class="toolbar noprint"><button type="submit">Kam qolganlarni hozir tekshirish</button></form>{% endif %}
+<div class="card">
+<table>
+  <thead><tr><th>Sana</th><th>Mahsulot</th><th>Sotuvchi</th><th class="n">Miqdor</th><th class="n">Taxminiy summa</th><th>Holat</th></tr></thead>
+  <tbody>
+  {% for o in rows %}
+    <tr><td>{{ o.created_at }}</td><td>{{ o.name }}</td><td>{{ o.supplier or '—' }}</td><td class="n">{{ o.qty|son }} {{ o.unit }}</td>
+      <td class="n">{{ (o.qty * o.price)|pul if o.price else '—' }}</td>
+      <td><span class="tag {{ 'yetarli' if o.status == 'qabul' else ('kam' if o.status in ('taklif','yuborildi') else 'off') }}">{{ holat.get(o.status, o.status) }}</span></td></tr>
+  {% else %}<tr><td colspan="6" class="muted">Buyurtma yo'q.</td></tr>{% endfor %}
+  </tbody>
+  {% if rows %}<tfoot><tr><td colspan="4">Yuborilgan va qabul qilingan buyurtmalar jami</td>
+    <td class="n">{{ total|pul }}</td><td></td></tr></tfoot>{% endif %}
+</table>
+</div>
+{% endblock %}
