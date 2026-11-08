@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kirish — Maosh hisoboti</title>
+<style>
+  :root { --accent:#2f5d8a; --accent2:#4f8fc9; --text:#1d2430; --muted:#667085; --line:#d0d5dd; --err:#b42318; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px;
+         font:15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color:var(--text);
+         background:linear-gradient(135deg, #1e3a5f 0%, #2f5d8a 45%, #6fa8dc 100%); }
+  .card { width:100%; max-width:400px; background:#fff; border-radius:18px; padding:36px 32px 28px;
+          box-shadow:0 20px 50px rgba(15,30,55,.35); }
+  .logo { width:56px; height:56px; border-radius:16px; margin:0 auto 16px; display:grid; place-items:center;
+          background:linear-gradient(135deg, var(--accent), var(--accent2)); color:#fff; }
+  h1 { font-size:22px; text-align:center; margin:0 0 4px; }
+  .sub { text-align:center; color:var(--muted); margin:0 0 26px; font-size:14px; }
+  label { display:block; font-size:13px; font-weight:600; margin:0 0 6px; }
+  .field { position:relative; margin-bottom:16px; }
+  input[type=text], input[type=password] { width:100%; font:inherit; padding:12px 14px; border:1px solid var(--line);
+          border-radius:10px; outline:none; transition:border-color .15s, box-shadow .15s; background:#fff; color:var(--text); }
+  input:focus { border-color:var(--accent2); box-shadow:0 0 0 4px rgba(79,143,201,.18); }
+  .eye { position:absolute; right:8px; bottom:7px; border:0; background:none; cursor:pointer; color:var(--muted);
+         padding:6px; border-radius:8px; }
+  .eye:hover { color:var(--text); background:#f2f4f7; }
+  .row { display:flex; align-items:center; gap:8px; margin:4px 0 22px; font-size:14px; color:var(--muted); }
+  .row input { width:16px; height:16px; accent-color:var(--accent); }
+  button.go { width:100%; font:inherit; font-weight:600; padding:12px; border:0; border-radius:10px; cursor:pointer; color:#fff;
+              background:linear-gradient(135deg, var(--accent), var(--accent2)); transition:filter .15s, transform .05s; }
+  button.go:hover { filter:brightness(1.07); }
+  button.go:active { transform:translateY(1px); }
+  button.go:disabled { opacity:.7; cursor:wait; }
+  .err { background:#fef3f2; color:var(--err); border:1px solid #fecdca; border-radius:10px; padding:10px 12px;
+         font-size:14px; margin-bottom:18px; }
+  .foot { text-align:center; color:var(--muted); font-size:12px; margin-top:22px; }
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="logo" aria-hidden="true">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+  </div>
+  <h1>Maosh hisoboti</h1>
+  <p class="sub">Davom etish uchun tizimga kiring</p>
+  {% if error %}<div class="err" role="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="/login" onsubmit="this.querySelector('.go').disabled=true">
+    <input type="hidden" name="next" value="{{ next }}">
+    <div class="field">
+      <label for="login">Login</label>
+      <input id="login" type="text" name="login" value="{{ login }}" autocomplete="username" autocapitalize="none" required {% if not login %}autofocus{% endif %}>
+    </div>
+    <div class="field">
+      <label for="parol">Parol</label>
+      <input id="parol" type="password" name="parol" autocomplete="current-password" required {% if login %}autofocus{% endif %} style="padding-right:44px">
+      <button type="button" class="eye" aria-label="Parolni ko'rsatish"
+              onclick="const p=document.getElementById('parol');p.type=p.type==='password'?'text':'password'">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
+    <label class="row"><input type="checkbox" name="eslab" value="1" checked> Eslab qolish (30 kun)</label>
+    <button class="go" type="submit">Kirish</button>
+  </form>
+  <p class="foot">Cliniccards · shifokorlar maoshi</p>
+</main>
+</body>
+</html>

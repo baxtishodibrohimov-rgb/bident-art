@@ -12,6 +12,8 @@
   header a { color:#fff; text-decoration:none; opacity:.9; }
   header a:hover { opacity:1; text-decoration:underline; }
   header strong { margin-right:auto; }
+  header .logout { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.35); padding:4px 12px; }
+  header .logout:hover { background:rgba(255,255,255,.25); }
   main { max-width:1200px; margin:0 auto; padding:16px; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; overflow-x:auto; }
   h1 { font-size:22px; margin:0 0 12px; }
@@ -44,6 +46,7 @@
   <a href="/?oy={{ oy }}">Shifokorlar</a>
   <a href="/qarzdorlar">Qarzdorlar</a>
   <a href="/sozlamalar">Foizlar</a>
+  <form method="post" action="/logout" style="margin:0"><button class="logout" type="submit">Chiqish</button></form>
 </header>
 <main>
 {% block content %}{% endblock %}

@@ -6,16 +6,16 @@ from __future__ import annotations
 
 import os
 import re
-import secrets
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse, Response
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
+
+import auth as sessions
 
 from client import CliniccardsClient, CliniccardsError
 from excel import report_xlsx
@@ -23,7 +23,6 @@ from service import HERE, Percents, Service, load_env
 
 load_env()
 
-security = HTTPBasic()
 templates = Jinja2Templates(directory=str(HERE / "templates"))
 
 
@@ -66,16 +65,65 @@ def service() -> Service:
     return _service
 
 
-def auth(creds: HTTPBasicCredentials = Depends(security)) -> str:
-    user = os.environ.get("HISOBOT_LOGIN", "admin")
-    password = os.environ.get("HISOBOT_PAROL", "")
-    if not password:
-        raise HTTPException(500, "HISOBOT_PAROL .env faylda berilmagan")
-    ok = secrets.compare_digest(creds.username.encode(), user.encode()) and \
-        secrets.compare_digest(creds.password.encode(), password.encode())
-    if not ok:
-        raise HTTPException(401, "Login yoki parol noto'g'ri", headers={"WWW-Authenticate": "Basic"})
-    return creds.username
+attempts = sessions.Attempts()
+
+
+def client_ip(request: Request) -> str:
+    fwd = request.headers.get("x-forwarded-for", "")
+    return fwd.split(",")[-1].strip() or (request.client.host if request.client else "?")
+
+
+def auth(request: Request) -> str:
+    user = sessions.check_token(request.cookies.get(sessions.COOKIE))
+    if not user:
+        raise sessions.NeedLogin()
+    return user
+
+
+@app.exception_handler(sessions.NeedLogin)
+def need_login(request: Request, exc: sessions.NeedLogin):
+    target = request.url.path + (f"?{request.url.query}" if request.url.query else "")
+    return RedirectResponse("/login" + ("" if target == "/" else f"?next={quote(target)}"), status_code=303)
+
+
+def login_page(request: Request, next_: str, login: str = "", error: str = "", status: int = 200):
+    return templates.TemplateResponse(request, "login.html",
+                                      {"next": next_, "login": login, "error": error}, status_code=status)
+
+
+@app.get("/login")
+def login_form(request: Request, next: str = "/"):
+    if sessions.check_token(request.cookies.get(sessions.COOKIE)):
+        return RedirectResponse(sessions.safe_next(next), status_code=303)
+    return login_page(request, sessions.safe_next(next))
+
+
+@app.post("/login")
+def login_submit(request: Request, login: str = Form(""), parol: str = Form(""),
+                 eslab: str = Form(""), next: str = Form("/")):
+    next_ = sessions.safe_next(next)
+    ip = client_ip(request)
+    if not sessions.credentials()[1]:
+        return login_page(request, next_, login, "Server sozlanmagan: HISOBOT_PAROL o'zgaruvchisi berilmagan.", 500)
+    if attempts.blocked(ip):
+        return login_page(request, next_, login, "Juda ko'p urinish. 5 daqiqadan keyin qayta urinib ko'ring.", 429)
+    if not sessions.check_password(login, parol):
+        attempts.fail(ip)
+        return login_page(request, next_, login, "Login yoki parol noto'g'ri.", 401)
+    attempts.reset(ip)
+    ttl = sessions.LONG if eslab else sessions.SHORT
+    resp = RedirectResponse(next_, status_code=303)
+    secure = request.headers.get("x-forwarded-proto", request.url.scheme) == "https"
+    resp.set_cookie(sessions.COOKIE, sessions.make_token(sessions.credentials()[0], ttl),
+                    max_age=ttl if eslab else None, httponly=True, samesite="lax", secure=secure)
+    return resp
+
+
+@app.post("/logout")
+def logout():
+    resp = RedirectResponse("/login", status_code=303)
+    resp.delete_cookie(sessions.COOKIE)
+    return resp
 
 
 @app.exception_handler(CliniccardsError)

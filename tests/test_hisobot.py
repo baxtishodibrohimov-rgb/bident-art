@@ -1,5 +1,4 @@
 """Soxta Cliniccards API bilan sinovlar (haqiqiy kalit kerak emas)."""
-import base64
 import json
 import sys
 from decimal import Decimal
@@ -135,21 +134,61 @@ def test_excel(svc):
     assert wb.sheetnames[0] == "Jami" and len(wb.sheetnames) == 4
 
 
-def test_web(svc, tmp_path, monkeypatch):
+def _client(svc, monkeypatch):
     monkeypatch.setenv("HISOBOT_PAROL", "maxfiy")
+    monkeypatch.setenv("HISOBOT_LOGIN", "admin")
     import app as webapp
     from fastapi.testclient import TestClient
     monkeypatch.setattr(webapp, "_service", svc)
-    c = TestClient(webapp.app)
-    assert c.get("/").status_code == 401
-    auth = {"Authorization": "Basic " + base64.b64encode(b"admin:maxfiy").decode()}
-    r = c.get("/?oy=2026-11", headers=auth)
-    assert r.status_code == 200 and "125 000" in r.text
-    r = c.get("/shifokor/501?oy=2026-11", headers=auth)
+    monkeypatch.setattr(webapp, "attempts", __import__("auth").Attempts())
+    return TestClient(webapp.app)
+
+
+def test_login_flow(svc, monkeypatch):
+    c = _client(svc, monkeypatch)
+    r = c.get("/shifokor/501?oy=2026-11", follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"].startswith("/login?next=")
+    r = c.get("/login")
+    assert r.status_code == 200 and "Kirish" in r.text and "WWW-Authenticate" not in r.headers
+    r = c.post("/login", data={"login": "admin", "parol": "xato", "next": "/"})
+    assert r.status_code == 401 and "noto&#39;g&#39;ri" in r.text
+    r = c.post("/login", data={"login": "admin", "parol": "maxfiy", "next": "/shifokor/501?oy=2026-11"},
+               follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/shifokor/501?oy=2026-11"
+    assert "httponly" in r.headers["set-cookie"].lower()
+    assert "Usmonov Akmal" in c.get("/shifokor/501?oy=2026-11").text
+    c.post("/logout")
+    assert c.get("/", follow_redirects=False).status_code == 303
+
+
+def test_login_open_redirect_and_bruteforce(svc, monkeypatch):
+    c = _client(svc, monkeypatch)
+    r = c.post("/login", data={"login": "admin", "parol": "maxfiy", "next": "//evil.com"}, follow_redirects=False)
+    assert r.headers["location"] == "/"
+    c.cookies.clear()
+    for _ in range(5):
+        c.post("/login", data={"login": "admin", "parol": "xato"})
+    r = c.post("/login", data={"login": "admin", "parol": "maxfiy"})
+    assert r.status_code == 429
+
+
+def test_forged_cookie_rejected(svc, monkeypatch):
+    import auth
+    c = _client(svc, monkeypatch)
+    c.cookies.set(auth.COOKIE, "admin|9999999999|deadbeef")
+    assert c.get("/", follow_redirects=False).status_code == 303
+
+
+def test_web(svc, tmp_path, monkeypatch):
+    c = _client(svc, monkeypatch)
+    c.post("/login", data={"login": "admin", "parol": "maxfiy"})
+    r = c.get("/?oy=2026-11")
+    assert r.status_code == 200 and "125 000" in r.text and "Chiqish" in r.text
+    r = c.get("/shifokor/501?oy=2026-11")
     assert "Usmonov Akmal" in r.text and "Konsultatsiya" not in r.text
-    assert c.get("/excel?oy=2026-11&shifokor=501", headers=auth).content[:2] == b"PK"
-    assert c.get("/qarzdorlar", headers=auth).status_code == 200
-    r = c.post("/sozlamalar", data={"foiz_501": "20", "default": "0"}, headers=auth, follow_redirects=False)
+    assert c.get("/excel?oy=2026-11&shifokor=501").content[:2] == b"PK"
+    assert c.get("/qarzdorlar").status_code == 200
+    r = c.post("/sozlamalar", data={"foiz_501": "20", "default": "0"}, follow_redirects=False)
     assert r.status_code == 303
     assert json.loads((tmp_path / "foizlar.json").read_text())["doctors"] == {"501": 20.0}
-    assert c.get("/?oy=2026-13", headers=auth).status_code == 400
+    assert c.get("/?oy=2026-13").status_code == 400

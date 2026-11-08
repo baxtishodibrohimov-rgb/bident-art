@@ -17,6 +17,12 @@ Masalan, martda qo'yilgan breket uchun noyabrda tushgan 1 000 000 noyabr maoshig
 «Shifokor belgilanmagan» qatori: ishda `done_by_doctor_id` bo'sh, ya'ni Cliniccards'da «Работы выполнил» to'ldirilmagan.
 Bunday ishni Cliniccards'da tuzatish kerak.
 
+## Kirish
+
+Sahifa ochilganda dasturning o'z kirish oynasi chiqadi (`/login`): login, parol va «Eslab qolish (30 kun)».
+Login va parol `HISOBOT_LOGIN` / `HISOBOT_PAROL` o'zgaruvchilaridan olinadi. Bir IP'dan 5 daqiqada 5 ta noto'g'ri urinishdan keyin kirish vaqtincha bloklanadi.
+Yuqoridagi «Chiqish» tugmasi sessiyani tugatadi.
+
 ## Qanday hisoblaydi
 
 1. `GET /planItems/DONE` va `GET /planItems/INVOICED`: tanlangan oydan `ORQAGA_OY` (standart 24) oy oldingi ishlardan bugungacha, 3 oylik bo'laklarda.
@@ -49,6 +55,7 @@ Bu Cliniccards'dagi «Начисления» bilan mos kelishi kerak.
    - `HISOBOT_LOGIN` — masalan `admin`
    - `HISOBOT_PAROL` — sahifaga kirish paroli
    - `FOIZLAR_FAYL` = `/data/foizlar.json`
+   - `SESSION_SECRET` — ixtiyoriy, uzun tasodifiy matn (kirish sessiyasini imzolash uchun)
 3. **Volume** qo'shing va uni `/data` ga ulang. Usiz shifokor foizlari har deploy'da o'chib ketadi.
 4. **Settings → Networking → Generate Domain**: `https://...up.railway.app` manzili chiqadi, HTTPS avtomatik.
 
