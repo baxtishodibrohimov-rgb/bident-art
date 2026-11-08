@@ -61,9 +61,26 @@ def fake_api(request: httpx.Request) -> httpx.Response:
         return ok([it for it in ITEMS[status] if frm <= it["marked_done_date"][:10] <= to])
     if path.startswith("/patients/"):
         return ok([PATIENTS[i] for i in path.split("/")[2].split(",") if i in PATIENTS])
+    if path == "/spendings/":
+        return ok([
+            {"id": "1", "amount": "400000", "paid": "400000", "payment_status": "Paid", "date_issued": "2026-11-02",
+             "supplier": {"id": 1, "name": "Dental Market"}, "spendings_category": {"id": 10, "name": "Materiallar"},
+             "spendings_subcategory": {"id": 11, "name": "Plomba materiali"}, "note": ""},
+            {"id": "2", "amount": "600000", "paid": "600000", "payment_status": "Paid", "date_issued": "2026-11-05",
+             "supplier": None, "spendings_category": {"id": 20, "name": "Ijara"},
+             "spendings_subcategory": {"id": 21, "name": "Bino ijarasi"}, "note": "noyabr"},
+            {"id": "3", "amount": "-100000", "paid": "-100000", "payment_status": "Paid", "date_issued": "2026-11-06",
+             "supplier": {"id": 1, "name": "Dental Market"}, "spendings_category": {"id": 10, "name": "Materiallar"},
+             "spendings_subcategory": {"id": 11, "name": "Plomba materiali"}, "note": "qaytarildi"},
+        ])
     if path == "/payments":
-        return ok([{"amount": "500000"}, {"amount": "1000000"}, {"amount": "50000"}, {"amount": "200000"},
-                   {"amount": "300000"}])
+        desk = {"id": "1", "name": "Naqd", "currency": "UZS"}
+        card = {"id": "2", "name": "Terminal", "currency": "UZS"}
+        return ok([{"amount": "500000", "patient_id": "900", "date": "2026-11-03 10:00:00", "cash_desk": desk, "cash_desk_id": "1"},
+                   {"amount": "1000000", "patient_id": "901", "date": "2026-11-05 12:00:00", "cash_desk": card, "cash_desk_id": "2"},
+                   {"amount": "50000", "patient_id": "900", "date": "2026-11-01 09:00:00", "cash_desk": desk, "cash_desk_id": "1"},
+                   {"amount": "200000", "patient_id": "900", "date": "2026-11-07 09:00:00", "cash_desk": desk, "cash_desk_id": "1"},
+                   {"amount": "300000", "patient_id": "901", "date": "2026-11-10 10:00:00", "cash_desk": card, "cash_desk_id": "2"}])
     return httpx.Response(404, json={"data": None, "result": "fail", "error": "not found"})
 
 
@@ -243,3 +260,51 @@ def test_web_date_range(svc, monkeypatch):
     assert x.content[:2] == b"PK" and "2026-10-01_2026-11-30" in x.headers["content-disposition"]
     assert c.get("/?dan=2026-11-30&gacha=2026-11-01").status_code == 400
     assert c.get("/?dan=xato&gacha=2026-11-01").status_code == 400
+
+
+def test_summary_five_numbers(svc):
+    s = svc.summary("2026-11")
+    # noyabrda bajarilgan ishlar: Rentgen 50 000 + Konsultatsiya 100 000
+    assert s.done_total == Decimal("150000") and s.done_count == 2
+    assert s.kassa_total == Decimal("2050000")
+    assert s.clinic_percent == Decimal("20") and s.clinic_share == Decimal("410000")
+    assert s.salary_total == Decimal("425000")  # 125 000 + 300 000
+    assert s.expenses_total == Decimal("900000") and s.expenses_count == 3
+
+
+def test_details(svc):
+    done = svc.done_detail("2026-11")
+    assert {g.name: g.total for g in done} == {"Karimova madina": Decimal("100000"),
+                                              "Shifokor belgilanmagan": Decimal("50000")}
+    assert done[0].left_total == Decimal("100000")
+    kassa = svc.kassa_detail("2026-11")
+    assert {g.name: g.total for g in kassa} == {"Naqd": Decimal("750000"), "Terminal": Decimal("1300000")}
+    assert kassa[0].rows[0]["patient"] == "Rasulova Dilnoza"
+    exp = svc.expenses_detail("2026-11")
+    assert {g.name: g.total for g in exp} == {"Ijara": Decimal("600000"), "Materiallar": Decimal("300000")}
+
+
+def test_clinic_percent_setting(svc, monkeypatch):
+    c = _client(svc, monkeypatch)
+    c.post("/login", data={"login": "admin", "parol": "maxfiy"})
+    c.post("/sozlamalar", data={"foiz_501": "25", "default": "0", "klinika": "30"})
+    assert svc.percents.clinic_percent() == 30.0
+    assert svc.summary("2026-11").clinic_share == Decimal("615000")
+    assert c.post("/sozlamalar", data={"klinika": "150"}).status_code == 400
+
+
+def test_dashboard_pages(svc, monkeypatch):
+    c = _client(svc, monkeypatch)
+    c.post("/login", data={"login": "admin", "parol": "maxfiy"})
+    r = c.get("/?oy=2026-11")
+    assert r.status_code == 200
+    for text in ("Bajarilgan ishlar", "Kassaga tushgan", "Klinikaga (20%)", "Shifokorlarga", "Xarajatlar",
+                 "2 050 000", "410 000", "425 000", "900 000", "/kassa?oy=2026-11"):
+        assert text in r.text, text
+    assert "Konsultatsiya" in c.get("/ishlar?oy=2026-11").text
+    k = c.get("/kassa?oy=2026-11").text
+    assert "Terminal" in k and "1 300 000" in k
+    assert "410 000" in c.get("/klinika?oy=2026-11").text
+    x = c.get("/xarajatlar?oy=2026-11").text
+    assert "Ijara" in x and "Bino ijarasi" in x and "-100 000" in x
+    assert "Karimova madina" in c.get("/shifokorlar?oy=2026-11").text

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Kassa — {{ p.label }}{% endblock %}
+{% block content %}
+<div class="toolbar noprint"><a class="btn" href="/?{{ q }}">← Bosh ekran</a><button type="button" onclick="window.print()">Chop etish</button></div>
+<h1>Kassaga tushgan pul · {{ p.label }}</h1>
+<p class="muted">Cliniccards'dagi barcha to'lovlar (GET /payments), kassa bo'yicha. Jami: <b>{{ total|pul }}</b>.</p>
+{% set action = "/kassa" %}{% include "_period.html" %}
+{% for g in groups %}
+<div class="card">
+  <h2>{{ g.name }}{% if g.extra %} <span class="muted">({{ g.extra }})</span>{% endif %} — {{ g.total|pul }}</h2>
+  <table>
+    <thead><tr><th>Sana</th><th>Bemor</th><th>Turi</th><th>Kim qabul qildi</th><th>Izoh</th><th class="n">Summa</th></tr></thead>
+    <tbody>{% for r in g.rows %}<tr><td>{{ r.date }}</td><td>{{ r.patient }}</td><td class="muted">{{ r.type }}</td><td>{{ r.who }}</td><td class="muted">{{ r.note }}</td><td class="n">{{ r.amount|pul }}</td></tr>{% endfor %}</tbody>
+    <tfoot><tr><td colspan="5">Jami ({{ g.rows|length }} ta to'lov)</td><td class="n">{{ g.total|pul }}</td></tr></tfoot>
+  </table>
+</div>
+{% else %}<div class="card muted">Bu davrda to'lov yo'q.</div>{% endfor %}
+{% if currencies > 1 %}<p class="warn">Diqqat: kassalar turli valyutada. Jami summa ularni oddiy qo'shib hisoblangan.</p>{% endif %}
+{% endblock %}

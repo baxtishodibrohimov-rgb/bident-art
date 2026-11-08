@@ -34,6 +34,15 @@
   .chip { font-size:13px; padding:4px 11px; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--text); text-decoration:none; }
   .chip:hover { border-color:var(--accent); }
   .chip.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .kpis { display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+  @media (max-width:1000px) { .kpis { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+  @media (max-width:520px) { .kpis { grid-template-columns:1fr; } }
+  .kpi { display:flex; flex-direction:column; gap:2px; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px;
+         color:var(--text); text-decoration:none; transition:border-color .15s, box-shadow .15s; min-width:0; }
+  .kpi:hover { border-color:var(--accent); box-shadow:0 4px 14px rgba(47,93,138,.12); }
+  .kpi .k { color:var(--muted); font-size:13px; }
+  .kpi b { font-size:22px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+  .kpi .hint { color:var(--accent); font-size:12px; }
   .stats { display:flex; gap:12px; flex-wrap:wrap; }
   .stat { flex:1 1 180px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 16px; }
   .stat b { display:block; font-size:22px; font-variant-numeric:tabular-nums; }
@@ -49,7 +58,8 @@
 <body>
 <header>
   <strong>Maosh hisoboti</strong>
-  <a href="/?{{ q }}">Shifokorlar</a>
+  <a href="/?{{ q }}">Bosh ekran</a>
+  <a href="/shifokorlar?{{ q }}">Shifokorlar</a>
   <a href="/qarzdorlar">Qarzdorlar</a>
   <a href="/sozlamalar">Foizlar</a>
   <form method="post" action="/logout" style="margin:0"><button class="logout" type="submit">Chiqish</button></form>

@@ -8,8 +8,13 @@ Masalan, martda qo'yilgan breket uchun noyabrda tushgan 1 000 000 noyabr maoshig
 
 | Sahifa | Nima ko'rsatadi |
 | --- | --- |
-| **Shifokorlar** (`/`) | Oy bo'yicha barcha shifokorlar: kim qancha pul olib keldi, foizi va maoshi. Kassa jami bilan solishtirish («Farq») |
-| **Shifokor** (`/shifokor/<id>`) | Bemor, ish, ish sanasi, shu oy tushgan pul, to'lov sanasi, shifokor ulushi |
+| **Bosh ekran** (`/`) | Tanlangan oy yoki sana oralig'i bo'yicha 5 ta summa: bajarilgan ishlar, kassaga tushgan, klinikaga (kassaning 20%), shifokorlarga, xarajatlar. Har birini bosganda tafsiloti ochiladi |
+| **Bajarilgan ishlar** (`/ishlar`) | Shu davrda bajarilgan ishlar, shifokor bo'yicha: narx, to'langan, qoldiq |
+| **Kassa** (`/kassa`) | Barcha to'lovlar (`GET /payments`), kassa bo'yicha |
+| **Klinika ulushi** (`/klinika`) | Kassa × klinika foizi, kassa bo'yicha |
+| **Shifokorlar** (`/shifokorlar`) | Kim qancha pul olib keldi, foizi va maoshi. Kassa jami bilan solishtirish («Farq») |
+| **Xarajatlar** (`/xarajatlar`) | Cliniccards xarajatlari (`GET /spendings`), toifa bo'yicha |
+| **Shifokor** (`/shifokor/<id>`) | Bemor, ish, ish sanasi, shu davrda tushgan pul, to'lov sanasi, shifokor ulushi |
 | **Excel / Chop etish** | Har ikkala sahifadan tayyor ro'yxat |
 | **Qarzdorlar** (`/qarzdorlar`) | Bajarilgan, lekin to'liq to'lanmagan ishlar: keyingi oylarda kutilayotgan pul |
 | **Foizlar** (`/sozlamalar`) | Har bir shifokor foizi (API Cliniccards'dagi foizni bermaydi, shuning uchun bir marta shu yerda kiritiladi) |

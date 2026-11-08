@@ -93,6 +93,10 @@ class CliniccardsClient:
     def payments(self, start: date, end: date) -> list[dict]:
         return self.get("/payments", {"from": start.isoformat(), "to": end.isoformat()}) or []
 
+    def spendings(self, start: date, end: date) -> list[dict]:
+        """Xarajatlar (Clinic Finances → Expenses)."""
+        return self.get("/spendings/", {"from": start.isoformat(), "to": end.isoformat()}) or []
+
     def patients_by_ids(self, ids: list[str], batch: int = 50) -> list[dict]:
         out: list[dict] = []
         ids = [str(i) for i in ids if i]

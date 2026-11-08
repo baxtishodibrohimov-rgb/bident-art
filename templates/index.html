@@ -1,42 +1,44 @@
 {% extends "base.html" %}
-{% block title %}Maosh — {{ p.label }}{% endblock %}
+{% block title %}Bosh ekran — {{ p.label }}{% endblock %}
 {% block content %}
-<h1>{{ p.label }}: shu davrda tushgan pul</h1>
+<h1>{{ p.label }}</h1>
 {% set action = "/" %}{% include "_period.html" %}
 <form class="toolbar noprint" method="post" action="/yangilash">
-  <a class="btn" href="/excel?{{ q }}">Excel</a>
   <button type="button" onclick="window.print()">Chop etish</button>
   <button type="submit">Ma'lumotni yangilash</button>
 </form>
 
-<div class="stats" style="margin-bottom:16px">
-  <div class="stat"><span class="muted">Ishlar bo'yicha tushgan</span><b>{{ rep.total|pul }}</b></div>
-  <div class="stat"><span class="muted">Jami maosh</span><b>{{ rep.salary|pul }}</b></div>
-  <div class="stat"><span class="muted">Kassaga tushgan (jami)</span><b>{{ rep.kassa_total|pul }}</b></div>
-  <div class="stat"><span class="muted">Farq</span>
-    <b class="{{ 'ok' if rep.difference == 0 else 'warn' }}">{{ rep.difference|pul }}</b></div>
+<div class="kpis">
+  <a class="kpi" href="/ishlar?{{ q }}">
+    <span class="k">Bajarilgan ishlar</span><b>{{ s.done_total|pul }}</b>
+    <span class="hint">{{ s.done_count }} ta ish · tafsilot →</span></a>
+  <a class="kpi" href="/kassa?{{ q }}">
+    <span class="k">Kassaga tushgan</span><b>{{ s.kassa_total|pul }}</b>
+    <span class="hint">{{ s.kassa_count }} ta to'lov · tafsilot →</span></a>
+  <a class="kpi" href="/klinika?{{ q }}">
+    <span class="k">Klinikaga ({{ s.clinic_percent|pul }}%)</span><b>{{ s.clinic_share|pul }}</b>
+    <span class="hint">kassaning {{ s.clinic_percent|pul }}% · tafsilot →</span></a>
+  <a class="kpi" href="/shifokorlar?{{ q }}">
+    <span class="k">Shifokorlarga</span><b>{{ s.salary_total|pul }}</b>
+    <span class="hint">{{ s.report.doctors|length }} ta shifokor · tafsilot →</span></a>
+  <a class="kpi" href="/xarajatlar?{{ q }}">
+    <span class="k">Xarajatlar</span><b>{{ s.expenses_total|pul }}</b>
+    <span class="hint">{{ s.expenses_count }} ta xarajat · tafsilot →</span></a>
 </div>
 
 <div class="card">
-<table>
-  <thead><tr><th>Shifokor</th><th class="n">Bemorlar</th><th class="n">Tushgan</th><th class="n">Foiz</th><th class="n">Maosh</th></tr></thead>
-  <tbody>
-  {% for d in rep.doctors %}
-    <tr>
-      <td>{% if d.doctor_id != "0" %}<a href="/shifokor/{{ d.doctor_id }}?{{ q }}">{{ d.name }}</a>{% else %}<span class="warn">{{ d.name }}</span>{% endif %}
-        {% if d.doctor_id != "0" and d.percent == 0 %}<span class="warn"> · foiz qo'yilmagan</span>{% endif %}</td>
-      <td class="n">{{ d.patients }}</td>
-      <td class="n">{{ d.total|pul }}</td>
-      <td class="n">{{ d.percent|pul }}%</td>
-      <td class="n">{{ d.salary|pul }}</td>
-    </tr>
-  {% else %}
-    <tr><td colspan="5" class="muted">Bu davrda ishlarga bog'langan to'lov topilmadi.</td></tr>
-  {% endfor %}
-  </tbody>
-  <tfoot><tr><td>Jami</td><td></td><td class="n">{{ rep.total|pul }}</td><td></td><td class="n">{{ rep.salary|pul }}</td></tr></tfoot>
-</table>
+  <h2>Shifokorlar maoshi</h2>
+  <table>
+    <thead><tr><th>Shifokor</th><th class="n">Tushgan</th><th class="n">Foiz</th><th class="n">Maosh</th></tr></thead>
+    <tbody>
+    {% for d in s.report.doctors %}
+      <tr><td>{% if d.doctor_id != "0" %}<a href="/shifokor/{{ d.doctor_id }}?{{ q }}">{{ d.name }}</a>{% else %}<span class="warn">{{ d.name }}</span>{% endif %}</td>
+        <td class="n">{{ d.total|pul }}</td><td class="n">{{ d.percent|pul }}%</td><td class="n">{{ d.salary|pul }}</td></tr>
+    {% else %}
+      <tr><td colspan="4" class="muted">Bu davrda ishlarga bog'langan to'lov yo'q.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
 </div>
-<p class="muted noprint">«Farq» — kassaga tushgan, lekin hali birorta bajarilgan ishga bog'lanmagan pul (avans, depozit, rejalashtirilgan ish uchun to'lov) yoki boshqa valyutadagi kassa.
-Ish qachon qilinganidan qat'i nazar, faqat tanlangan davrda tushgan to'lovlar hisoblanadi.</p>
+<p class="muted noprint">Har bir summani bosing: u qaysi ishlar, to'lovlar yoki xarajatlardan yig'ilgani ochiladi.</p>
 {% endblock %}

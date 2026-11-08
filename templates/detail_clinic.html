@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Klinika ulushi — {{ p.label }}{% endblock %}
+{% block content %}
+<div class="toolbar noprint"><a class="btn" href="/?{{ q }}">← Bosh ekran</a><button type="button" onclick="window.print()">Chop etish</button></div>
+<h1>Klinikaga beriladigan summa · {{ p.label }}</h1>
+{% set action = "/klinika" %}{% include "_period.html" %}
+<div class="card">
+  <p style="font-size:18px;margin:0 0 12px">Kassaga tushgan <b>{{ s.kassa_total|pul }}</b> × <b>{{ s.clinic_percent|pul }}%</b> = <b>{{ s.clinic_share|pul }}</b></p>
+  <table>
+    <thead><tr><th>Kassa</th><th class="n">Tushgan</th><th class="n">Klinika ulushi ({{ s.clinic_percent|pul }}%)</th></tr></thead>
+    <tbody>{% for g in groups %}<tr><td><a href="/kassa?{{ q }}">{{ g.name }}</a>{% if g.extra %} <span class="muted">({{ g.extra }})</span>{% endif %}</td>
+      <td class="n">{{ g.total|pul }}</td><td class="n">{{ (g.total * s.clinic_percent / 100)|pul }}</td></tr>{% endfor %}</tbody>
+    <tfoot><tr><td>Jami</td><td class="n">{{ s.kassa_total|pul }}</td><td class="n">{{ s.clinic_share|pul }}</td></tr></tfoot>
+  </table>
+</div>
+<p class="muted">Foizni «Foizlar» sahifasida o'zgartirish mumkin.</p>
+{% endblock %}

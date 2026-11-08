@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Xarajatlar — {{ p.label }}{% endblock %}
+{% block content %}
+<div class="toolbar noprint"><a class="btn" href="/?{{ q }}">← Bosh ekran</a><button type="button" onclick="window.print()">Chop etish</button></div>
+<h1>Xarajatlar · {{ p.label }}</h1>
+<p class="muted">Cliniccards'dagi xarajatlar (Финансы → Расходы), toifa bo'yicha. Manfiy summa — qaytarilgan pul. Jami: <b>{{ total|pul }}</b>.</p>
+{% set action = "/xarajatlar" %}{% include "_period.html" %}
+{% for g in groups %}
+<div class="card">
+  <h2>{{ g.name }} — {{ g.total|pul }}</h2>
+  <table>
+    <thead><tr><th>Sana</th><th>Turi</th><th>Yetkazib beruvchi / xodim</th><th>Izoh</th><th>Holati</th><th class="n">Summa</th></tr></thead>
+    <tbody>{% for r in g.rows %}<tr><td>{{ r.date }}</td><td>{{ r.sub }}</td><td>{{ r.supplier }}</td><td class="muted">{{ r.note }}</td><td class="muted">{{ r.status }}</td><td class="n">{{ r.amount|pul }}</td></tr>{% endfor %}</tbody>
+    <tfoot><tr><td colspan="5">Jami ({{ g.rows|length }} ta)</td><td class="n">{{ g.total|pul }}</td></tr></tfoot>
+  </table>
+</div>
+{% else %}<div class="card muted">Bu davrda xarajat yo'q.</div>{% endfor %}
+{% endblock %}
