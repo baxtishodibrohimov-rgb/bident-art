@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Sklad diagnostikasi{% endblock %}
+{% block content %}
+<h1>Sklad diagnostikasi</h1>
+{% include "_sklad_nav.html" %}
+<p class="muted">Bu sahifa Cliniccards sklad ma'lumoti API orqali qanday kelishini ko'rsatadi. Ombor qismini Cliniccards bilan bir xil qurish uchun kerak. Hech narsa o'zgartirilmaydi.</p>
+<form class="toolbar noprint" method="get">
+  <label>Oxirgi <input type="number" name="oy" min="1" max="240" value="{{ oy }}" style="width:80px"> oy</label>
+  <button type="submit">Ko'rsatish</button>
+  <span class="muted">{{ start }} — {{ end }} · {{ invoices }} ta nakladnoy · {{ products }} ta tovar</span>
+</form>
+<div class="card">
+  <h2>Nakladnoy turlari</h2>
+  <table>
+    <thead><tr><th>Turi (API)</th><th class="n">Soni</th><th class="n">Qatorlar</th><th>Davr</th><th>Ombor</th><th>Qayerdan</th><th>Sotuvchilar</th></tr></thead>
+    <tbody>{% for t, d in types.items() %}<tr><td><b>{{ t }}</b></td><td class="n">{{ d.n }}</td><td class="n">{{ d.lines }}</td>
+      <td>{{ d.first }} — {{ d.last }}</td><td>{{ d.rooms|join(", ") }}</td><td>{{ d.from_rooms|join(", ") }}</td>
+      <td class="muted">{{ (d.suppliers|list)[:5]|join(", ") }}{% if d.suppliers|length > 5 %} …{% endif %}</td></tr>
+    {% else %}<tr><td colspan="7" class="muted">Bu davrda nakladnoy yo'q.</td></tr>{% endfor %}</tbody>
+  </table>
+</div>
+<div class="grid2">
+  <div class="card"><h2>Omborlar</h2>{% for id, name in rooms.items() %}<div>{{ name }} <span class="muted">(ID {{ id }})</span></div>{% else %}<span class="muted">—</span>{% endfor %}</div>
+  <div class="card"><h2>Qator maydonlari</h2><div class="muted">{{ item_keys|join(", ") }}</div>
+    <h2 style="margin-top:10px">dimension_type</h2>{% for k, v in dim_types.items() %}<div>{{ k }}: {{ v }}</div>{% endfor %}
+    <h2 style="margin-top:10px">Birliklar (qadoq / mayda)</h2>{% for k, v in measures.items() %}<div>{{ k }}: {{ v }}</div>{% endfor %}</div>
+</div>
+{% for t, d in types.items() %}
+<div class="card"><h2>Misol: {{ t }}</h2><pre style="white-space:pre-wrap;font-size:12px;margin:0">{{ d.example_json }}</pre></div>
+{% endfor %}
+{% if product_example %}<div class="card"><h2>Tovar misoli</h2><pre style="white-space:pre-wrap;font-size:12px;margin:0">{{ product_example }}</pre></div>{% endif %}
+{% endblock %}

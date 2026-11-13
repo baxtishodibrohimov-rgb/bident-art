@@ -66,6 +66,47 @@ def setup(app, templates, auth, service):
                else f"{res['new_income_items']} ta yangi kirim qo'shildi")
         return RedirectResponse(f"/sklad?xabar={msg}", status_code=303)
 
+    @router.get("/sklad/diagnostika")
+    def diagnostics(request: Request, oy: int = 12, _=Depends(auth)):
+        """Cliniccards sklad ma'lumoti qanday ko'rinishda kelishini ko'rsatadi (ombor qismini to'g'ri qurish uchun)."""
+        import json
+        from datetime import date as _date
+        from report import shift_months
+        oy = max(1, min(oy, 240))
+        svc = service()
+        end = _date.today()
+        start = shift_months(_date(end.year, end.month, 1), -(oy - 1))
+        invoices = stock.fetch_invoices(svc.client, start, end, 3)
+        products = svc.client.get("/stock-products") or []
+        types: dict[str, dict] = {}
+        rooms: dict[str, str] = {}
+        item_keys, dim_types, measures = set(), {}, {}
+        for inv in invoices:
+            t = str(inv.get("type"))
+            d = types.setdefault(t, {"n": 0, "lines": 0, "first": inv.get("date"), "last": inv.get("date"),
+                                     "suppliers": set(), "from_rooms": set(), "rooms": set(), "example": inv})
+            d["n"] += 1
+            d["lines"] += len(inv.get("invoice_items") or [])
+            d["first"] = min(str(d["first"] or ""), str(inv.get("date") or ""))
+            d["last"] = max(str(d["last"] or ""), str(inv.get("date") or ""))
+            if inv.get("supplier_name"):
+                d["suppliers"].add(inv["supplier_name"])
+            for key, name, bucket in (("room_id", "room_name", "rooms"), ("from_room_id", "from_room_name", "from_rooms")):
+                if inv.get(key) and str(inv.get(key)) != "0":
+                    rooms[str(inv[key])] = inv.get(name) or ""
+                    d[bucket].add(inv.get(name) or str(inv[key]))
+            for it in inv.get("invoice_items") or []:
+                item_keys.update(it.keys())
+                dim_types[str(it.get("dimension_type"))] = dim_types.get(str(it.get("dimension_type")), 0) + 1
+                measures[f"{it.get('measure_name')} / {it.get('dimension_name')}"] = 1 + measures.get(
+                    f"{it.get('measure_name')} / {it.get('dimension_name')}", 0)
+        for d in types.values():
+            d["example_json"] = json.dumps(d.pop("example"), ensure_ascii=False, indent=2)[:4000]
+        return page(request, "diagnostics.html", oy=oy, start=start, end=end, invoices=len(invoices), types=types,
+                    rooms=rooms, item_keys=sorted(item_keys), dim_types=dim_types, measures=measures,
+                    products=len(products),
+                    product_example=json.dumps(products[0], ensure_ascii=False, indent=2) if products else "")
+
     @router.get("/sklad/mahsulot/{pid}")
     def product(request: Request, pid: str, _=Depends(auth)):
         db = get_db()
@@ -121,29 +162,34 @@ def setup(app, templates, auth, service):
     @router.get("/xodimlar")
     def people(request: Request, _=Depends(auth)):
         return page(request, "people.html", rows=get_db().q("SELECT * FROM people ORDER BY name"),
-                    ask_time=os.environ.get("SKLAD_SOROV_VAQTI", "18:00"))
+                    ask_time=os.environ.get("SKLAD_SOROV_VAQTI", "19:00"),
+                    att_time=os.environ.get("DAVOMAT_VAQTI", "20:00"))
 
     @router.post("/xodimlar")
     def person_add(name: str = Form(...), is_taker: str = Form(""), is_checker: str = Form(""), is_admin: str = Form(""),
-                   _=Depends(auth)):
+                   is_attendance: str = Form(""), _=Depends(auth)):
         if not name.strip():
             raise HTTPException(400, "Ismini kiriting")
-        get_db().run("INSERT INTO people(name, is_taker, is_checker, is_admin, token) VALUES(?,?,?,?,?)",
-                     (name.strip(), int(bool(is_taker)), int(bool(is_checker)), int(bool(is_admin)), new_token()))
+        get_db().run("INSERT INTO people(name, is_taker, is_checker, is_admin, is_attendance, token) VALUES(?,?,?,?,?,?)",
+                     (name.strip(), int(bool(is_taker)), int(bool(is_checker)), int(bool(is_admin)),
+                      int(bool(is_attendance)), new_token()))
         return RedirectResponse("/xodimlar", status_code=303)
 
     @router.post("/xodimlar/{pid}")
     def person_edit(pid: int, name: str = Form(...), is_taker: str = Form(""), is_checker: str = Form(""),
-                    is_admin: str = Form(""), delete: str = Form(""), unlink: str = Form(""), _=Depends(auth)):
+                    is_admin: str = Form(""), is_attendance: str = Form(""), delete: str = Form(""), unlink: str = Form(""),
+                    _=Depends(auth)):
         db = get_db()
         if delete:
-            if db.one("SELECT 1 FROM reports WHERE person_id=? OR checked_by=?", (pid, pid)):
-                db.run("UPDATE people SET is_taker=0, is_checker=0, is_admin=0, chat_id=NULL WHERE id=?", (pid,))
+            if db.one("SELECT 1 FROM reports WHERE person_id=? OR checked_by=?", (pid, pid)) or \
+                    db.one("SELECT 1 FROM clinic_days WHERE reported_by=?", (pid,)):
+                db.run("UPDATE people SET is_taker=0, is_checker=0, is_admin=0, is_attendance=0, chat_id=NULL WHERE id=?", (pid,))
             else:
                 db.run("DELETE FROM people WHERE id=?", (pid,))
         else:
-            db.run("UPDATE people SET name=?, is_taker=?, is_checker=?, is_admin=? WHERE id=?",
-                   (name.strip(), int(bool(is_taker)), int(bool(is_checker)), int(bool(is_admin)), pid))
+            db.run("UPDATE people SET name=?, is_taker=?, is_checker=?, is_admin=?, is_attendance=? WHERE id=?",
+                   (name.strip(), int(bool(is_taker)), int(bool(is_checker)), int(bool(is_admin)),
+                    int(bool(is_attendance)), pid))
             if unlink:
                 db.run("UPDATE people SET chat_id=NULL, token=? WHERE id=?", (new_token(), pid))
         return RedirectResponse("/xodimlar", status_code=303)
@@ -177,6 +223,14 @@ def setup(app, templates, auth, service):
         n = b.ask_takers(force=True)
         return RedirectResponse(f"/xodimlar?xabar={n} ta xodimga so'rov yuborildi", status_code=303)
 
+    @router.post("/bot/davomat")
+    def ask_attendance_now(_=Depends(auth)):
+        b = get_bot()
+        if not b:
+            raise HTTPException(400, "Telegram bot ulanmagan (TELEGRAM_BOT_TOKEN)")
+        n = b.ask_attendance(force=True)
+        return RedirectResponse(f"/xodimlar?xabar=Davomat so'rovi {n} ta xodimga yuborildi", status_code=303)
+
     @router.post("/bot/buyurtma-tekshir")
     def check_orders(_=Depends(auth)):
         b = get_bot()
@@ -194,4 +248,5 @@ def setup(app, templates, auth, service):
             return
         import bot as botmod
         _state["bot"] = botmod.start_background(get_db(), token, os.environ.get("KLINIKA_NOMI", "Biodent"),
-                                                os.environ.get("SKLAD_SOROV_VAQTI", "18:00"))
+                                                os.environ.get("SKLAD_SOROV_VAQTI", "19:00"),
+                                                os.environ.get("DAVOMAT_VAQTI", "20:00"))

@@ -23,6 +23,7 @@ from datetime import datetime
 
 import httpx
 
+import staff
 import stock
 from db import DB, TZ, now, today
 
@@ -58,6 +59,7 @@ class Bot:
         self.clinic = clinic
         self.username = db.meta("bot_username") or os.environ.get("TELEGRAM_BOT_USERNAME", "")
         self.last_error = ""
+        self._msg_id = None
 
     # ------------------------------------------------------------------ yordamchi
     def send(self, chat_id, text, markup=None):
@@ -105,6 +107,84 @@ class Bot:
             sent += 1
         return sent
 
+    # ------------------------------------------------------------------ davomat
+    def ask_attendance(self, force: bool = False) -> int:
+        day = today()
+        if not force and self.db.one("SELECT 1 FROM clinic_days WHERE day=?", (day,)):
+            return 0
+        d = datetime.fromisoformat(day)
+        sent = 0
+        for p in self.db.q("SELECT * FROM people WHERE is_attendance=1 AND chat_id IS NOT NULL"):
+            self.send(p["chat_id"], f"Davomat: bugun {d:%d.%m.%Y} ({staff.WEEKDAYS[d.weekday()]}) klinika ishladimi?",
+                      kb([("Ha, ishladi", f"att:w:{day}:1"), ("Yo'q, dam olish", f"att:w:{day}:0")]))
+            sent += 1
+        return sent
+
+    def _att_kb(self, ids, selected):
+        names = {w["id"]: w["full_name"] for w in self.db.q("SELECT id, full_name FROM workers")}
+        rows = [[(("✅ " if i in selected else "⬜ ") + names.get(i, f"#{i}"), f"att:t:{i}")] for i in ids]
+        return kb(*rows, [("Tayyor", "att:ok")])
+
+    def on_attendance(self, chat_id, p, parts):
+        action = parts[0]
+        st = self.db.state(chat_id)
+        if action == "w":
+            day, worked = parts[1], parts[2] == "1"
+            if not worked:
+                staff.save_day(self.db, day, False, [], [], p["id"])
+                self.db.set_state(chat_id, None)
+                self.send(chat_id, f"Yozib qo'ydim: {day} — klinika ishlamadi.")
+                return
+            ids = [w["id"] for w in self.db.q("SELECT id FROM workers WHERE active=1 ORDER BY full_name")]
+            if not ids:
+                staff.save_day(self.db, day, True, [], [], p["id"])
+                self.send(chat_id, "Yozib qo'ydim: klinika ishladi. Dasturda hali xodimlar qo'shilmagan.")
+                return
+            self.db.set_state(chat_id, {"step": "att_present", "day": day, "ids": ids, "sel": ids, "extra": []})
+            self.send(chat_id, "Kimlar keldi? Kelmaganlarni bosib olib tashlang, keyin «Tayyor».", self._att_kb(ids, ids))
+        elif action == "t" and st.get("step") in ("att_present", "att_extra"):
+            wid = int(parts[1])
+            key = "sel" if st["step"] == "att_present" else "extra"
+            ids = st["ids"] if st["step"] == "att_present" else st["sel"]
+            cur = set(st[key])
+            cur ^= {wid}
+            st[key] = [i for i in ids if i in cur]
+            self.db.set_state(chat_id, st)
+            try:
+                self.api.call("editMessageReplyMarkup", chat_id=chat_id, message_id=self._msg_id,
+                              reply_markup=self._att_kb(ids, set(st[key])))
+            except Exception:
+                pass
+        elif action == "ok" and st.get("step") == "att_present":
+            if not st["sel"]:
+                staff.save_day(self.db, st["day"], True, [], [], p["id"])
+                self.db.set_state(chat_id, None)
+                self.send(chat_id, "Yozib qo'ydim: klinika ishladi, xodimlardan hech kim belgilanmadi.")
+                return
+            st["step"] = "att_extra"
+            self.db.set_state(chat_id, st)
+            self.send(chat_id, "Kimlar normadan ko'p ishladi? Belgilang (hech kim bo'lmasa, darhol «Tayyor»).",
+                      self._att_kb(st["sel"], set()))
+        elif action == "ok" and st.get("step") == "att_extra":
+            staff.save_day(self.db, st["day"], True, st["sel"], st["extra"], p["id"])
+            self.db.set_state(chat_id, None)
+            day = datetime.fromisoformat(st["day"]).date()
+            pays = {wp.worker["id"]: wp for wp in staff.payroll(self.db, day, day)}
+            lines = []
+            for wid in st["sel"]:
+                wp = pays.get(wid)
+                if wp:
+                    mark = " (+qo'shimcha)" if wp.extra_days else ""
+                    lines.append(f"• {wp.worker['full_name']}{mark} — {pul(wp.total)} so'm")
+            rest = " Bugun dam olish kuni: hammaga qo'shimcha hisoblandi." if staff.is_rest_day(day) else ""
+            text = f"Davomat {day:%d.%m.%Y}:\n" + "\n".join(lines) + f"\nJami: {pul(sum(pays[w].total for w in st['sel'] if w in pays))} so'm.{rest}"
+            self.send(chat_id, "Rahmat! " + text)
+            for a in self.admins():
+                if a["chat_id"] != chat_id:
+                    self.send(a["chat_id"], text)
+        else:
+            self.send(chat_id, "Bu davomat allaqachon yuborilgan.")
+
     # ------------------------------------------------------------------ yangilanishlar
     def handle(self, upd: dict) -> None:
         if "callback_query" in upd:
@@ -114,12 +194,15 @@ class Bot:
                 self.api.call("answerCallbackQuery", callback_query_id=cq["id"])
             except Exception:
                 pass
-            try:
-                self.api.call("editMessageReplyMarkup", chat_id=chat_id, message_id=cq["message"]["message_id"],
-                              reply_markup={"inline_keyboard": []})
-            except Exception:
-                pass
-            self.on_button(chat_id, cq.get("data") or "")
+            data = cq.get("data") or ""
+            self._msg_id = cq["message"]["message_id"]
+            if not data.startswith("att:t:"):  # belgilash tugmalari qoladi, qolganlari bosilgach olinadi
+                try:
+                    self.api.call("editMessageReplyMarkup", chat_id=chat_id, message_id=self._msg_id,
+                                  reply_markup={"inline_keyboard": []})
+                except Exception:
+                    pass
+            self.on_button(chat_id, data)
         elif "message" in upd:
             msg = upd["message"]
             chat_id = msg["chat"]["id"]
@@ -140,7 +223,7 @@ class Bot:
             if p:
                 self.db.run("UPDATE people SET chat_id=? WHERE id=?", (chat_id, p["id"]))
                 roles = [r for r, f in (("sklad hisoboti", p["is_taker"]), ("sklad tekshiruvi", p["is_checker"]),
-                                        ("tasdiq va buyurtmalar", p["is_admin"])) if f]
+                                        ("tasdiq va buyurtmalar", p["is_admin"]), ("kunlik davomat", p["is_attendance"])) if f]
                 self.send(chat_id, f"{p['name']}, siz {self.clinic} botiga ulandingiz.\nVazifangiz: {', '.join(roles) or '—'}."
                           + ("\nSkladdan narsa olganingizda istalgan vaqtda /oldim deb yozishingiz mumkin." if p["is_taker"] else ""))
                 return
@@ -192,6 +275,8 @@ class Bot:
                 self.on_order_decision(chat_id, parts[1], int(parts[2]))
             elif kind == "sup":                           # sotuvchi: qabul qildim
                 self.on_supplier_ack(chat_id, int(parts[1]))
+            elif kind == "att" and p and p["is_attendance"]:  # davomat
+                self.on_attendance(chat_id, p, parts[1:])
         except Exception as e:
             self.last_error = f"{e}"
             traceback.print_exc()
@@ -424,24 +509,26 @@ class Bot:
                 self.last_error = str(e)
                 stop.wait(10)
 
-    def schedule_forever(self, stop: threading.Event, at: str):
-        """Har kuni `at` (HH:MM, klinika vaqti) da xodimlardan so'raydi."""
+    def schedule_forever(self, stop: threading.Event, at: str, attendance_at: str = "20:00"):
+        """Har kuni `at` da sklad so'rovi, `attendance_at` da davomat so'rovi (klinika vaqti, HH:MM)."""
+        jobs = (("last_ask_day", at, self.ask_takers), ("last_att_day", attendance_at, self.ask_attendance))
         while not stop.is_set():
-            try:
-                t = datetime.now(TZ)
-                if t.strftime("%H:%M") >= at and self.db.meta("last_ask_day") != t.strftime("%Y-%m-%d"):
-                    self.db.set_meta("last_ask_day", t.strftime("%Y-%m-%d"))
-                    self.ask_takers()
-            except Exception as e:
-                self.last_error = str(e)
+            t = datetime.now(TZ)
+            for key, when, fn in jobs:
+                try:
+                    if t.strftime("%H:%M") >= when and self.db.meta(key) != t.strftime("%Y-%m-%d"):
+                        self.db.set_meta(key, t.strftime("%Y-%m-%d"))
+                        fn()
+                except Exception as e:
+                    self.last_error = str(e)
             stop.wait(30)
 
 
-def start_background(db: DB, token: str, clinic: str, at: str) -> Bot:
+def start_background(db: DB, token: str, clinic: str, at: str, attendance_at: str = "20:00") -> Bot:
     bot = Bot(db, TelegramAPI(token), clinic)
     bot.identify()
     stop = threading.Event()
     threading.Thread(target=bot.poll_forever, args=(stop,), daemon=True).start()
-    threading.Thread(target=bot.schedule_forever, args=(stop, at), daemon=True).start()
+    threading.Thread(target=bot.schedule_forever, args=(stop, at, attendance_at), daemon=True).start()
     bot._stop = stop
     return bot

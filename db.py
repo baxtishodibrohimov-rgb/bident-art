@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS people (
     is_taker INTEGER NOT NULL DEFAULT 0,    -- har kuni "skladdan narsa oldingizmi?" so'raladi
     is_checker INTEGER NOT NULL DEFAULT 0,  -- skladni tekshiradi
     is_admin INTEGER NOT NULL DEFAULT 0,    -- tasdiq va buyurtma takliflari keladi
+    is_attendance INTEGER NOT NULL DEFAULT 0, -- har kuni davomat (kim keldi) so'raladi
     chat_id INTEGER,
     token TEXT UNIQUE NOT NULL
 );
@@ -84,6 +85,28 @@ CREATE TABLE IF NOT EXISTS orders (
     sent_at TEXT,
     answered_at TEXT
 );
+CREATE TABLE IF NOT EXISTS workers (       -- shifokor bo'lmagan xodimlar (maosh shabloni)
+    id INTEGER PRIMARY KEY,
+    full_name TEXT NOT NULL,
+    position TEXT DEFAULT '',
+    daily_rate INTEGER NOT NULL DEFAULT 0,  -- kunlik summa, so'm
+    extra_rate INTEGER NOT NULL DEFAULT 0,  -- noqulay kun / normadan ko'p ishlagan kun uchun qo'shimcha
+    active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS clinic_days (   -- klinika shu kuni ishladimi
+    day TEXT PRIMARY KEY,
+    worked INTEGER NOT NULL,
+    reported_by INTEGER REFERENCES people(id),
+    answered_at TEXT
+);
+CREATE TABLE IF NOT EXISTS attendance (
+    day TEXT NOT NULL,
+    worker_id INTEGER NOT NULL REFERENCES workers(id),
+    extra INTEGER NOT NULL DEFAULT 0,       -- normadan ko'p ishladi (yoki qo'lda qo'shimcha belgilangan)
+    source TEXT DEFAULT 'bot',
+    PRIMARY KEY (day, worker_id)
+);
 CREATE TABLE IF NOT EXISTS bot_state (chat_id INTEGER PRIMARY KEY, data TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
 """
@@ -112,6 +135,9 @@ class DB:
         self.lock = threading.RLock()
         with self.lock:
             self.conn.executescript(SCHEMA)
+            cols = {r["name"] for r in self.conn.execute("PRAGMA table_info(people)")}
+            if "is_attendance" not in cols:  # eski bazaga yangi ustun
+                self.conn.execute("ALTER TABLE people ADD COLUMN is_attendance INTEGER NOT NULL DEFAULT 0")
 
     # --- umumiy ----------------------------------------------------------
     def q(self, sql: str, args: tuple = ()) -> list[sqlite3.Row]:

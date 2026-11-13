@@ -18,6 +18,9 @@ Cliniccards'dagi (Настройки → Зарплата) foiz bilan bir xil bo
   </table>
   <p><b>Klinika ulushi</b> (kassaga tushgan pulning necha foizi klinikaga beriladi):
     <input type="number" step="0.01" min="0" max="100" name="klinika" value="{{ clinic }}" style="width:100px"> %</p>
+  <p><b>Shifokorlar ulushi</b> (kassaning necha foizi shifokorlarga ajratiladi):
+    <input type="number" step="0.01" min="0" max="100" name="shifokorlar" value="{{ doctors_share }}" style="width:100px"> %.
+    Qolgani xarajatlarga (xodimlar maoshi ham shu ichida).</p>
   <p>Foizi kiritilmagan xodimlar uchun: <input type="number" step="0.01" min="0" max="100" name="default" value="{{ default }}" style="width:100px"> %</p>
   <button class="primary" type="submit">Saqlash</button>
 </form>

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Grafik — {{ p.label }}{% endblock %}
+{% block content %}
+<h1>Grafik · {{ p.label }}</h1>
+<nav class="subnav noprint"><a href="/maosh-xodimlar?{{ q }}">Xodimlar va maosh</a><a class="on" href="/grafik?{{ q }}">Grafik</a></nav>
+{% set action = "/grafik" %}{% include "_period.html" %}
+<p class="muted noprint">Kunlar bot orqali har kuni to'ladi (davomat). Katakni bosib o'zgartirish mumkin: bo'sh → keldi (✓) → keldi va qo'shimcha (✓+) → bo'sh.
+Sariq ustun — dam olish kuni (ishlansa, qo'shimcha avtomatik qo'shiladi).</p>
+<div class="card" style="overflow-x:auto">
+<table class="sched">
+  <thead>
+    <tr><th>Xodim</th>
+      {% for d in days %}<th class="c{{ ' rest' if d.weekday() in rest }}">{{ d.day }}<br><span class="muted">{{ wd[d.weekday()] }}</span></th>{% endfor %}
+      <th class="n">Kun</th><th class="n">Qo'sh.</th><th class="n">Jami</th></tr>
+    <tr><td class="muted">Klinika</td>
+      {% for d in days %}{% set c = clinic.get(d.isoformat()) %}<td class="c{{ ' rest' if d.weekday() in rest }}">{% if c == 1 %}<span class="ok">●</span>{% elif c == 0 %}<span class="muted">—</span>{% endif %}</td>{% endfor %}
+      <td colspan="3" class="muted">● ishladi, — ishlamadi</td></tr>
+  </thead>
+  <tbody>
+  {% for w in pays %}
+    <tr><td>{{ w.worker.full_name }}<br><span class="muted">{{ w.worker.position }}</span></td>
+      {% for d in days %}{% set k = (d.isoformat(), w.worker.id) %}{% set m = marks.get(k) %}
+        <td class="c{{ ' rest' if d.weekday() in rest }}">
+          <form method="post" action="/grafik/belgi">
+            <input type="hidden" name="day" value="{{ d.isoformat() }}"><input type="hidden" name="worker_id" value="{{ w.worker.id }}">
+            <input type="hidden" name="back" value="/grafik?{{ q }}">
+            <input type="hidden" name="state" value="{{ 'keldi' if m is none else ('yoq' if (m == 1 or d.weekday() in rest) else 'qoshimcha') }}">
+            <button class="cell{{ ' on' if m is not none }}{{ ' plus' if m == 1 or (m is not none and d.weekday() in rest) }}" type="submit"
+              title="{{ w.worker.full_name }}, {{ d.isoformat() }}">{{ '' if m is none else ('✓+' if m == 1 or d.weekday() in rest else '✓') }}</button>
+          </form></td>
+      {% endfor %}
+      <td class="n">{{ w.worked|length }}</td><td class="n">{{ w.extra_days|length }}</td><td class="n"><b>{{ w.total|pul }}</b></td></tr>
+  {% else %}<tr><td colspan="{{ days|length + 4 }}" class="muted">Xodim yo'q. «Xodimlar va maosh» bo'limida qo'shing.</td></tr>{% endfor %}
+  </tbody>
+  <tfoot><tr><td colspan="{{ days|length + 3 }}">Jami maosh</td><td class="n">{{ total|pul }}</td></tr></tfoot>
+</table>
+</div>
+<style>
+  table.sched th.c, table.sched td.c { padding:4px 2px; text-align:center; min-width:30px; }
+  table.sched .rest { background:#fffaeb; }
+  table.sched form { margin:0; }
+  .cell { width:28px; height:26px; padding:0; border:1px solid var(--line); border-radius:6px; background:#fff; font-size:12px; cursor:pointer; }
+  .cell.on { background:#ecfdf3; border-color:#abefc6; color:#067647; font-weight:700; }
+  .cell.plus { background:#fef0c7; border-color:#fedf89; color:#b54708; }
+  .ok { color:#067647; }
+</style>
+{% endblock %}

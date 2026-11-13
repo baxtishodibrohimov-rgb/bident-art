@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Xodimlar maoshi — {{ p.label }}{% endblock %}
+{% block content %}
+<h1>Xodimlar maoshi · {{ p.label }}</h1>
+<nav class="subnav noprint"><a class="on" href="/maosh-xodimlar?{{ q }}">Xodimlar va maosh</a><a href="/grafik?{{ q }}">Grafik</a></nav>
+<p class="muted">Shifokor bo'lmagan xodimlar. Maosh = ishlagan kunlar × kunlik summa + qo'shimcha kunlar × qo'shimcha summa.
+Qo'shimcha kuniga bir marta qo'shiladi: dam olish kunida ishlaganda yoki normadan ko'p ishlaganda. Maosh xarajatlar uchun ajratilgan 55% ichidan hisoblanadi.</p>
+{% set action = "/maosh-xodimlar" %}{% include "_period.html" %}
+
+<div class="card">
+  <h2>Maosh hisobi</h2>
+  <table>
+    <thead><tr><th>Xodim</th><th>Lavozim</th><th class="n">Ishlagan kun</th><th class="n">Kunlik</th><th class="n">Qo'shimcha kun</th><th class="n">Qo'shimcha</th><th class="n">Jami</th></tr></thead>
+    <tbody>
+    {% for w in pays %}
+      <tr><td>{{ w.worker.full_name }}</td><td class="muted">{{ w.worker.position }}</td>
+        <td class="n">{{ w.worked|length }}</td><td class="n">{{ w.base|pul }}</td>
+        <td class="n">{{ w.extra_days|length }}</td><td class="n">{{ w.extra|pul }}</td><td class="n"><b>{{ w.total|pul }}</b></td></tr>
+    {% else %}<tr><td colspan="7" class="muted">Xodim yo'q. Pastdagi shablon orqali qo'shing.</td></tr>{% endfor %}
+    </tbody>
+    <tfoot><tr><td colspan="6">Jami</td><td class="n">{{ total|pul }}</td></tr></tfoot>
+  </table>
+</div>
+
+<form method="post" class="card toolbar">
+  <input type="text" name="full_name" placeholder="Ism-familiya" required>
+  <input type="text" name="position" placeholder="Lavozim (masalan, assistent)">
+  <label>Kunlik summa <input type="number" name="daily_rate" min="0" step="1000" required style="width:130px"></label>
+  <label>Noqulay kun qo'shimchasi <input type="number" name="extra_rate" min="0" step="1000" value="0" style="width:130px"></label>
+  <button class="primary" type="submit">Qo'shish</button>
+</form>
+
+<div class="card">
+  <h2>Shablon: xodimlar ro'yxati</h2>
+  <table>
+    <thead><tr><th>Ism-familiya</th><th>Lavozim</th><th class="n">Kunlik summa</th><th class="n">Qo'shimcha</th><th>Faol</th><th></th></tr></thead>
+    <tbody>
+    {% for x in rows %}
+      <tr>
+        <td><input form="fw{{ x.id }}" type="text" name="full_name" value="{{ x.full_name }}" required></td>
+        <td><input form="fw{{ x.id }}" type="text" name="position" value="{{ x.position or '' }}"></td>
+        <td class="n"><input form="fw{{ x.id }}" type="number" name="daily_rate" min="0" step="1000" value="{{ x.daily_rate }}" style="width:120px"></td>
+        <td class="n"><input form="fw{{ x.id }}" type="number" name="extra_rate" min="0" step="1000" value="{{ x.extra_rate }}" style="width:120px"></td>
+        <td><input form="fw{{ x.id }}" type="checkbox" name="active" value="1" {{ 'checked' if x.active }} aria-label="Faol"></td>
+        <td><form id="fw{{ x.id }}" method="post" action="/maosh-xodimlar/{{ x.id }}"></form><button form="fw{{ x.id }}" type="submit">Saqlash</button></td>
+      </tr>
+    {% else %}<tr><td colspan="6" class="muted">Hali xodim yo'q.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <p class="muted" style="margin:8px 0 0">Ishdan ketgan xodimdan «Faol» belgisini olib tashlang: tarixi va eski maosh hisobi saqlanib qoladi.</p>
+</div>
+{% endblock %}

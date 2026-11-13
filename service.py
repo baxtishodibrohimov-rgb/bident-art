@@ -52,6 +52,7 @@ class Summary:
     kassa_total: Decimal      # shu davrda kassaga tushgan jami pul
     kassa_count: int
     clinic_percent: Decimal   # klinika ulushi, %
+    doctors_percent: Decimal  # shifokorlar ulushi, %
     expenses_total: Decimal   # Cliniccards xarajatlari
     expenses_count: int
 
@@ -62,6 +63,18 @@ class Summary:
     @property
     def salary_total(self) -> Decimal:
         return self.report.salary
+
+    @property
+    def doctors_share(self) -> Decimal:
+        return (self.kassa_total * self.doctors_percent / 100).quantize(Decimal("0.01"), ROUND_HALF_UP)
+
+    @property
+    def expense_percent(self) -> Decimal:
+        return Decimal(100) - self.clinic_percent - self.doctors_percent
+
+    @property
+    def expense_budget(self) -> Decimal:
+        return self.kassa_total - self.clinic_share - self.doctors_share
 
 
 class Percents:
@@ -84,11 +97,21 @@ class Percents:
         value = json.loads(self.path.read_text(encoding="utf-8")).get("klinika")
         return fallback if value is None else float(value)
 
-    def save(self, doctors: dict[str, float], default: float = 0.0, clinic: float | None = None) -> None:
+    def doctors_percent(self) -> float:
+        """Shifokorlar ulushi: kassaning necha foizi (standart SHIFOKOR_FOIZ yoki 25)."""
+        fallback = float(os.environ.get("SHIFOKOR_FOIZ") or 25)
+        if not self.path.exists():
+            return fallback
+        value = json.loads(self.path.read_text(encoding="utf-8")).get("shifokorlar")
+        return fallback if value is None else float(value)
+
+    def save(self, doctors: dict[str, float], default: float = 0.0, clinic: float | None = None,
+             doctors_share: float | None = None) -> None:
         clinic = self.clinic_percent() if clinic is None else clinic
+        doctors_share = self.doctors_percent() if doctors_share is None else doctors_share
         self.path.parent.mkdir(parents=True, exist_ok=True)
         tmp = self.path.with_suffix(".tmp")
-        tmp.write_text(json.dumps({"default": default, "klinika": clinic, "doctors": doctors}, ensure_ascii=False, indent=2),
+        tmp.write_text(json.dumps({"default": default, "klinika": clinic, "shifokorlar": doctors_share, "doctors": doctors}, ensure_ascii=False, indent=2),
                        encoding="utf-8")
         tmp.replace(self.path)
 
@@ -174,6 +197,7 @@ class Service:
             kassa_total=rep.kassa_total,
             kassa_count=len(self.payments(p)),
             clinic_percent=Decimal(str(self.percents.clinic_percent())),
+            doctors_percent=Decimal(str(self.percents.doctors_percent())),
             expenses_total=sum((money(s.get("amount")) for s in spend), money(0)),
             expenses_count=len(spend),
         )

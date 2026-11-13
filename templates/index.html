@@ -27,6 +27,27 @@
 </div>
 
 <div class="card">
+  <h2>Kassaning taqsimoti</h2>
+  <div class="split" aria-hidden="true">
+    <i style="width:{{ s.clinic_percent }}%;background:#2f5d8a"></i><i style="width:{{ s.doctors_percent }}%;background:#4f8fc9"></i><i style="width:{{ s.expense_percent }}%;background:#b9d3ea"></i>
+  </div>
+  <table>
+    <thead><tr><th>Ulush</th><th class="n">Foiz</th><th class="n">Ajratilgan</th><th class="n">Ishlatilgan</th><th class="n">Qoldi</th></tr></thead>
+    <tbody>
+      <tr><td><a href="/klinika?{{ q }}">Klinika</a></td><td class="n">{{ s.clinic_percent|pul }}%</td><td class="n">{{ s.clinic_share|pul }}</td><td class="n">—</td><td class="n">—</td></tr>
+      <tr><td><a href="/shifokorlar?{{ q }}">Shifokorlar</a></td><td class="n">{{ s.doctors_percent|pul }}%</td><td class="n">{{ s.doctors_share|pul }}</td>
+        <td class="n">{{ s.salary_total|pul }}</td><td class="n">{{ (s.doctors_share - s.salary_total)|pul }}</td></tr>
+      <tr><td><b>Xarajatlar</b></td><td class="n">{{ s.expense_percent|pul }}%</td><td class="n"><b>{{ s.expense_budget|pul }}</b></td>
+        <td class="n"><b>{{ used|pul }}</b></td><td class="n"><b class="{{ 'warn' if left < 0 else 'ok' }}">{{ left|pul }}</b></td></tr>
+      <tr><td style="padding-left:28px"><a href="/maosh-xodimlar?{{ q }}">— xodimlar maoshi</a></td><td></td><td></td><td class="n">{{ staff_total|pul }}</td><td></td></tr>
+      <tr><td style="padding-left:28px"><a href="/xarajatlar?{{ q }}">— Cliniccards xarajatlari</a></td><td></td><td></td><td class="n">{{ s.expenses_total|pul }}</td><td></td></tr>
+    </tbody>
+  </table>
+  <p class="muted" style="margin:8px 0 0">Shifokorlar «ishlatilgan» — har bir shifokorga foizi bo'yicha hisoblangan maosh. Farq ishga bog'lanmagan to'lovlar (avans, depozit) tufayli chiqadi.
+  Shifokor yoki xodim maoshini Cliniccards'da xarajat qilib yozsangiz, u «Cliniccards xarajatlari» ichida ham chiqadi — ikki marta hisoblanmasligi uchun buni ayting.</p>
+</div>
+
+<div class="card">
   <h2>Shifokorlar maoshi</h2>
   <table>
     <thead><tr><th>Shifokor</th><th class="n">Tushgan</th><th class="n">Foiz</th><th class="n">Maosh</th></tr></thead>

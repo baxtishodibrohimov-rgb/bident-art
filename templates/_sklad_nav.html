@@ -1,5 +1,5 @@
 <nav class="subnav noprint">
-  {% for href, name in [("/sklad", "Qoldiq"), ("/sklad/hisobotlar", "Kunlik hisobotlar"), ("/buyurtmalar", "Buyurtmalar"), ("/sotuvchilar", "Sotuvchilar"), ("/xodimlar", "Xodimlar va bot")] %}
+  {% for href, name in [("/sklad", "Qoldiq"), ("/sklad/hisobotlar", "Kunlik hisobotlar"), ("/buyurtmalar", "Buyurtmalar"), ("/sotuvchilar", "Sotuvchilar"), ("/xodimlar", "Xodimlar va bot"), ("/sklad/diagnostika", "Diagnostika")] %}
     <a href="{{ href }}" class="{{ 'on' if request.url.path == href else '' }}">{{ name }}</a>
   {% endfor %}
 </nav>

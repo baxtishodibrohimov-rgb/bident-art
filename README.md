@@ -22,6 +22,23 @@ Masalan, martda qo'yilgan breket uchun noyabrda tushgan 1 000 000 noyabr maoshig
 «Shifokor belgilanmagan» qatori: ishda `done_by_doctor_id` bo'sh, ya'ni Cliniccards'da «Работы выполнил» to'ldirilmagan.
 Bunday ishni Cliniccards'da tuzatish kerak.
 
+## Xodimlar (shifokor bo'lmagan) va davomat
+
+Kassa taqsimoti: klinika 20%, shifokorlar 25%, qolgan 55% xarajatlar. Xodimlar maoshi 55% ichidan hisoblanadi;
+bosh ekranda «Kassaning taqsimoti» jadvali 55% dan qancha ishlatilgani va qolganini ko'rsatadi.
+
+- **Xodimlar** (`/maosh-xodimlar`): shablon — ism-familiya, lavozim, kunlik summa, noqulay kun qo'shimchasi.
+- **Grafik** (`/grafik`): har kuni kim kelgani; davr tanlanadi; katakni bosib qo'lda o'zgartirish mumkin.
+- **Maosh** = ishlagan kunlar × kunlik summa + qo'shimcha kunlar × qo'shimcha summa. Qo'shimcha kuniga bir marta:
+  dam olish kunida (`DAM_OLISH_KUNLARI`, standart yakshanba) ishlaganda yoki normadan ko'p ishlaganda.
+- **Davomat boti**: har kuni `DAVOMAT_VAQTI` da (standart 20:00) «Davomat» vazifali xodimga: «Bugun klinika ishladimi?» →
+  kimlar keldi (tugmalar bilan) → kimlar normadan ko'p ishladi. Natija adminlarga ham boradi.
+
+## Sklad diagnostikasi
+
+`/sklad/diagnostika` — Cliniccards sklad nakladnoylari API'da qanday turlar, omborlar va birliklar bilan kelishini ko'rsatadi.
+Ombor qismini Cliniccards bilan bir xil qilib qayta qurishdan oldin shu sahifadagi ma'lumot kerak.
+
 ## Sklad va Telegram bot
 
 «Sklad» bo'limi (`/sklad`) har bir mahsulot qoldig'ini yuritadi va bot orqali kunlik hisobot oladi.
@@ -33,7 +50,7 @@ Bunday ishni Cliniccards'da tuzatish kerak.
   Cliniccards'ga keyin kiritilgan chiqim nakladnoylari qayta ayrilmaydi.
 
 **Kunlik tartib**
-1. `SKLAD_SOROV_VAQTI` da (standart 18:00) bot «Oladi» xodimlardan so'raydi: «Bugun skladdan narsa oldingizmi?»
+1. `SKLAD_SOROV_VAQTI` da (standart 19:00) bot «Oladi» xodimlardan so'raydi: «Bugun skladdan narsa oldingizmi?»
    Xodim istalgan vaqtda `/oldim` deb ham yozishi mumkin.
 2. Xodim mahsulot nomini yozadi, ro'yxatdan tanlaydi va sonini kiritadi.
 3. «Tekshiradi» xodimga: «Skladda shuncha qolishi kerak, to'g'rimi?» Noto'g'ri bo'lsa, haqiqiy sonni yozadi va

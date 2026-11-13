@@ -182,7 +182,11 @@ def health():
 @app.get("/")
 def index(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
     s = service().summary(p)
-    return templates.TemplateResponse(request, "index.html", {"s": s, **period_context(p)})
+    import staff
+    staff_total = Decimal(staff.payroll_total(sklad_routes.get_db(), p.start, p.end))
+    used = staff_total + s.expenses_total
+    return templates.TemplateResponse(request, "index.html", {
+        "s": s, "staff_total": staff_total, "used": used, "left": s.expense_budget - used, **period_context(p)})
 
 
 @app.get("/shifokorlar")
@@ -251,13 +255,14 @@ def settings_page(request: Request, saved: int = 0, _=Depends(auth)):
     staff = sorted(service().staff(), key=lambda s: (s.get("role") != "DOCTOR", s.get("lastname") or ""))
     return templates.TemplateResponse(request, "settings.html", {
         "staff": staff, "percents": percents, "default": default, "saved": saved,
-        "clinic": service().percents.clinic_percent()})
+        "clinic": service().percents.clinic_percent(), "doctors_share": service().percents.doctors_percent()})
 
 
 @app.post("/sozlamalar")
-async def settings_save(request: Request, default: float = Form(0), klinika: float = Form(20), _=Depends(auth)):
-    if not 0 <= klinika <= 100:
-        raise HTTPException(400, "Klinika foizi 0 dan 100 gacha bo'lishi kerak")
+async def settings_save(request: Request, default: float = Form(0), klinika: float = Form(20),
+                        shifokorlar: float = Form(25), _=Depends(auth)):
+    if not 0 <= klinika <= 100 or not 0 <= shifokorlar <= 100 or klinika + shifokorlar > 100:
+        raise HTTPException(400, "Klinika va shifokorlar foizi 0–100 oralig'ida, yig'indisi 100 dan oshmasligi kerak")
     form = await request.form()
     doctors: dict[str, float] = {}
     for key, value in form.items():
@@ -269,13 +274,17 @@ async def settings_save(request: Request, default: float = Form(0), klinika: flo
             if not 0 <= pct <= 100:
                 raise HTTPException(400, "Foiz 0 dan 100 gacha bo'lishi kerak")
             doctors[key[5:]] = pct
-    service().percents.save(doctors, default, klinika)
+    service().percents.save(doctors, default, klinika, shifokorlar)
     return RedirectResponse("/sozlamalar?saved=1", status_code=303)
 
 
 import sklad_routes  # noqa: E402
 
 sklad_routes.setup(app, templates, auth, service)
+
+import staff_routes  # noqa: E402
+
+staff_routes.setup(app, templates, auth, get_period, period_context)
 
 
 @app.post("/yangilash")

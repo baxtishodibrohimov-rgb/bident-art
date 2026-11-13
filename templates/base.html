@@ -54,6 +54,9 @@
   input[type=text], input[type=tel] { font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--text); }
   select { font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--text); }
   .grid2 { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; }
+  .split { display:flex; height:10px; border-radius:5px; overflow:hidden; margin:0 0 12px; }
+  .split i { display:block; height:100%; }
+  .ok { color:#067647; }
   .stats { display:flex; gap:12px; flex-wrap:wrap; }
   .stat { flex:1 1 180px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 16px; }
   .stat b { display:block; font-size:22px; font-variant-numeric:tabular-nums; }
@@ -73,6 +76,7 @@
   <a href="/shifokorlar?{{ q }}">Shifokorlar</a>
   <a href="/qarzdorlar">Qarzdorlar</a>
   <a href="/sklad">Sklad</a>
+  <a href="/maosh-xodimlar?{{ q }}">Xodimlar</a>
   <a href="/sozlamalar">Foizlar</a>
   <form method="post" action="/logout" style="margin:0"><button class="logout" type="submit">Chiqish</button></form>
 </header>
