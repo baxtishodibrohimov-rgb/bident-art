@@ -1,5 +1,15 @@
 # Cliniccards maosh hisoboti
 
+**Ulushlar o'zgarmas:** klinika — kassaga tushgan pulning 20%, har bir shifokor — o'ziga tushgan pulning 25%.
+**Bosh ekran:** bajarilgan ishlar, kassaga tushgan, xarajatlar (klinika ulushi + shifokorlar + xodimlar + material rasxod)
+va klinika sof foydasi (bajarilgan ishlar − xarajatlar). Har bir summa bosilganda tafsiloti ochiladi.
+Cliniccards'dagi maosh xarajatlari (xodimga bog'langan yoki «Зарплата» toifasi) shifokorlarga «berilgan» summa sifatida
+olinadi va material rasxodga qo'shilmaydi.
+
+Bo'limlar: Bosh ekran · Shifokorlar · Qarzdorlar · Sklad (qoldiq — ro'yxat/kartochka va rasmlar, kunlik hisobotlar,
+buyurtmalar, sotuvchilar va ular bilan hisob-kitob) · Xodimlar (maosh, ⚙ sozlama, grafik, xodim vazifalari) ·
+Telegram bot (suhbatlar, bot xodimlari) · Qanday ishlaydi.
+
 Cliniccards API orqali **shu oyda kassaga tushgan pul** bo'yicha shifokorlar maoshini hisoblaydigan kichik dastur.
 Ish qachon qilinganidan qat'i nazar, faqat tanlangan oyda tushgan to'lovlar hisobga olinadi.
 Masalan, martda qo'yilgan breket uchun noyabrda tushgan 1 000 000 noyabr maoshiga kiradi.

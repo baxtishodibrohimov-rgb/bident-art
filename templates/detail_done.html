@@ -1,24 +1,24 @@
 {% extends "base.html" %}
 {% block title %}Bajarilgan ishlar — {{ p.label }}{% endblock %}
 {% block content %}
-<div class="toolbar noprint"><a class="btn" href="/?{{ q }}">← Bosh ekran</a><button type="button" onclick="window.print()">Chop etish</button></div>
-<h1>Bajarilgan ishlar · {{ p.label }}</h1>
-<p class="muted">Shu davrda «bajarildi» deb belgilangan ishlar (ish sanasi bo'yicha) va ularning narxi, chegirma bilan.</p>
+<h1>Bajarilgan ishlar</h1>
 {% set action = "/ishlar" %}{% include "_period.html" %}
-<div class="stats" style="margin-bottom:16px">
-  <div class="stat"><span class="muted">Jami ish summasi</span><b>{{ total|pul }}</b></div>
-  <div class="stat"><span class="muted">Shundan to'langan</span><b>{{ groups|sum(attribute="paid_total")|pul }}</b></div>
-  <div class="stat"><span class="muted">Qoldiq (qarz)</span><b class="warn">{{ groups|sum(attribute="left_total")|pul }}</b></div>
+<div class="tiles">
+  <div class="tile"><div class="k">Jami ish summasi</div><div class="v num">{{ total|pul }}<small>so'm</small></div></div>
+  <div class="tile good"><div class="k">Shundan to'langan</div><div class="v num">{{ groups|sum(attribute="paid_total")|pul }}<small>so'm</small></div></div>
+  <div class="tile warn"><div class="k">Qoldiq (qarz)</div><div class="v num">{{ groups|sum(attribute="left_total")|pul }}<small>so'm</small></div></div>
+  <div class="tile"><div class="k">Ishlar soni</div><div class="v num">{{ groups|map(attribute="rows")|map("length")|sum }}</div></div>
 </div>
+<section class="panel">
 {% for g in groups %}
-<div class="card">
-  <h2>{{ g.name }} — {{ g.total|pul }}</h2>
-  <table>
-    <thead><tr><th>Ish sanasi</th><th>Bemor</th><th>Ish</th><th class="n">Narx</th><th class="n">To'langan</th><th class="n">Qoldiq</th></tr></thead>
-    <tbody>{% for r in g.rows %}<tr><td>{{ r.date }}</td><td>{{ r.patient }}</td><td>{{ r.work }}</td>
-      <td class="n">{{ r.amount|pul }}</td><td class="n">{{ r.paid|pul }}</td><td class="n">{{ r.left|pul }}</td></tr>{% endfor %}</tbody>
-    <tfoot><tr><td colspan="3">Jami</td><td class="n">{{ g.total|pul }}</td><td class="n">{{ g.paid_total|pul }}</td><td class="n">{{ g.left_total|pul }}</td></tr></tfoot>
-  </table>
-</div>
-{% else %}<div class="card muted">Bu davrda bajarilgan ish yo'q.</div>{% endfor %}
+  <div class="debt-doc">
+    <div class="panel-h"><h2>{{ g.name }}</h2><span class="pill good num">{{ g.total|pul }}</span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Ish sanasi</th><th>Bemor</th><th>Ish</th><th class="r">Narx</th><th class="r">To'langan</th><th class="r">Qoldiq</th></tr></thead>
+      <tbody>{% for r in g.rows %}<tr><td class="num">{{ r.date }}</td><td>{{ r.patient }}</td><td>{{ r.work }}</td>
+        <td class="r">{{ r.amount|pul }}</td><td class="r">{{ r.paid|pul }}</td><td class="r">{{ r.left|pul }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </div>
+{% else %}<div class="panel-h"><span class="muted">Bu davrda bajarilgan ish yo'q.</span></div>{% endfor %}
+</section>
 {% endblock %}

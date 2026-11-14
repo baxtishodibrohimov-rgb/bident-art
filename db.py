@@ -107,6 +107,17 @@ CREATE TABLE IF NOT EXISTS attendance (
     source TEXT DEFAULT 'bot',
     PRIMARY KEY (day, worker_id)
 );
+CREATE TABLE IF NOT EXISTS product_photos (
+    product_id TEXT PRIMARY KEY,
+    mime TEXT NOT NULL,
+    data BLOB NOT NULL,
+    updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS worker_tasks (
+    id INTEGER PRIMARY KEY,
+    worker_id INTEGER NOT NULL REFERENCES workers(id),
+    text TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS bot_state (chat_id INTEGER PRIMARY KEY, data TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
 """
@@ -135,9 +146,15 @@ class DB:
         self.lock = threading.RLock()
         with self.lock:
             self.conn.executescript(SCHEMA)
-            cols = {r["name"] for r in self.conn.execute("PRAGMA table_info(people)")}
-            if "is_attendance" not in cols:  # eski bazaga yangi ustun
-                self.conn.execute("ALTER TABLE people ADD COLUMN is_attendance INTEGER NOT NULL DEFAULT 0")
+            for table, col, ddl in (
+                ("people", "is_attendance", "INTEGER NOT NULL DEFAULT 0"),
+                ("people", "worker_id", "INTEGER"),
+                ("suppliers", "contact", "TEXT DEFAULT ''"),
+                ("workers", "tg", "TEXT DEFAULT ''"),
+            ):  # eski bazaga yangi ustunlar
+                cols = {r["name"] for r in self.conn.execute(f"PRAGMA table_info({table})")}
+                if col not in cols:
+                    self.conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}")
 
     # --- umumiy ----------------------------------------------------------
     def q(self, sql: str, args: tuple = ()) -> list[sqlite3.Row]:

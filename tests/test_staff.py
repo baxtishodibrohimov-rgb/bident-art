@@ -96,7 +96,7 @@ def test_attendance_bot(env, monkeypatch):
     assert not db.one("SELECT 1 FROM clinic_days WHERE day='2026-11-15'")
 
 
-def test_pages_and_distribution(env, tmp_path, monkeypatch):
+def test_staff_pages(env, tmp_path, monkeypatch):
     db, tg, bot = env
     monkeypatch.setenv("HISOBOT_PAROL", "maxfiy")
     import app as webapp
@@ -116,30 +116,54 @@ def test_pages_and_distribution(env, tmp_path, monkeypatch):
     c = TestClient(webapp.app)
     c.post("/login", data={"login": "admin", "parol": "maxfiy"})
 
-    r = c.post("/maosh-xodimlar", data={"full_name": "Aziza Karimova", "position": "Assistent",
-                                        "daily_rate": "150000", "extra_rate": "50000"}, follow_redirects=True)
-    assert "Aziza Karimova" in r.text
-    wid = db.one("SELECT id FROM workers")["id"]
-    assert c.post("/maosh-xodimlar", data={"full_name": "X", "daily_rate": "-5"}).status_code == 400
+    # ⚙ oynasi: barcha xodimlar bir yo'la saqlanadi
+    form = {"id": ["", ""], "name": ["Aziza Karimova", "Bekzod Aliyev"], "pos": ["Assistent", "Haydovchi"],
+            "daily": ["150000", "120000"], "extra": ["50000", "40000"], "tg": ["@aziza_k", ""]}
+    r = c.post("/xodimlar/saqlash", data=form, follow_redirects=True)
+    assert "Aziza Karimova" in r.text and "Saqlandi" in r.text
+    assert db.one("SELECT tg FROM workers WHERE full_name='Aziza Karimova'")["tg"] == "@aziza_k"
+    wid = db.one("SELECT id FROM workers WHERE full_name='Aziza Karimova'")["id"]
+    bid = db.one("SELECT id FROM workers WHERE full_name='Bekzod Aliyev'")["id"]
+    bad = {"id": [""], "name": ["X"], "pos": [""], "daily": ["100000"], "extra": ["0"], "tg": ["abc"]}
+    assert c.post("/xodimlar/saqlash", data=bad).status_code == 400            # noto'g'ri Telegram
+    assert c.post("/xodimlar/saqlash", data={**bad, "tg": [""], "daily": ["-5"]}).status_code == 400
+    # Bekzod ro'yxatdan olib tashlansa — faol emas, lekin o'chmaydi
+    c.post("/xodimlar/saqlash", data={"id": [str(wid)], "name": ["Aziza Karimova"], "pos": ["Assistent"],
+                                     "daily": ["150000"], "extra": ["50000"], "tg": ["@aziza_k"]})
+    assert db.one("SELECT active FROM workers WHERE id=?", (bid,))["active"] == 0
+    assert c.get("/maosh-xodimlar?oy=2026-11", follow_redirects=False).headers["location"] == "/xodimlar?oy=2026-11"
+
     for day, state in (("2026-11-13", "keldi"), ("2026-11-15", "keldi"), ("2026-11-10", "qoshimcha")):
         c.post("/grafik/belgi", data={"day": day, "worker_id": wid, "state": state, "back": "/grafik?oy=2026-11"})
     r = c.get("/grafik?oy=2026-11")
     assert r.status_code == 200 and "550 000" in r.text      # 3 × 150 000 + 2 × 50 000 (yakshanba va qo'shimcha)
     assert c.get("/grafik?dan=2026-01-01&gacha=2026-12-31").status_code == 400
-    assert "550 000" in c.get("/maosh-xodimlar?oy=2026-11").text
+    assert "550 000" in c.get("/xodimlar?oy=2026-11").text
 
-    # bosh ekran: kassa 2 050 000 → klinika 410 000, shifokorlar 512 500, xarajatlar 1 127 500;
-    # ishlatilgan = xodimlar 550 000 + Cliniccards xarajatlari 900 000 = 1 450 000 → qoldi −322 500
-    r = c.get("/?oy=2026-11")
-    for text in ("Kassaning taqsimoti", "410 000", "512 500", "1 127 500", "1 450 000", "-322 500", "55%"):
-        assert text in r.text, text
-    c.post("/sozlamalar", data={"klinika": "20", "shifokorlar": "25", "default": "0"})
-    assert c.post("/sozlamalar", data={"klinika": "60", "shifokorlar": "50"}).status_code == 400
+    # xarajatlarda xodimlar maoshi: klinika 410 000 + shifokorlar 450 000 + xodimlar 550 000 + material 900 000
+    x = c.get("/xarajatlar?oy=2026-11").text
+    assert "550 000" in x and "2 310 000" in x
 
-    # davomat roli va tugma
-    c.post("/xodimlar", data={"name": "Ma'mura", "is_attendance": "1"})
+    # xodim vazifalari: ish vazifalari va botdagi vazifa
+    c.post(f"/vazifalar/{wid}/qosh", data={"text": "Asboblarni sterilizatsiya qilish"})
+    r = c.get("/vazifalar")
+    assert "Asboblarni sterilizatsiya qilish" in r.text
+    tid = db.one("SELECT id FROM worker_tasks")["id"]
+    c.post(f"/vazifalar/{wid}/rol", data={"role": "is_attendance", "on": "1"})
+    person = db.one("SELECT * FROM people WHERE worker_id=?", (wid,))
+    assert person["is_attendance"] == 1 and person["name"] == "Aziza Karimova"
+    assert "https://t.me/biodent_test_bot?start=" in c.get("/vazifalar").text
+    c.post(f"/vazifalar/{wid}/rol", data={"role": "is_attendance"})
+    assert db.one("SELECT is_attendance FROM people WHERE worker_id=?", (wid,))["is_attendance"] == 0
+    assert c.post(f"/vazifalar/{wid}/rol", data={"role": "chat_id", "on": "1"}).status_code == 400
+    c.post(f"/vazifalar/ochir/{tid}")
+    assert db.one("SELECT count(*) AS n FROM worker_tasks")["n"] == 0
+
+    # Telegram bot bo'limi
+    assert "Suhbatlar" in c.get("/bot").text and "Davomat" in c.get("/bot?chat=Davomat").text
+    c.post("/bot/xodimlar", data={"name": "Ma'mura", "is_attendance": "1"})
     assert db.one("SELECT is_attendance FROM people WHERE name=?", ("Ma'mura",))["is_attendance"] == 1
-    assert "Davomat so'rovini hozir yuborish" in c.get("/xodimlar").text
+    assert "Davomat so'rovini hozir yuborish" in c.get("/bot/xodimlar").text
 
 
 def test_diagnostics_page(env, monkeypatch, tmp_path):

@@ -1,7 +1,12 @@
-<nav class="subnav noprint">
-  {% for href, name in [("/sklad", "Qoldiq"), ("/sklad/hisobotlar", "Kunlik hisobotlar"), ("/buyurtmalar", "Buyurtmalar"), ("/sotuvchilar", "Sotuvchilar"), ("/xodimlar", "Xodimlar va bot"), ("/sklad/diagnostika", "Diagnostika")] %}
-    <a href="{{ href }}" class="{{ 'on' if request.url.path == href else '' }}">{{ name }}</a>
-  {% endfor %}
-</nav>
-{% if not bot %}<div class="card warn" style="padding:10px 14px">Telegram bot ulanmagan: Railway Variables'ga <b>TELEGRAM_BOT_TOKEN</b> qo'shing. Hozircha sklad hisobini faqat shu sahifada ko'rish mumkin.</div>
-{% elif bot.last_error %}<div class="card warn" style="padding:10px 14px">Bot xatosi: {{ bot.last_error }}</div>{% endif %}
+<div class="bar">
+  <nav class="subnav">
+    {% for href, name in [("/sklad", "Qoldiq"), ("/sklad/hisobotlar", "Kunlik hisobotlar"), ("/buyurtmalar", "Buyurtmalar"), ("/sotuvchilar", "Sotuvchilar")] %}
+      <a href="{{ href }}" class="{{ 'on' if request.url.path == href or (href == '/sotuvchilar' and request.url.path.startswith('/sotuvchi')) else '' }}">{{ name }}</a>
+    {% endfor %}
+  </nav>
+  {% if request.url.path == "/sklad" %}
+  <form method="post" action="/sklad/sinxron" class="inline noprint"><button class="btn" type="submit" title="{% if synced %}Oxirgi yangilanish: {{ synced }}{% else %}Hali yangilanmagan{% endif %}">↻ Cliniccards'dan yangilash</button></form>
+  {% endif %}
+</div>
+{% if not bot and request.url.path in ("/sklad/hisobotlar", "/buyurtmalar") %}<div class="warnbox">Telegram bot ulanmagan: Railway Variables'ga <b>TELEGRAM_BOT_TOKEN</b> qo'shing.</div>
+{% elif bot and bot.last_error %}<div class="warnbox">Bot xatosi: {{ bot.last_error }}</div>{% endif %}

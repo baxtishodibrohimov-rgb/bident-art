@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ s.name }}{% endblock %}
+{% block content %}
+<h1 class="sr-only">{{ s.name }}</h1>
+{% include "_sklad_nav.html" %}
+<form class="panel" style="padding:16px" method="post" action="/sotuvchilar/{{ s.id }}">
+  <div class="supcard">
+    <label><div class="k muted">Do'kon</div><input type="text" name="name" value="{{ s.name }}" required style="width:100%;font-weight:600"></label>
+    <label><div class="k muted">Sotuvchi</div><input type="text" name="contact" value="{{ s.contact or '' }}" placeholder="ismi" style="width:100%"></label>
+    <label><div class="k muted">Telefon</div><input type="tel" name="phone" value="{{ s.phone or '' }}" placeholder="+998" style="width:100%"></label>
+    <div><div class="k muted">Telegram</div>{% if s.chat_id %}<span class="pill good">ulangan</span> <label class="muted" style="font-size:12px"><input type="checkbox" name="unlink" value="1"> uzish</label>
+      {% elif bot %}<span class="linkbox">{{ bot.link(s.token) }}</span>{% else %}<span class="muted">bot ulanmagan</span>{% endif %}</div>
+  </div>
+  <div class="controls" style="margin-top:10px;justify-content:flex-end"><button class="btn primary" type="submit">Saqlash</button></div>
+</form>
+<div class="tiles three">
+  <div class="tile"><div class="k">Olingan tovar</div><div class="v num">{{ x.b|pul }}<small>so'm</small></div></div>
+  <div class="tile good"><div class="k">To'langan</div><div class="v num">{{ x.pd|pul }}<small>so'm</small></div></div>
+  <div class="tile {{ 'warn' if x.debt > 0 else 'good' }}"><div class="k">Qarzimiz</div><div class="v num">{{ x.debt|pul }}<small>so'm</small></div></div>
+</div>
+<section class="panel"><div class="panel-h"><h2>Nima oldik</h2></div><div class="scroll"><table>
+  <thead><tr><th>Sana</th><th>Nakladnoy</th><th>Mahsulot</th><th class="r">Miqdor</th><th class="r">Narx</th><th class="r">Summa</th></tr></thead>
+  <tbody>{% for r in x.bought %}<tr><td class="num">{{ r.date }}</td><td class="muted num">{{ r.doc }}</td><td>{{ r.product }}</td><td class="r">{{ r.qty|son }} {{ r.unit }}</td>
+    <td class="r">{{ r.price|pul }}</td><td class="r">{{ r.sum|pul }}</td></tr>{% else %}<tr><td colspan="6" class="muted">Hali tovar olinmagan.</td></tr>{% endfor %}</tbody>
+  <tfoot><tr><td colspan="5">Jami</td><td class="r">{{ x.b|pul }}</td></tr></tfoot>
+</table></div></section>
+<section class="panel"><div class="panel-h"><h2>Qancha berdik</h2></div><div class="scroll"><table style="min-width:320px">
+  <thead><tr><th>Sana</th><th>Izoh</th><th class="r">Summa</th></tr></thead>
+  <tbody>{% for r in x.paid %}<tr><td class="num">{{ r.date }}</td><td class="muted">{{ r.note }}</td><td class="r">{{ r.amount|pul }}</td></tr>{% else %}<tr><td colspan="3" class="muted">To'lov yo'q.</td></tr>{% endfor %}</tbody>
+  <tfoot><tr><td colspan="2">Jami</td><td class="r">{{ x.pd|pul }}</td></tr></tfoot>
+</table></div></section>
+{% endblock %}

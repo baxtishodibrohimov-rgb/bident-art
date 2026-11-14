@@ -9,6 +9,7 @@ from datetime import date
 from pathlib import Path
 
 import details
+import finance
 from client import CliniccardsClient
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
@@ -209,11 +210,85 @@ class Service:
         items = self.items(period.end)
         relevant = [it for it in items if any(period.contains(p.get("date")) for p in (it.get("payments") or []))]
         names = self.patient_names(it.get("patient_id") for it in relevant)
-        percents, default = self.percents.load()
-        rep = build_report(relevant, period, self.staff(), percents, names, default)
+        # O'zgarmas: har bir shifokor — 25%
+        rep = build_report(relevant, period, self.staff(), {}, names, float(finance.DOCTOR_PCT))
         if with_kassa:
             rep.kassa_total = self.kassa_total(period)
         return rep
+
+    def overview(self, period, staff_salary=0) -> "finance.Overview":
+        p = as_period(period)
+        rep = self.month_report(p)
+        done = self.done_items(p)
+        _, material = finance.split_spendings(self.spendings(p))
+        return finance.Overview(
+            done_total=sum((money(it.get("price_with_discount")) for it in done), money(0)),
+            done_count=len(done),
+            kassa_total=rep.kassa_total,
+            kassa_count=len(self.payments(p)),
+            doctors_salary=rep.salary,
+            staff_salary=money(staff_salary),
+            material_total=sum((money(s.get("amount")) for s in material), money(0)),
+            material_count=len(material),
+        )
+
+    def doctor_payouts(self, period) -> dict:
+        salary, _ = finance.split_spendings(self.spendings(period))
+        return finance.payouts_by_doctor(salary, self.staff())
+
+    def material_detail(self, period):
+        _, material = finance.split_spendings(self.spendings(period))
+        return details.expenses(material)
+
+    # --- sotuvchilar bilan hisob-kitob (butun davr) -------------------------
+    def stock_invoices(self) -> list[dict]:
+        import stock as _stock
+        return self._cached(f"stock_invoices:{self.start_date}",
+                            lambda: _stock.fetch_invoices(self.client, self.start_date, date.today()))
+
+    def all_spendings(self) -> list[dict]:
+        return self._cached(f"spendings_all:{self.start_date}",
+                            lambda: [s for a, b in month_ranges(self.start_date, date.today(), 12)
+                                     for s in self.client.spendings(a, b)])
+
+    def supplier_ledger(self, suppliers: list, products: dict) -> dict:
+        """{supplier_id: {"bought": [...], "paid": [...], "b": Decimal, "pd": Decimal, "debt": Decimal}}"""
+        import stock as _stock
+        by_cc = {str(s["cc_supplier_id"]): s["id"] for s in suppliers if s["cc_supplier_id"]}
+        by_name = {(s["name"] or "").strip().lower(): s["id"] for s in suppliers}
+        out = {s["id"]: {"bought": [], "paid": [], "b": money(0), "pd": money(0)} for s in suppliers}
+
+        def find(cc_id, name):
+            return by_cc.get(str(cc_id or "")) or by_name.get((name or "").strip().lower())
+
+        for inv in self.stock_invoices():
+            if _stock.invoice_sign(inv) <= 0:
+                continue
+            sid = find(inv.get("supplier_id"), inv.get("supplier_name"))
+            if sid not in out:
+                continue
+            for it in inv.get("invoice_items") or []:
+                qty, price = money(it.get("count")), money(it.get("price"))
+                total = money(it.get("total_price")) or qty * price
+                pid = str(it.get("product_id"))
+                out[sid]["bought"].append({"date": str(inv.get("date") or "")[:10], "doc": inv.get("invoice_number") or inv.get("invoice_id"),
+                                           "product": products.get(pid, {}).get("name", f"#{pid}"),
+                                           "unit": products.get(pid, {}).get("unit", it.get("measure_name") or ""),
+                                           "qty": qty, "price": price, "sum": total})
+                out[sid]["b"] += total
+        for sp in self.all_spendings():
+            sup = sp.get("supplier") or {}
+            sid = find(sup.get("id"), sup.get("name"))
+            if sid not in out:
+                continue
+            amount = money(sp.get("paid") if sp.get("paid") not in (None, "") else sp.get("amount"))
+            out[sid]["paid"].append({"date": str(sp.get("date_issued") or "")[:10], "amount": amount, "note": sp.get("note") or ""})
+            out[sid]["pd"] += amount
+        for v in out.values():
+            v["bought"].sort(key=lambda r: r["date"])
+            v["paid"].sort(key=lambda r: r["date"])
+            v["debt"] = v["b"] - v["pd"]
+        return out
 
     # --- tafsilotlar -----------------------------------------------------
     def done_detail(self, period):

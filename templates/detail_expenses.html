@@ -1,18 +1,26 @@
 {% extends "base.html" %}
 {% block title %}Xarajatlar — {{ p.label }}{% endblock %}
 {% block content %}
-<div class="toolbar noprint"><a class="btn" href="/?{{ q }}">← Bosh ekran</a><button type="button" onclick="window.print()">Chop etish</button></div>
-<h1>Xarajatlar · {{ p.label }}</h1>
-<p class="muted">Cliniccards'dagi xarajatlar (Финансы → Расходы), toifa bo'yicha. Manfiy summa — qaytarilgan pul. Jami: <b>{{ total|pul }}</b>.</p>
+<h1>Xarajatlar</h1>
 {% set action = "/xarajatlar" %}{% include "_period.html" %}
-{% for g in groups %}
-<div class="card">
-  <h2>{{ g.name }} — {{ g.total|pul }}</h2>
-  <table>
-    <thead><tr><th>Sana</th><th>Turi</th><th>Yetkazib beruvchi / xodim</th><th>Izoh</th><th>Holati</th><th class="n">Summa</th></tr></thead>
-    <tbody>{% for r in g.rows %}<tr><td>{{ r.date }}</td><td>{{ r.sub }}</td><td>{{ r.supplier }}</td><td class="muted">{{ r.note }}</td><td class="muted">{{ r.status }}</td><td class="n">{{ r.amount|pul }}</td></tr>{% endfor %}</tbody>
-    <tfoot><tr><td colspan="5">Jami ({{ g.rows|length }} ta)</td><td class="n">{{ g.total|pul }}</td></tr></tfoot>
-  </table>
+<div class="tiles">{% for href, name, v in o.parts() %}
+  <a class="tile link" href="{{ href }}{% if '#' not in href %}?{{ q }}{% endif %}"><div class="k">{{ name }}</div><div class="v num">{{ v|pul }}<small>so'm</small></div></a>{% endfor %}
 </div>
-{% else %}<div class="card muted">Bu davrda xarajat yo'q.</div>{% endfor %}
+<section class="panel"><div class="scroll"><table style="min-width:420px">
+  <tbody>{% for href, name, v in o.parts() %}<tr><td>{{ name }}</td><td class="r">{{ v|pul }}</td>
+    <td class="r muted">{{ ((v / o.expenses_total * 100) if o.expenses_total else 0)|round|int }}%</td></tr>{% endfor %}</tbody>
+  <tfoot><tr><td>Jami xarajatlar</td><td class="r">{{ o.expenses_total|pul }}</td><td class="r">100%</td></tr></tfoot>
+</table></div></section>
+<section class="panel" id="material"><div class="panel-h"><h2>Material rasxod</h2><span class="pill bad num">{{ o.material_total|pul }}</span></div>
+{% for g in groups %}
+  <div class="debt-doc">
+    <div class="panel-h"><h2 style="font-size:15px">{{ g.name }}</h2><span class="muted num">{{ g.total|pul }}</span></div>
+    <div class="scroll"><table>
+      <thead><tr><th>Sana</th><th>Turi</th><th>Yetkazib beruvchi</th><th>Izoh</th><th class="r">Summa</th></tr></thead>
+      <tbody>{% for r in g.rows %}<tr><td class="num">{{ r.date }}</td><td>{{ r.sub }}</td><td>{{ r.supplier }}</td><td class="muted">{{ r.note }}</td><td class="r">{{ r.amount|pul }}</td></tr>{% endfor %}</tbody>
+      <tfoot><tr><td colspan="4">Jami</td><td class="r">{{ g.total|pul }}</td></tr></tfoot>
+    </table></div>
+  </div>
+{% else %}<div class="panel-h"><span class="muted">Bu davrda material rasxod yo'q.</span></div>{% endfor %}
+</section>
 {% endblock %}

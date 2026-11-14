@@ -1,4 +1,4 @@
-"""Veb-sahifa: oylik hisobot, shifokor tafsiloti, qarzdorlar, foizlar sozlamasi.
+"""Veb-sahifa: bosh ekran, shifokorlar, qarzdorlar, sklad, xodimlar, Telegram bot.
 
 Ishga tushirish:  uvicorn app:app --host 0.0.0.0 --port 8090
 """
@@ -21,6 +21,7 @@ import auth as sessions
 from client import CliniccardsClient, CliniccardsError
 from excel import report_xlsx
 from report import Period
+import finance
 from service import HERE, Percents, Service, load_env, start_date_from_env
 
 load_env()
@@ -179,27 +180,26 @@ def health():
     return {"ok": True}
 
 
+def staff_salary(p: Period) -> int:
+    import staff
+    return staff.payroll_total(sklad_routes.get_db(), p.start, p.end)
+
+
+def nav(section: str) -> dict:
+    return {"section": section}
+
+
 @app.get("/")
 def index(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
-    s = service().summary(p)
-    import staff
-    staff_total = Decimal(staff.payroll_total(sklad_routes.get_db(), p.start, p.end))
-    used = staff_total + s.expenses_total
-    return templates.TemplateResponse(request, "index.html", {
-        "s": s, "staff_total": staff_total, "used": used, "left": s.expense_budget - used, **period_context(p)})
-
-
-@app.get("/shifokorlar")
-def doctors(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
-    rep = service().month_report(p)
-    return templates.TemplateResponse(request, "doctors.html", {"rep": rep, **period_context(p)})
+    o = service().overview(p, staff_salary(p))
+    return templates.TemplateResponse(request, "index.html", {"o": o, **nav("bosh"), **period_context(p)})
 
 
 @app.get("/ishlar")
 def done_work(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
     groups = service().done_detail(p)
     return templates.TemplateResponse(request, "detail_done.html", {
-        "groups": groups, "total": sum((g.total for g in groups), Decimal(0)), **period_context(p)})
+        "groups": groups, "total": sum((g.total for g in groups), Decimal(0)), **nav("bosh"), **period_context(p)})
 
 
 @app.get("/kassa")
@@ -207,31 +207,54 @@ def kassa(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
     groups = service().kassa_detail(p)
     return templates.TemplateResponse(request, "detail_kassa.html", {
         "groups": groups, "total": sum((g.total for g in groups), Decimal(0)),
-        "currencies": len({g.extra for g in groups if g.extra}), **period_context(p)})
+        "currencies": len({g.extra for g in groups if g.extra}), **nav("bosh"), **period_context(p)})
 
 
 @app.get("/klinika")
 def clinic(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
+    o = service().overview(p, staff_salary(p))
     return templates.TemplateResponse(request, "detail_clinic.html", {
-        "s": service().summary(p), "groups": service().kassa_detail(p), **period_context(p)})
+        "o": o, "pct": finance.CLINIC_PCT, "groups": service().kassa_detail(p), **nav("bosh"), **period_context(p)})
 
 
 @app.get("/xarajatlar")
 def expenses(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
-    groups = service().expenses_detail(p)
+    o = service().overview(p, staff_salary(p))
+    groups = service().material_detail(p)
     return templates.TemplateResponse(request, "detail_expenses.html", {
-        "groups": groups, "total": sum((g.total for g in groups), Decimal(0)), **period_context(p)})
+        "o": o, "groups": groups, **nav("bosh"), **period_context(p)})
+
+
+@app.get("/foyda")
+def profit(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
+    o = service().overview(p, staff_salary(p))
+    return templates.TemplateResponse(request, "profit.html", {"o": o, **nav("bosh"), **period_context(p)})
+
+
+@app.get("/shifokorlar")
+def doctors(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
+    rep = service().month_report(p)
+    paid = service().doctor_payouts(p)
+    docs = [d for d in rep.doctors if d.doctor_id != "0"]
+    given = sum((paid.get(d.doctor_id, Decimal(0)) for d in docs), Decimal(0))
+    return templates.TemplateResponse(request, "doctors.html", {
+        "rep": rep, "paid": paid, "given": given, "not_given": max(Decimal(0), rep.salary - given),
+        **nav("shifokorlar"), **period_context(p)})
 
 
 @app.get("/shifokor/{doctor_id}")
 def doctor(request: Request, doctor_id: str, p: Period = Depends(get_period), _=Depends(auth)):
     rep = service().month_report(p, with_kassa=False)
     d = rep.doctor(doctor_id)
+    name = None
     if d is None:
         staff = {str(s.get("doctor_id")): s for s in service().staff()}
         if doctor_id not in staff:
             raise HTTPException(404, "Shifokor topilmadi")
-    return templates.TemplateResponse(request, "doctor.html", {"d": d, "doctor_id": doctor_id, **period_context(p)})
+        from report import staff_name
+        name = staff_name(staff[doctor_id])
+    return templates.TemplateResponse(request, "doctor.html", {
+        "d": d, "name": name, "doctor_id": doctor_id, **nav("shifokorlar"), **period_context(p)})
 
 
 @app.get("/excel")
@@ -246,36 +269,18 @@ def excel(p: Period = Depends(get_period), shifokor: str | None = None, _=Depend
 @app.get("/qarzdorlar")
 def debts(request: Request, _=Depends(auth)):
     groups = service().debts()
-    return templates.TemplateResponse(request, "debts.html", {"groups": groups})
+    return templates.TemplateResponse(request, "debts.html", {"groups": groups, **nav("qarzdorlar")})
+
+
+@app.get("/qanday-ishlaydi")
+def how(request: Request, _=Depends(auth)):
+    return templates.TemplateResponse(request, "how.html", {**nav("qanday")})
 
 
 @app.get("/sozlamalar")
-def settings_page(request: Request, saved: int = 0, _=Depends(auth)):
-    percents, default = service().percents.load()
-    staff = sorted(service().staff(), key=lambda s: (s.get("role") != "DOCTOR", s.get("lastname") or ""))
-    return templates.TemplateResponse(request, "settings.html", {
-        "staff": staff, "percents": percents, "default": default, "saved": saved,
-        "clinic": service().percents.clinic_percent(), "doctors_share": service().percents.doctors_percent()})
-
-
-@app.post("/sozlamalar")
-async def settings_save(request: Request, default: float = Form(0), klinika: float = Form(20),
-                        shifokorlar: float = Form(25), _=Depends(auth)):
-    if not 0 <= klinika <= 100 or not 0 <= shifokorlar <= 100 or klinika + shifokorlar > 100:
-        raise HTTPException(400, "Klinika va shifokorlar foizi 0–100 oralig'ida, yig'indisi 100 dan oshmasligi kerak")
-    form = await request.form()
-    doctors: dict[str, float] = {}
-    for key, value in form.items():
-        if key.startswith("foiz_") and str(value).strip() != "":
-            try:
-                pct = float(str(value).replace(",", "."))
-            except ValueError:
-                raise HTTPException(400, f"Noto'g'ri foiz: {value}")
-            if not 0 <= pct <= 100:
-                raise HTTPException(400, "Foiz 0 dan 100 gacha bo'lishi kerak")
-            doctors[key[5:]] = pct
-    service().percents.save(doctors, default, klinika, shifokorlar)
-    return RedirectResponse("/sozlamalar?saved=1", status_code=303)
+def settings_page(_=Depends(auth)):
+    # Foizlar o'zgarmas (klinika 20%, shifokorlar 25%) — sozlama sahifasi yo'q
+    return RedirectResponse("/", status_code=303)
 
 
 import sklad_routes  # noqa: E402

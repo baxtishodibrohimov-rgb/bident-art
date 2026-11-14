@@ -1,33 +1,101 @@
 {% extends "base.html" %}
 {% block title %}Sklad{% endblock %}
 {% block content %}
-<h1>Sklad</h1>
+<h1 class="sr-only">Sklad qoldig'i</h1>
 {% include "_sklad_nav.html" %}
-<form class="toolbar noprint" method="post" action="/sklad/sinxron">
-  <button class="primary" type="submit">Cliniccards'dan yangilash</button>
-  <span class="muted">{% if synced %}Oxirgi yangilanish: {{ synced }}{% else %}Hali yangilanmagan. Birinchi marta bosganda qoldiq Cliniccards'dagi barcha nakladnoylardan hisoblanadi (1–2 daqiqa).{% endif %}</span>
-</form>
-<div class="toolbar noprint">
-  <a class="chip{{ ' on' if not f }}" href="/sklad">Hammasi</a>
-  <a class="chip{{ ' on' if f == 'tugagan' }}" href="/sklad?f=tugagan">Tugagan: {{ counts.tugagan }}</a>
-  <a class="chip{{ ' on' if f == 'kam' }}" href="/sklad?f=kam">Kam qolgan: {{ counts.kam }}</a>
-  <a class="chip{{ ' on' if f == 'yetarli' }}" href="/sklad?f=yetarli">Yetarli: {{ counts.yetarli }}</a>
+{% if not synced %}<div class="warnbox">Mahsulotlar hali yo'q. «Cliniccards'dan yangilash» tugmasini bosing — birinchi marta qoldiq Cliniccards'dagi barcha nakladnoylardan hisoblanadi (1–2 daqiqa).</div>{% endif %}
+<div class="tiles three">
+  <a class="tile link {{ 'on' if not f }}" href="/sklad"><div class="k">Mahsulotlar — hammasi</div><div class="v num">{{ all_count }}<small>tur</small></div><div class="hint">jami qiymat {{ value|pul }} so'm</div></a>
+  <a class="tile link warn {{ 'on' if f == 'kam' }}" href="/sklad?f=kam"><div class="k">Kam qolgan</div><div class="v num">{{ counts.kam }}</div><div class="hint">ko'rsatish →</div></a>
+  <a class="tile link {{ 'bad' if counts.tugagan else 'good' }} {{ 'on' if f == 'tugagan' }}" href="/sklad?f=tugagan"><div class="k">Tugagan</div><div class="v num">{{ counts.tugagan }}</div><div class="hint">ko'rsatish →</div></a>
 </div>
-<div class="card">
-<table>
-  <thead><tr><th>Mahsulot</th><th>Toifa</th><th class="n">Qoldiq</th><th class="n">Chegara</th><th>Holat</th><th>Sotuvchi</th><th class="n">Oxirgi narx</th></tr></thead>
+{% set fq = ('&f=' ~ f) if f else '' %}
+<div class="viewtoggle noprint" role="group" aria-label="Ko'rinish">
+  <a class="btn {{ 'on' if view == 'list' }}" href="/sklad?v=list{{ fq }}">☰ Ro'yxat</a>
+  <a class="btn {{ 'on' if view == 'cards' }}" href="/sklad?v=cards{{ fq }}">▦ Kartochka</a>
+</div>
+{% if view == 'cards' %}
+<div class="pcards">
+  {% for r in rows %}{% set st = status(r) %}
+  <article class="pcard">
+    <button type="button" class="pcard-img {{ 'has' if r.id in photos }}" data-photo="{{ r.id }}" data-name="{{ r.name }}" aria-label="{{ r.name }} rasmi">
+      {% if r.id in photos %}<img src="/sklad/rasm/{{ r.id }}" alt="" loading="lazy">{% else %}<span>+ rasm qo'shish</span>{% endif %}</button>
+    <div class="pcard-body">
+      <div class="pcard-top"><a class="rowlink" href="/sklad/mahsulot/{{ r.id }}">{{ r.name }}</a><span class="pill {{ stock_cls[st] }}">{{ st }}</span></div>
+      <div class="muted" style="font-size:13px">{{ r.category }}</div>
+      <div class="pcard-qty num"><b>{{ r.qty|son }}</b> {{ r.unit }} <span class="muted">· chegara {{ r.min_qty|son if r.min_qty else '—' }}</span></div>
+      <div class="pcard-row"><span class="muted">Narx</span><span class="num">{{ r.last_price|pul }}</span></div>
+      <div class="pcard-row"><span class="muted">Qiymati</span><span class="num"><b>{{ ((r.qty if r.qty > 0 else 0) * r.last_price)|pul }}</b></span></div>
+      <div class="pcard-row"><span class="muted">Sotuvchi</span>{% if r.supplier_id %}<a class="rowlink" href="/sotuvchi/{{ r.supplier_id }}">{{ r.supplier_name }}</a>{% else %}—{% endif %}</div>
+    </div>
+  </article>
+  {% else %}<p class="muted">Bu bo'limda mahsulot yo'q.</p>{% endfor %}
+</div>
+<p class="muted num" style="margin:0;text-align:right">Jami ({{ rows|length }} ta mahsulot): <b>{{ rows_value|pul }} so'm</b></p>
+{% else %}
+<section class="panel"><div class="scroll"><table>
+  <thead><tr><th class="ph-col">Rasm</th><th>Mahsulot</th><th>Toifa</th><th class="r">Miqdor</th><th class="r">Chegara</th><th>Holat</th><th class="r">Narx</th><th class="r">Qiymati</th><th>Sotuvchi</th></tr></thead>
   <tbody>
-  {% for r in rows %}
-    <tr><td><a href="/sklad/mahsulot/{{ r.id }}">{{ r.name }}</a></td><td class="muted">{{ r.category }}</td>
-      <td class="n">{{ r.qty|son }} {{ r.unit }}</td><td class="n">{{ r.min_qty|son if r.min_qty else '—' }}</td>
-      <td><span class="tag {{ status(r) }}">{{ status(r) }}</span></td>
-      <td>{{ r.supplier_name or '—' }}{% if r.supplier_name and not r.supplier_chat %} <span class="tag off">botga ulanmagan</span>{% endif %}</td>
-      <td class="n">{{ r.last_price|pul if r.last_price else '—' }}</td></tr>
-  {% else %}
-    <tr><td colspan="7" class="muted">Mahsulotlar yo'q. «Cliniccards'dan yangilash» tugmasini bosing.</td></tr>
-  {% endfor %}
+  {% for r in rows %}{% set st = status(r) %}
+    <tr><td class="ph-col"><button type="button" class="ph {{ 'has' if r.id in photos }}" data-photo="{{ r.id }}" data-name="{{ r.name }}" aria-label="{{ r.name }} rasmi">
+          {% if r.id in photos %}<img src="/sklad/rasm/{{ r.id }}" alt="" loading="lazy">{% else %}+{% endif %}</button></td>
+      <td><a class="rowlink" href="/sklad/mahsulot/{{ r.id }}">{{ r.name }}</a></td><td class="muted">{{ r.category }}</td>
+      <td class="r"><b>{{ r.qty|son }}</b> {{ r.unit }}</td><td class="r">{{ r.min_qty|son if r.min_qty else '—' }}</td>
+      <td><span class="pill {{ stock_cls[st] }}">{{ st }}</span></td><td class="r">{{ r.last_price|pul }}</td>
+      <td class="r">{{ ((r.qty if r.qty > 0 else 0) * r.last_price)|pul }}</td>
+      <td>{% if r.supplier_id %}<a class="rowlink" href="/sotuvchi/{{ r.supplier_id }}">{{ r.supplier_name }}</a>{% else %}—{% endif %}</td></tr>
+  {% else %}<tr><td colspan="9" class="muted">Bu bo'limda mahsulot yo'q.</td></tr>{% endfor %}
   </tbody>
-</table>
+  <tfoot><tr><td colspan="7">Jami ({{ rows|length }} ta mahsulot)</td><td class="r">{{ rows_value|pul }}</td><td></td></tr></tfoot>
+</table></div></section>
+{% endif %}
+
+<input type="file" id="photoInput" accept="image/*" hidden>
+<div class="modal" id="photoModal" hidden role="dialog" aria-modal="true" aria-labelledby="pm-title">
+  <div class="modal-box narrow">
+    <div class="modal-h"><h2 id="pm-title"></h2><button type="button" class="btn icon" data-close aria-label="Yopish">×</button></div>
+    <img id="photoBig" alt="" style="width:100%;max-height:60vh;object-fit:contain;border-radius:10px;background:var(--surface-2)">
+    <p class="range-err" id="photoErr" hidden></p>
+    <div class="modal-f"><button type="button" class="btn" id="photoDelete">O'chirish</button><button type="button" class="btn primary" id="photoReplace">Almashtirish</button></div>
+  </div>
 </div>
-<p class="muted">«Chegara» — shu songa tushganda bot sizga buyurtma taklif qiladi. Uni har bir mahsulot sahifasida belgilang. Qoldiq: boshlang'ich (Cliniccards nakladnoylari) + yangi kirimlar − bot orqali tasdiqlangan chiqimlar.</p>
+<script>
+(() => {
+  const pin = document.getElementById("photoInput"), pm = document.getElementById("photoModal");
+  let current = null;
+  const pick = id => { current = id; pin.value = ""; pin.click(); };
+  // Rasmni brauzerda kichraytiramiz (eng uzun tomoni 800px), keyin serverga yuboramiz
+  const shrink = file => new Promise((ok, bad) => {
+    const r = new FileReader();
+    r.onerror = () => bad(new Error("Faylni o'qib bo'lmadi"));
+    r.onload = () => { const img = new Image(); img.onerror = () => bad(new Error("Bu fayl rasm emas"));
+      img.onload = () => { const k = Math.min(1, 800 / Math.max(img.width, img.height)), c = document.createElement("canvas");
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); ok(c.toDataURL("image/jpeg", 0.85)); };
+      img.src = r.result; };
+    r.readAsDataURL(file);
+  });
+  const post = (url, body) => fetch(url, { method: "POST", body, credentials: "same-origin" }).then(r => { if (!r.ok) throw new Error("Saqlab bo'lmadi"); });
+  document.querySelectorAll("[data-photo]").forEach(b => b.addEventListener("click", () => {
+    const id = b.dataset.photo;
+    if (!b.classList.contains("has")) return pick(id);
+    current = id; document.getElementById("pm-title").textContent = b.dataset.name;
+    document.getElementById("photoBig").src = "/sklad/rasm/" + encodeURIComponent(id) + "?t=" + Date.now(); pm.hidden = false;
+  }));
+  pin.addEventListener("change", async () => {
+    const f = pin.files && pin.files[0]; if (!f || !current) return;
+    try { const fd = new FormData(); fd.append("data", await shrink(f)); await post("/sklad/rasm/" + encodeURIComponent(current), fd); location.reload(); }
+    catch (e) { alert(e.message); }
+  });
+  const close = () => { pm.hidden = true; };
+  pm.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", close));
+  pm.addEventListener("click", e => { if (e.target === pm) close(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+  document.getElementById("photoReplace").addEventListener("click", () => { close(); pick(current); });
+  document.getElementById("photoDelete").addEventListener("click", async () => {
+    try { await post("/sklad/rasm/" + encodeURIComponent(current) + "/ochirish", new FormData()); location.reload(); }
+    catch (e) { const er = document.getElementById("photoErr"); er.textContent = e.message; er.hidden = false; }
+  });
+})();
+</script>
 {% endblock %}

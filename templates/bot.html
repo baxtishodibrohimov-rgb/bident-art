@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Telegram bot{% endblock %}
+{% block content %}
+<h1 class="sr-only">Telegram bot</h1>
+{% include "_bot_nav.html" %}
+{% if not bot %}<div class="warnbox">Telegram bot ulanmagan: Railway Variables'ga <b>TELEGRAM_BOT_TOKEN</b> qo'shing. Pastda bot qanday gaplashishi namunasi.</div>
+{% elif bot.last_error %}<div class="warnbox">Bot xatosi: {{ bot.last_error }}</div>
+{% else %}<div class="flash">Bot ishlayapti: <b>@{{ bot.username }}</b> · sklad so'rovi {{ ask_time }}, davomat {{ att_time }}</div>{% endif %}
+<div class="controls">{% for k in chats %}<a class="chip {{ 'on' if k == tab }}" href="/bot?chat={{ k|urlencode }}">{{ k }}</a>{% endfor %}</div>
+{% set c = chats[tab] %}
+<section class="phone">
+  <div class="phone-h"><span class="ava" aria-hidden="true">B</span><div><b>Biodent bot</b><br><span class="muted">{{ c.who }}</span></div></div>
+  <div class="chat">{% for frm, text, buttons in c.msgs %}<div class="msg {{ frm }}"><div class="bubble">{{ text|e|replace("\n", "<br>"|safe) }}</div>
+    {% if buttons %}<div class="kbd">{% for b in buttons %}<span>{{ b }}</span>{% endfor %}</div>{% endif %}</div>{% endfor %}</div>
+</section>
+{% endblock %}

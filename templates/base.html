@@ -2,87 +2,35 @@
 <html lang="uz">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{% block title %}Maosh hisoboti{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600&display=swap">
 <style>
-  :root { --bg:#f6f7f9; --card:#fff; --text:#1d2430; --muted:#667085; --line:#e4e7ec; --accent:#2f5d8a; --warn:#b54708; }
-  * { box-sizing: border-box; }
-  body { margin:0; font:15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); }
-  header { background:var(--accent); color:#fff; padding:12px 16px; display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
-  header a { color:#fff; text-decoration:none; opacity:.9; }
-  header a:hover { opacity:1; text-decoration:underline; }
-  header strong { margin-right:auto; }
-  header .logout { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.35); padding:4px 12px; }
-  header .logout:hover { background:rgba(255,255,255,.25); }
-  main { max-width:1200px; margin:0 auto; padding:16px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; overflow-x:auto; }
-  h1 { font-size:22px; margin:0 0 12px; }
-  h2 { font-size:18px; margin:0 0 10px; }
-  table { border-collapse:collapse; width:100%; }
-  th, td { padding:7px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
-  th { background:#f0f3f7; font-weight:600; font-size:13px; }
-  td.n, th.n { text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
-  tfoot td { font-weight:700; border-top:2px solid var(--text); }
-  .muted { color:var(--muted); }
-  .warn { color:var(--warn); }
-  .toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
-  .btn, button, input[type=month], input[type=number] { font:inherit; padding:6px 12px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--text); text-decoration:none; cursor:pointer; }
-  .btn.primary, button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
-  .period { display:flex; flex-wrap:wrap; gap:4px 20px; align-items:center; margin-bottom:12px; }
-  .period .toolbar { margin-bottom:0; }
-  input[type=date] { font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--text); }
-  .chip { font-size:13px; padding:4px 11px; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--text); text-decoration:none; }
-  .chip:hover { border-color:var(--accent); }
-  .chip.on { background:var(--accent); border-color:var(--accent); color:#fff; }
-  .kpis { display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:12px; margin-bottom:16px; }
-  @media (max-width:1000px) { .kpis { grid-template-columns:repeat(2, minmax(0,1fr)); } }
-  @media (max-width:520px) { .kpis { grid-template-columns:1fr; } }
-  .kpi { display:flex; flex-direction:column; gap:2px; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px;
-         color:var(--text); text-decoration:none; transition:border-color .15s, box-shadow .15s; min-width:0; }
-  .kpi:hover { border-color:var(--accent); box-shadow:0 4px 14px rgba(47,93,138,.12); }
-  .kpi .k { color:var(--muted); font-size:13px; }
-  .kpi b { font-size:22px; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
-  .kpi .hint { color:var(--accent); font-size:12px; }
-  .flash { background:#ecfdf3; color:#067647; border:1px solid #abefc6; border-radius:10px; padding:10px 14px; margin-bottom:14px; }
-  .subnav { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 14px; }
-  .subnav a { padding:6px 12px; border-radius:8px; text-decoration:none; color:var(--text); border:1px solid var(--line); background:#fff; }
-  .subnav a.on { background:var(--accent); color:#fff; border-color:var(--accent); }
-  .tag { display:inline-block; font-size:12px; font-weight:600; padding:1px 8px; border-radius:999px; white-space:nowrap; }
-  .tag.tugagan { background:#fef3f2; color:#b42318; } .tag.kam { background:#fffaeb; color:#b54708; } .tag.yetarli { background:#ecfdf3; color:#067647; }
-  .tag.off { background:#f2f4f7; color:#667085; }
-  .linkbox { font:12px/1.4 ui-monospace, Menlo, monospace; background:#f2f4f7; padding:4px 8px; border-radius:6px; word-break:break-all; display:inline-block; max-width:100%; }
-  input[type=text], input[type=tel] { font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--text); }
-  select { font:inherit; padding:6px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--text); }
-  .grid2 { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:12px; }
-  .split { display:flex; height:10px; border-radius:5px; overflow:hidden; margin:0 0 12px; }
-  .split i { display:block; height:100%; }
-  .ok { color:#067647; }
-  .stats { display:flex; gap:12px; flex-wrap:wrap; }
-  .stat { flex:1 1 180px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 16px; }
-  .stat b { display:block; font-size:22px; font-variant-numeric:tabular-nums; }
-  .ok { color:#067647; }
-  @media print {
-    header, .toolbar, .noprint { display:none !important; }
-    body { background:#fff; font-size:12px; }
-    main { padding:0; max-width:none; }
-    .card { border:none; padding:0; }
-  }
+{% include "_style.css" %}
 </style>
 </head>
 <body>
-<header>
-  <strong>Maosh hisoboti</strong>
-  <a href="/?{{ q }}">Bosh ekran</a>
-  <a href="/shifokorlar?{{ q }}">Shifokorlar</a>
-  <a href="/qarzdorlar">Qarzdorlar</a>
-  <a href="/sklad">Sklad</a>
-  <a href="/maosh-xodimlar?{{ q }}">Xodimlar</a>
-  <a href="/sozlamalar">Foizlar</a>
-  <form method="post" action="/logout" style="margin:0"><button class="logout" type="submit">Chiqish</button></form>
+{% set sec = section|default('') %}
+<header class="topbar">
+  <div class="in">
+    <a class="brand" href="/" style="color:inherit;text-decoration:none"><span class="mark" aria-hidden="true">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></span>
+      Maosh hisoboti</a>
+    <nav class="nav" aria-label="Bo'limlar">
+      {% for key, href, name in [("bosh", "/", "Bosh ekran"), ("shifokorlar", "/shifokorlar", "Shifokorlar"), ("qarzdorlar", "/qarzdorlar", "Qarzdorlar"),
+                                 ("sklad", "/sklad", "Sklad"), ("xodimlar", "/xodimlar", "Xodimlar"), ("bot", "/bot", "Telegram bot"), ("qanday", "/qanday-ishlaydi", "Qanday ishlaydi")] %}
+        <a href="{{ href }}{% if q is defined and key in ('bosh', 'shifokorlar', 'xodimlar') %}?{{ q }}{% endif %}" {% if sec == key %}aria-current="page"{% endif %}>{{ name }}</a>
+      {% endfor %}
+    </nav>
+    <form method="post" action="/logout" class="inline"><button class="logout" type="submit">Chiqish</button></form>
+  </div>
 </header>
 <main>
-{% if request.query_params.get('xabar') %}<div class="flash">{{ request.query_params.get('xabar') }}</div>{% endif %}
-{% block content %}{% endblock %}
+  <div class="wrap">
+    {% if request.query_params.get('xabar') %}<div class="flash" role="status">{{ request.query_params.get('xabar') }}</div>{% endif %}
+    {% block content %}{% endblock %}
+  </div>
 </main>
 </body>
 </html>

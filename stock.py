@@ -111,6 +111,8 @@ def sync(db: DB, client, start: date, end: date | None = None) -> dict:
                         db.conn.execute("UPDATE products SET supplier_id=? WHERE id=? AND supplier_id IS NULL", (sup, pid))
                     if not first:
                         new_income += 1
+                        db.conn.execute("UPDATE orders SET status='keldi', answered_at=? WHERE product_id=? "
+                                        "AND status IN ('yuborildi','qabul')", (now(), pid))
         if first:
             db.set_meta("stock_snapshot", now())
     db.set_meta("stock_synced", now())

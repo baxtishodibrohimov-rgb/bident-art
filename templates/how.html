@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Qanday ishlaydi{% endblock %}
+{% block content %}
+<h1>Qanday hisoblaydi</h1>
+<section class="panel" style="padding:16px">
+  <h2>Misol: breket, 10 000 000 so'm, martda qo'yilgan</h2>
+  <p class="note" style="margin:6px 0 10px">Bemor har oy to'laydi. Noyabr hisobotiga faqat noyabrda tushgan 1 000 000 kiradi; mart ishi bo'lsa ham. Istalgan sana oralig'ini tanlash mumkin.</p>
+  <div class="timeline">{% for m in ["mar","apr","may","iyn","iyl","avg","sen","okt","noy"] %}<div>{{ m }}</div>{% endfor %}
+    {% for v in ["2,0","1,0","1,0","1,0","1,0","1,0","1,0","1,0","1,0"] %}<div class="cell {{ 'work' if loop.first else 'pay' }} {{ 'sel' if loop.last }}">{{ v }}</div>{% endfor %}</div>
+  <p class="note" style="margin-top:8px;font-size:13px">mln so'm · ko'k: ish qilingan oy · yashil: to'lov tushgan oy · ramka: tanlangan oy</p>
+</section>
+<div class="how">
+  <div class="step"><div class="n">1-qadam</div><h3>Ishlarni yig'ish</h3><p>Cliniccards'ning butun davridagi bajarilgan ishlar olinadi: <code>GET /planItems/DONE</code> va <code>INVOICED</code>.</p></div>
+  <div class="step"><div class="n">2-qadam</div><h3>Davr to'lovlari</h3><p>Har bir ishning <code>payments</code> ro'yxatidan sanasi tanlangan davrga tushganlari qo'shiladi.</p></div>
+  <div class="step"><div class="n">3-qadam</div><h3>Ulushlar</h3><p>Klinika — kassaning 20%, har bir shifokor — o'ziga tushgan pulning 25% (o'zgarmas).</p></div>
+</div>
+<section class="panel" style="padding:16px;display:grid;gap:10px">
+  <h2>Sof foyda</h2>
+  <p class="note">Xarajatlar = klinika ulushi + shifokorlar maoshi + xodimlar maoshi + material rasxod (Cliniccards xarajatlari, maoshlardan tashqari). Sof foyda = shu davrda bajarilgan ishlar − xarajatlar.</p>
+  <div class="code">Cliniccards API  →  Dastur (Railway)            →  Hisobot
+GET /planItems      davr to'lovlari, 25% ulush     shifokorlar maoshi
+GET /payments       kassa va klinika ulushi        bosh ekran
+GET /spendings      maosh va material rasxod       xarajatlar, sof foyda
+GET /stock-*        sklad qoldig'i (faqat o'qish)  buyurtma va bot eslatmalari</div>
+</section>
+{% endblock %}

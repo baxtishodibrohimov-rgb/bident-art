@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Xodim vazifalari{% endblock %}
+{% block content %}
+<h1 class="sr-only">Xodim vazifalari</h1>
+{% include "_xodim_nav.html" %}
+<div class="duties">
+{% for w in workers %}{% set person = people.get(w.id) %}
+  <section class="panel duty" id="w{{ w.id }}">
+    <div class="panel-h"><div><h2>{{ w.full_name }}</h2><span class="muted" style="font-size:13px">{{ w.position or '' }}</span></div>
+      {% if person and bot %}<div style="font-size:12px;text-align:right">{% if person.chat_id %}<span class="pill good">botga ulangan</span>{% else %}<span class="muted">Botga ulash havolasi:</span><br><span class="linkbox">{{ bot.link(person.token) }}</span>{% endif %}</div>{% endif %}</div>
+    <div class="duty-body">
+      <div>
+        <div class="k muted">Ish vazifalari</div>
+        <ul class="tasks">{% for t in tasks.get(w.id, []) %}<li><span>{{ t.text }}</span>
+          <form method="post" action="/vazifalar/ochir/{{ t.id }}" class="inline"><button type="submit" class="btn icon del" aria-label="O'chirish" title="O'chirish">×</button></form></li>
+          {% else %}<li class="muted">Hali vazifa yozilmagan.</li>{% endfor %}</ul>
+        <form class="controls" method="post" action="/vazifalar/{{ w.id }}/qosh"><input class="btn" name="text" placeholder="Yangi vazifa, masalan: kassani yopish" aria-label="Yangi vazifa" style="flex:1;min-width:0" required><button class="btn primary" type="submit">Qo'shish</button></form>
+      </div>
+      <div>
+        <div class="k muted">Botdagi vazifalari</div>
+        <div class="roles">{% for key, name, hint in roles %}
+          <form method="post" action="/vazifalar/{{ w.id }}/rol" class="inline"><input type="hidden" name="role" value="{{ key }}">
+            <label class="role"><input type="checkbox" name="on" value="1" {{ 'checked' if person and person[key] }} onchange="this.form.submit()">
+              <span><b>{{ name }}</b><br><span class="muted">{{ hint }}</span></span></label></form>{% endfor %}</div>
+      </div>
+    </div>
+  </section>
+{% else %}<section class="panel"><div class="panel-h"><span class="muted">Xodim yo'q. «Xodimlar va maosh» bo'limidagi ⚙ orqali qo'shing.</span></div></section>{% endfor %}
+</div>
+{% endblock %}

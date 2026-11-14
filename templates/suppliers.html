@@ -1,29 +1,29 @@
 {% extends "base.html" %}
 {% block title %}Sotuvchilar{% endblock %}
 {% block content %}
-<h1>Sotuvchilar</h1>
+<h1 class="sr-only">Sotuvchilar</h1>
 {% include "_sklad_nav.html" %}
-<p class="muted">Har bir sotuvchiga uning havolasini yuboring (masalan, WhatsApp yoki SMS orqali). U havolani ochib «Start» bossa, bot unga buyurtma yubora oladi. Cliniccards nakladnoylaridagi sotuvchilar avtomatik qo'shiladi.</p>
-<form method="post" class="card toolbar">
-  <input type="text" name="name" placeholder="Sotuvchi nomi" required>
-  <input type="tel" name="phone" placeholder="Telefon">
-  <button class="primary" type="submit">Qo'shish</button>
-</form>
-<div class="card">
-<table>
-  <thead><tr><th>Sotuvchi</th><th>Telefon</th><th class="n">Mahsulotlar</th><th>Telegram</th><th></th></tr></thead>
-  <tbody>
-  {% for s in rows %}
-    <tr>
-      <td><input form="fs{{ s.id }}" type="text" name="name" value="{{ s.name }}" required></td>
-      <td><input form="fs{{ s.id }}" type="tel" name="phone" value="{{ s.phone or '' }}" style="width:140px"></td>
-      <td class="n">{{ s.n }}</td>
-      <td>{% if s.chat_id %}<span class="tag yetarli">ulangan</span> <label class="muted"><input form="fs{{ s.id }}" type="checkbox" name="unlink" value="1"> uzish</label>
-          {% elif bot %}<span class="linkbox">{{ bot.link(s.token) }}</span>{% else %}<span class="muted">bot ulanmagan</span>{% endif %}</td>
-      <td><form id="fs{{ s.id }}" method="post" action="/sotuvchilar/{{ s.id }}"></form><button form="fs{{ s.id }}" type="submit">Saqlash</button></td>
-    </tr>
-  {% else %}<tr><td colspan="5" class="muted">Sotuvchi yo'q.</td></tr>{% endfor %}
-  </tbody>
-</table>
+<div class="tiles three">
+  <div class="tile"><div class="k">Jami olingan tovar</div><div class="v num">{{ tot_b|pul }}<small>so'm</small></div></div>
+  <div class="tile good"><div class="k">To'langan</div><div class="v num">{{ tot_p|pul }}<small>so'm</small></div></div>
+  <div class="tile {{ 'warn' if tot_debt > 0 else 'good' }}"><div class="k">Qarzimiz</div><div class="v num">{{ tot_debt|pul }}<small>so'm</small></div></div>
 </div>
+<section class="panel"><div class="scroll"><table>
+  <thead><tr><th>Do'kon</th><th>Sotuvchi</th><th>Telefon</th><th class="r">Olingan</th><th class="r">To'langan</th><th class="r">Qarz</th><th>Telegram</th></tr></thead>
+  <tbody>
+  {% for x in rows %}
+    <tr><td><a class="rowlink" href="/sotuvchi/{{ x.s.id }}">{{ x.s.name }}</a></td><td>{{ x.s.contact or '—' }}</td><td class="num">{{ x.s.phone or '—' }}</td>
+      <td class="r">{{ x.b|pul }}</td><td class="r">{{ x.pd|pul }}</td>
+      <td class="r" style="color:var({{ '--warn' if x.debt > 0 else '--good' }});font-weight:600">{{ x.debt|pul }}</td>
+      <td>{% if x.s.chat_id %}<span class="pill good">ulangan</span>{% else %}<span class="pill off">ulanmagan</span>{% endif %}</td></tr>
+  {% else %}<tr><td colspan="7" class="muted">Sotuvchi yo'q. Cliniccards kirim nakladnoylaridagi sotuvchilar «Cliniccards'dan yangilash» bosilganda avtomatik qo'shiladi.</td></tr>{% endfor %}
+  </tbody>
+  <tfoot><tr><td colspan="3">Jami</td><td class="r">{{ tot_b|pul }}</td><td class="r">{{ tot_p|pul }}</td><td class="r">{{ tot_debt|pul }}</td><td></td></tr></tfoot>
+</table></div></section>
+<details class="panel" style="padding:12px 16px"><summary style="cursor:pointer;font-weight:600">+ Sotuvchi qo'shish</summary>
+  <form method="post" action="/sotuvchilar" class="controls" style="margin-top:10px">
+    <input type="text" name="name" placeholder="Do'kon nomi" required><input type="text" name="contact" placeholder="Sotuvchi ismi">
+    <input type="tel" name="phone" placeholder="Telefon"><button class="btn primary" type="submit">Qo'shish</button>
+  </form>
+</details>
 {% endblock %}

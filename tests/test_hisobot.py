@@ -111,7 +111,7 @@ def test_october_has_no_madina_salary(svc):
 def test_installments_and_unassigned(svc):
     rep = svc.month_report("2026-11")
     assert rep.doctor("502").total == Decimal("1000000")
-    assert rep.doctor("502").salary == Decimal("300000")
+    assert rep.doctor("502").salary == Decimal("250000")  # o'zgarmas 25%
     assert rep.doctor("0").total == Decimal("50000")
     assert rep.doctor("0").salary == 0
     assert rep.doctors[-1].doctor_id == "0"
@@ -163,6 +163,9 @@ def _client(svc, monkeypatch):
     from fastapi.testclient import TestClient
     monkeypatch.setattr(webapp, "_service", svc)
     monkeypatch.setattr(webapp, "attempts", __import__("auth").Attempts())
+    import sklad_routes
+    from db import DB
+    monkeypatch.setitem(sklad_routes._state, "db", DB(":memory:"))
     return TestClient(webapp.app)
 
 
@@ -204,16 +207,17 @@ def test_forged_cookie_rejected(svc, monkeypatch):
 def test_web(svc, tmp_path, monkeypatch):
     c = _client(svc, monkeypatch)
     c.post("/login", data={"login": "admin", "parol": "maxfiy"})
-    r = c.get("/?oy=2026-11")
+    r = c.get("/shifokorlar?oy=2026-11")
     assert r.status_code == 200 and "125 000" in r.text and "Chiqish" in r.text
     r = c.get("/shifokor/501?oy=2026-11")
     assert "Usmonov Akmal" in r.text and "Konsultatsiya" not in r.text
     assert c.get("/excel?oy=2026-11&shifokor=501").content[:2] == b"PK"
     assert c.get("/qarzdorlar").status_code == 200
-    r = c.post("/sozlamalar", data={"foiz_501": "20", "default": "0"}, follow_redirects=False)
-    assert r.status_code == 303
-    assert json.loads((tmp_path / "foizlar.json").read_text())["doctors"] == {"501": 20.0}
+    # foizlar o'zgarmas: sozlama sahifasi yo'q
+    assert c.get("/sozlamalar", follow_redirects=False).headers["location"] == "/"
+    assert "Foizlar" not in c.get("/").text
     assert c.get("/?oy=2026-13").status_code == 400
+
 
 
 def test_full_history_finds_old_work(svc):
@@ -250,10 +254,10 @@ def test_date_range(svc):
 def test_web_date_range(svc, monkeypatch):
     c = _client(svc, monkeypatch)
     c.post("/login", data={"login": "admin", "parol": "maxfiy"})
-    r = c.get("/?dan=2026-10-01&gacha=2026-11-30")
+    r = c.get("/shifokorlar?dan=2026-10-01&gacha=2026-11-30")
     assert r.status_code == 200 and "01.10.2026 – 30.11.2026" in r.text
     assert "/shifokor/502?dan=2026-10-01&amp;gacha=2026-11-30" in r.text
-    assert "Shu yil" in r.text and 'type="date"' in r.text
+    assert r.text.count('type="date"') == 2
     r = c.get("/shifokor/502?dan=2026-10-01&gacha=2026-11-30")
     assert "2 000 000" in r.text
     x = c.get("/excel?dan=2026-10-01&gacha=2026-11-30")
@@ -262,14 +266,15 @@ def test_web_date_range(svc, monkeypatch):
     assert c.get("/?dan=xato&gacha=2026-11-01").status_code == 400
 
 
-def test_summary_five_numbers(svc):
-    s = svc.summary("2026-11")
-    # noyabrda bajarilgan ishlar: Rentgen 50 000 + Konsultatsiya 100 000
-    assert s.done_total == Decimal("150000") and s.done_count == 2
-    assert s.kassa_total == Decimal("2050000")
-    assert s.clinic_percent == Decimal("20") and s.clinic_share == Decimal("410000")
-    assert s.salary_total == Decimal("425000")  # 125 000 + 300 000
-    assert s.expenses_total == Decimal("900000") and s.expenses_count == 3
+def test_overview_numbers(svc):
+    o = svc.overview("2026-11", staff_salary=200000)
+    assert o.done_total == Decimal("150000") and o.done_count == 2   # Rentgen 50 000 + Konsultatsiya 100 000
+    assert o.kassa_total == Decimal("2050000") and o.clinic_share == Decimal("410000")
+    assert o.doctors_salary == Decimal("450000")   # 125 000 + 250 000 + 75 000 (har bir shifokor 25%)
+    assert o.material_total == Decimal("900000") and o.material_count == 3
+    assert o.expenses_total == Decimal("410000") + Decimal("450000") + Decimal("200000") + Decimal("900000")
+    assert o.profit == Decimal("150000") - o.expenses_total
+
 
 
 def test_details(svc):
@@ -284,13 +289,20 @@ def test_details(svc):
     assert {g.name: g.total for g in exp} == {"Ijara": Decimal("600000"), "Materiallar": Decimal("300000")}
 
 
-def test_clinic_percent_setting(svc, monkeypatch):
-    c = _client(svc, monkeypatch)
-    c.post("/login", data={"login": "admin", "parol": "maxfiy"})
-    c.post("/sozlamalar", data={"foiz_501": "25", "default": "0", "klinika": "30"})
-    assert svc.percents.clinic_percent() == 30.0
-    assert svc.summary("2026-11").clinic_share == Decimal("615000")
-    assert c.post("/sozlamalar", data={"klinika": "150"}).status_code == 400
+def test_salary_spendings_split_and_payouts():
+    import finance
+    staff = [{"doctor_id": "501", "lastname": "Karimova", "firstname": "madina"},
+             {"doctor_id": "502", "lastname": "Aliyev", "firstname": "Bobur"}]
+    spend = [
+        {"amount": "100000", "paid": "100000", "member": {"id": 501, "lastname": "Karimova", "firstname": "madina"}},
+        {"amount": "80000", "paid": "50000", "member": "Bobur Aliyev"},
+        {"amount": "30000", "spendings_category": {"name": "Зарплата"}},
+        {"amount": "400000", "spendings_category": {"name": "Materiallar"}},
+    ]
+    salary, material = finance.split_spendings(spend)
+    assert len(salary) == 3 and [m["amount"] for m in material] == ["400000"]
+    assert finance.payouts_by_doctor(salary, staff) == {"501": Decimal("100000"), "502": Decimal("50000")}
+
 
 
 def test_dashboard_pages(svc, monkeypatch):
@@ -298,13 +310,18 @@ def test_dashboard_pages(svc, monkeypatch):
     c.post("/login", data={"login": "admin", "parol": "maxfiy"})
     r = c.get("/?oy=2026-11")
     assert r.status_code == 200
-    for text in ("Bajarilgan ishlar", "Kassaga tushgan", "Klinikaga (20%)", "Shifokorlarga", "Xarajatlar",
-                 "2 050 000", "410 000", "425 000", "900 000", "/kassa?oy=2026-11"):
+    for text in ("Bajarilgan ishlar", "Kassaga tushgan", "Xarajatlar", "Klinika sof foydasi",
+                 "150 000", "2 050 000", "1 760 000", "-1 610 000", "/foyda?oy=2026-11"):
         assert text in r.text, text
     assert "Konsultatsiya" in c.get("/ishlar?oy=2026-11").text
     k = c.get("/kassa?oy=2026-11").text
     assert "Terminal" in k and "1 300 000" in k
     assert "410 000" in c.get("/klinika?oy=2026-11").text
     x = c.get("/xarajatlar?oy=2026-11").text
-    assert "Ijara" in x and "Bino ijarasi" in x and "-100 000" in x
-    assert "Karimova madina" in c.get("/shifokorlar?oy=2026-11").text
+    for text in ("Klinika ulushi", "Shifokorlar maoshi", "Xodimlar maoshi", "Material rasxod", "Ijara", "-100 000", "1 760 000"):
+        assert text in x, text
+    f = c.get("/foyda?oy=2026-11").text
+    assert "Klinika sof foydasi" in f and "-1 610 000" in f
+    d = c.get("/shifokorlar?oy=2026-11").text
+    assert "Karimova madina" in d and "Berilgan summa" in d and "Berilmagan summa" in d
+    assert c.get("/qanday-ishlaydi").status_code == 200

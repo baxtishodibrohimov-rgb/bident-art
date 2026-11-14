@@ -1,11 +1,13 @@
 """«Sklad» bo'limi: qoldiq, sotuvchilar, xodimlar, hisobotlar, buyurtmalar va bot boshqaruvi."""
 from __future__ import annotations
 
+import base64
 import os
+import re
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 
 import stock
 from db import DB, new_token
@@ -17,7 +19,13 @@ STATUS_UZ = {"soraldi": "javob kutilmoqda", "olinmadi": "olinmadi", "kiritilmoqd
              "tekshiruvda": "tekshiruvda", "tasdiqlandi": "tasdiqlandi", "farq": "farq bilan tasdiqlandi",
              "cc_chiqarildi": "Cliniccards'dan chiqarildi",
              "taklif": "taklif (admin qarori kutilmoqda)", "yuborildi": "sotuvchiga yuborildi",
-             "qabul": "sotuvchi qabul qildi", "bekor": "bekor qilindi"}
+             "qabul": "sotuvchi qabul qildi", "keldi": "keldi (kirim qilindi)", "bekor": "bekor qilindi"}
+STATUS_CLS = {"tasdiqlandi": "good", "cc_chiqarildi": "good", "olinmadi": "good", "farq": "warn", "tekshiruvda": "warn",
+              "soraldi": "off", "kiritilmoqda": "off", "taklif": "warn", "yuborildi": "warn", "qabul": "warn",
+              "keldi": "good", "bekor": "off"}
+STOCK_CLS = {"tugagan": "bad", "kam": "warn", "yetarli": "good"}
+MAX_PHOTO = 1_500_000
+DATA_URL = re.compile(r"^data:(image/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=]+)$")
 
 
 def db_path() -> Path:
@@ -38,23 +46,61 @@ def get_bot():
 def setup(app, templates, auth, service):
     """app.py dan chaqiriladi: marshrutlarni ulaydi va botni ishga tushiradi."""
     templates.env.globals["holat"] = STATUS_UZ
+    templates.env.globals["holat_cls"] = STATUS_CLS
+    templates.env.globals["stock_cls"] = STOCK_CLS
     templates.env.filters["son"] = stock.fmt_qty
 
     def page(request, name, **ctx):
+        ctx.setdefault("section", "sklad")
         return templates.TemplateResponse(request, name, {"bot": get_bot(), **ctx})
 
     @router.get("/sklad")
-    def sklad(request: Request, f: str = "", _=Depends(auth)):
+    def sklad(request: Request, f: str = "", v: str = "", _=Depends(auth)):
         db = get_db()
-        rows = stock.products(db)
-        if f:
-            rows = [r for r in rows if stock.status(r) == f]
+        all_rows = stock.products(db)
+        rows = [r for r in all_rows if not f or stock.status(r) == f]
         counts = {k: 0 for k in ("tugagan", "kam", "yetarli")}
-        for r in stock.products(db):
+        for r in all_rows:
             counts[stock.status(r)] += 1
-        return page(request, "sklad.html", rows=rows, f=f, counts=counts, status=stock.status,
-                    synced=db.meta("stock_synced"), snapshot=db.meta("stock_snapshot"),
-                    suppliers=db.q("SELECT * FROM suppliers ORDER BY name"))
+        value = sum(max(0, r["qty"]) * r["last_price"] for r in all_rows)
+        view = v if v in ("list", "cards") else request.cookies.get("sklad_view", "list")
+        photos = {r["product_id"] for r in db.q("SELECT product_id FROM product_photos")}
+        resp = page(request, "sklad.html", rows=rows, all_count=len(all_rows), f=f, counts=counts, status=stock.status,
+                    value=value, rows_value=sum(max(0, r["qty"]) * r["last_price"] for r in rows), view=view,
+                    photos=photos, synced=db.meta("stock_synced"))
+        if v in ("list", "cards"):
+            resp.set_cookie("sklad_view", v, max_age=365 * 24 * 3600, samesite="lax")
+        return resp
+
+    # --- mahsulot rasmlari ---------------------------------------------
+    @router.get("/sklad/rasm/{pid}")
+    def photo(pid: str, _=Depends(auth)):
+        row = get_db().one("SELECT mime, data FROM product_photos WHERE product_id=?", (pid,))
+        if not row:
+            raise HTTPException(404, "Rasm yo'q")
+        return Response(bytes(row["data"]), media_type=row["mime"], headers={"Cache-Control": "private, max-age=300"})
+
+    @router.post("/sklad/rasm/{pid}")
+    def photo_save(pid: str, data: str = Form(...), _=Depends(auth)):
+        db = get_db()
+        if not db.one("SELECT 1 FROM products WHERE id=?", (pid,)):
+            raise HTTPException(404, "Mahsulot topilmadi")
+        m = DATA_URL.match(data.strip())
+        if not m:
+            raise HTTPException(400, "Rasm noto'g'ri formatda")
+        raw = base64.b64decode(m.group(2))
+        if len(raw) > MAX_PHOTO:
+            raise HTTPException(400, "Rasm juda katta")
+        from db import now
+        db.run("INSERT INTO product_photos(product_id, mime, data, updated_at) VALUES(?,?,?,?) "
+               "ON CONFLICT(product_id) DO UPDATE SET mime=excluded.mime, data=excluded.data, updated_at=excluded.updated_at",
+               (pid, m.group(1), raw, now()))
+        return {"ok": True}
+
+    @router.post("/sklad/rasm/{pid}/ochirish")
+    def photo_delete(pid: str, _=Depends(auth)):
+        get_db().run("DELETE FROM product_photos WHERE product_id=?", (pid,))
+        return {"ok": True}
 
     @router.post("/sklad/sinxron")
     def sklad_sync(request: Request, _=Depends(auth)):
@@ -136,36 +182,61 @@ def setup(app, templates, auth, service):
         return RedirectResponse(f"/sklad/mahsulot/{pid}?saqlandi=1", status_code=303)
 
     # --- sotuvchilar ---------------------------------------------------
+    def ledger():
+        db = get_db()
+        sups = db.q("SELECT * FROM suppliers ORDER BY name")
+        products = {r["id"]: {"name": r["name"], "unit": r["unit"]} for r in db.q("SELECT id, name, unit FROM products")}
+        return sups, service().supplier_ledger(sups, products)
+
     @router.get("/sotuvchilar")
     def suppliers(request: Request, _=Depends(auth)):
-        db = get_db()
-        rows = db.q("""SELECT s.*, (SELECT count(*) FROM products p WHERE p.supplier_id=s.id AND p.active=1) AS n
-                       FROM suppliers s ORDER BY s.name""")
-        return page(request, "suppliers.html", rows=rows)
+        sups, led = ledger()
+        rows = [{"s": s, **led[s["id"]]} for s in sups]
+        tot_b = sum((r["b"] for r in rows), 0)
+        tot_p = sum((r["pd"] for r in rows), 0)
+        return page(request, "suppliers.html", rows=rows, tot_b=tot_b, tot_p=tot_p, tot_debt=tot_b - tot_p)
+
+    @router.get("/sotuvchi/{sid}")
+    def supplier(request: Request, sid: int, _=Depends(auth)):
+        sups, led = ledger()
+        s = next((x for x in sups if x["id"] == sid), None)
+        if not s:
+            raise HTTPException(404, "Sotuvchi topilmadi")
+        return page(request, "supplier.html", s=s, x=led[sid])
 
     @router.post("/sotuvchilar")
-    def supplier_add(name: str = Form(...), phone: str = Form(""), _=Depends(auth)):
+    def supplier_add(name: str = Form(...), contact: str = Form(""), phone: str = Form(""), _=Depends(auth)):
         if not name.strip():
-            raise HTTPException(400, "Nomini kiriting")
-        get_db().run("INSERT INTO suppliers(name, phone, token) VALUES(?,?,?)", (name.strip(), phone.strip(), new_token()))
+            raise HTTPException(400, "Do'kon nomini kiriting")
+        get_db().run("INSERT INTO suppliers(name, contact, phone, token) VALUES(?,?,?,?)",
+                     (name.strip(), contact.strip(), phone.strip(), new_token()))
         return RedirectResponse("/sotuvchilar", status_code=303)
 
     @router.post("/sotuvchilar/{sid}")
-    def supplier_edit(sid: int, name: str = Form(...), phone: str = Form(""), unlink: str = Form(""), _=Depends(auth)):
+    def supplier_edit(sid: int, name: str = Form(...), contact: str = Form(""), phone: str = Form(""),
+                      unlink: str = Form(""), _=Depends(auth)):
         db = get_db()
-        db.run("UPDATE suppliers SET name=?, phone=? WHERE id=?", (name.strip(), phone.strip(), sid))
+        db.run("UPDATE suppliers SET name=?, contact=?, phone=? WHERE id=?", (name.strip(), contact.strip(), phone.strip(), sid))
         if unlink:
             db.run("UPDATE suppliers SET chat_id=NULL, token=? WHERE id=?", (new_token(), sid))
-        return RedirectResponse("/sotuvchilar", status_code=303)
+        return RedirectResponse(f"/sotuvchi/{sid}?xabar=Saqlandi", status_code=303)
 
     # --- xodimlar ------------------------------------------------------
-    @router.get("/xodimlar")
-    def people(request: Request, _=Depends(auth)):
-        return page(request, "people.html", rows=get_db().q("SELECT * FROM people ORDER BY name"),
+    @router.get("/bot")
+    def bot_page(request: Request, chat: str = "", _=Depends(auth)):
+        import bot_chats
+        tab = chat if chat in bot_chats.CHATS else next(iter(bot_chats.CHATS))
+        return page(request, "bot.html", chats=bot_chats.CHATS, tab=tab, section="bot",
                     ask_time=os.environ.get("SKLAD_SOROV_VAQTI", "19:00"),
                     att_time=os.environ.get("DAVOMAT_VAQTI", "20:00"))
 
-    @router.post("/xodimlar")
+    @router.get("/bot/xodimlar")
+    def people(request: Request, _=Depends(auth)):
+        return page(request, "people.html", section="bot", rows=get_db().q("SELECT * FROM people ORDER BY name"),
+                    ask_time=os.environ.get("SKLAD_SOROV_VAQTI", "19:00"),
+                    att_time=os.environ.get("DAVOMAT_VAQTI", "20:00"))
+
+    @router.post("/bot/xodimlar")
     def person_add(name: str = Form(...), is_taker: str = Form(""), is_checker: str = Form(""), is_admin: str = Form(""),
                    is_attendance: str = Form(""), _=Depends(auth)):
         if not name.strip():
@@ -173,9 +244,9 @@ def setup(app, templates, auth, service):
         get_db().run("INSERT INTO people(name, is_taker, is_checker, is_admin, is_attendance, token) VALUES(?,?,?,?,?,?)",
                      (name.strip(), int(bool(is_taker)), int(bool(is_checker)), int(bool(is_admin)),
                       int(bool(is_attendance)), new_token()))
-        return RedirectResponse("/xodimlar", status_code=303)
+        return RedirectResponse("/bot/xodimlar", status_code=303)
 
-    @router.post("/xodimlar/{pid}")
+    @router.post("/bot/xodimlar/{pid}")
     def person_edit(pid: int, name: str = Form(...), is_taker: str = Form(""), is_checker: str = Form(""),
                     is_admin: str = Form(""), is_attendance: str = Form(""), delete: str = Form(""), unlink: str = Form(""),
                     _=Depends(auth)):
@@ -192,7 +263,7 @@ def setup(app, templates, auth, service):
                     int(bool(is_attendance)), pid))
             if unlink:
                 db.run("UPDATE people SET chat_id=NULL, token=? WHERE id=?", (new_token(), pid))
-        return RedirectResponse("/xodimlar", status_code=303)
+        return RedirectResponse("/bot/xodimlar", status_code=303)
 
     # --- hisobotlar va buyurtmalar -------------------------------------
     @router.get("/sklad/hisobotlar")
@@ -212,8 +283,10 @@ def setup(app, templates, auth, service):
         rows = get_db().q("""SELECT o.*, p.name, p.unit, s.name AS supplier FROM orders o
                              JOIN products p ON p.id=o.product_id LEFT JOIN suppliers s ON s.id=o.supplier_id
                              ORDER BY o.id DESC LIMIT 300""")
-        total = sum(o["qty"] * o["price"] for o in rows if o["status"] in ("yuborildi", "qabul"))
-        return page(request, "orders.html", rows=rows, total=total)
+        arrived = [o for o in rows if o["status"] == "keldi"]
+        return page(request, "orders.html", rows=rows, arrived=len(arrived),
+                    waiting=sum(1 for o in rows if o["status"] in ("taklif", "yuborildi", "qabul")),
+                    arrived_sum=sum(o["qty"] * o["price"] for o in arrived))
 
     @router.post("/bot/sorash")
     def ask_now(_=Depends(auth)):
@@ -221,7 +294,7 @@ def setup(app, templates, auth, service):
         if not b:
             raise HTTPException(400, "Telegram bot ulanmagan (TELEGRAM_BOT_TOKEN)")
         n = b.ask_takers(force=True)
-        return RedirectResponse(f"/xodimlar?xabar={n} ta xodimga so'rov yuborildi", status_code=303)
+        return RedirectResponse(f"/bot/xodimlar?xabar={n} ta xodimga so'rov yuborildi", status_code=303)
 
     @router.post("/bot/davomat")
     def ask_attendance_now(_=Depends(auth)):
@@ -229,7 +302,7 @@ def setup(app, templates, auth, service):
         if not b:
             raise HTTPException(400, "Telegram bot ulanmagan (TELEGRAM_BOT_TOKEN)")
         n = b.ask_attendance(force=True)
-        return RedirectResponse(f"/xodimlar?xabar=Davomat so'rovi {n} ta xodimga yuborildi", status_code=303)
+        return RedirectResponse(f"/bot/xodimlar?xabar=Davomat so'rovi {n} ta xodimga yuborildi", status_code=303)
 
     @router.post("/bot/buyurtma-tekshir")
     def check_orders(_=Depends(auth)):

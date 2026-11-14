@@ -1,65 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Bosh ekran — {{ p.label }}{% endblock %}
 {% block content %}
-<h1>{{ p.label }}</h1>
+<h1 class="sr-only">{{ p.label }}</h1>
 {% set action = "/" %}{% include "_period.html" %}
-<form class="toolbar noprint" method="post" action="/yangilash">
-  <button type="button" onclick="window.print()">Chop etish</button>
-  <button type="submit">Ma'lumotni yangilash</button>
-</form>
-
-<div class="kpis">
-  <a class="kpi" href="/ishlar?{{ q }}">
-    <span class="k">Bajarilgan ishlar</span><b>{{ s.done_total|pul }}</b>
-    <span class="hint">{{ s.done_count }} ta ish · tafsilot →</span></a>
-  <a class="kpi" href="/kassa?{{ q }}">
-    <span class="k">Kassaga tushgan</span><b>{{ s.kassa_total|pul }}</b>
-    <span class="hint">{{ s.kassa_count }} ta to'lov · tafsilot →</span></a>
-  <a class="kpi" href="/klinika?{{ q }}">
-    <span class="k">Klinikaga ({{ s.clinic_percent|pul }}%)</span><b>{{ s.clinic_share|pul }}</b>
-    <span class="hint">kassaning {{ s.clinic_percent|pul }}% · tafsilot →</span></a>
-  <a class="kpi" href="/shifokorlar?{{ q }}">
-    <span class="k">Shifokorlarga</span><b>{{ s.salary_total|pul }}</b>
-    <span class="hint">{{ s.report.doctors|length }} ta shifokor · tafsilot →</span></a>
-  <a class="kpi" href="/xarajatlar?{{ q }}">
-    <span class="k">Xarajatlar</span><b>{{ s.expenses_total|pul }}</b>
-    <span class="hint">{{ s.expenses_count }} ta xarajat · tafsilot →</span></a>
+<div class="kpis four">
+  <a class="kpi" href="/ishlar?{{ q }}"><span class="k">Bajarilgan ishlar</span>
+    <span class="v num">{{ o.done_total|pul }}<small>so'm</small></span><span class="hint">{{ o.done_count }} ta ish · tafsilot →</span></a>
+  <a class="kpi main" href="/kassa?{{ q }}"><span class="k">Kassaga tushgan</span>
+    <span class="v num">{{ o.kassa_total|pul }}<small>so'm</small></span><span class="hint">{{ o.kassa_count }} ta to'lov · tafsilot →</span></a>
+  <a class="kpi" href="/xarajatlar?{{ q }}"><span class="k">Xarajatlar</span>
+    <span class="v num">{{ o.expenses_total|pul }}<small>so'm</small></span><span class="hint">klinika, shifokorlar, xodimlar, material · tafsilot →</span></a>
+  <a class="kpi {{ 'neg' if o.profit < 0 else 'pos' }}" href="/foyda?{{ q }}"><span class="k">Klinika sof foydasi</span>
+    <span class="v num">{{ o.profit|pul }}<small>so'm</small></span><span class="hint">bajarilgan ishlar − xarajatlar · tafsilot →</span></a>
 </div>
-
-<div class="card">
-  <h2>Kassaning taqsimoti</h2>
-  <div class="split" aria-hidden="true">
-    <i style="width:{{ s.clinic_percent }}%;background:#2f5d8a"></i><i style="width:{{ s.doctors_percent }}%;background:#4f8fc9"></i><i style="width:{{ s.expense_percent }}%;background:#b9d3ea"></i>
-  </div>
-  <table>
-    <thead><tr><th>Ulush</th><th class="n">Foiz</th><th class="n">Ajratilgan</th><th class="n">Ishlatilgan</th><th class="n">Qoldi</th></tr></thead>
-    <tbody>
-      <tr><td><a href="/klinika?{{ q }}">Klinika</a></td><td class="n">{{ s.clinic_percent|pul }}%</td><td class="n">{{ s.clinic_share|pul }}</td><td class="n">—</td><td class="n">—</td></tr>
-      <tr><td><a href="/shifokorlar?{{ q }}">Shifokorlar</a></td><td class="n">{{ s.doctors_percent|pul }}%</td><td class="n">{{ s.doctors_share|pul }}</td>
-        <td class="n">{{ s.salary_total|pul }}</td><td class="n">{{ (s.doctors_share - s.salary_total)|pul }}</td></tr>
-      <tr><td><b>Xarajatlar</b></td><td class="n">{{ s.expense_percent|pul }}%</td><td class="n"><b>{{ s.expense_budget|pul }}</b></td>
-        <td class="n"><b>{{ used|pul }}</b></td><td class="n"><b class="{{ 'warn' if left < 0 else 'ok' }}">{{ left|pul }}</b></td></tr>
-      <tr><td style="padding-left:28px"><a href="/maosh-xodimlar?{{ q }}">— xodimlar maoshi</a></td><td></td><td></td><td class="n">{{ staff_total|pul }}</td><td></td></tr>
-      <tr><td style="padding-left:28px"><a href="/xarajatlar?{{ q }}">— Cliniccards xarajatlari</a></td><td></td><td></td><td class="n">{{ s.expenses_total|pul }}</td><td></td></tr>
-    </tbody>
-  </table>
-  <p class="muted" style="margin:8px 0 0">Shifokorlar «ishlatilgan» — har bir shifokorga foizi bo'yicha hisoblangan maosh. Farq ishga bog'lanmagan to'lovlar (avans, depozit) tufayli chiqadi.
-  Shifokor yoki xodim maoshini Cliniccards'da xarajat qilib yozsangiz, u «Cliniccards xarajatlari» ichida ham chiqadi — ikki marta hisoblanmasligi uchun buni ayting.</p>
-</div>
-
-<div class="card">
-  <h2>Shifokorlar maoshi</h2>
-  <table>
-    <thead><tr><th>Shifokor</th><th class="n">Tushgan</th><th class="n">Foiz</th><th class="n">Maosh</th></tr></thead>
-    <tbody>
-    {% for d in s.report.doctors %}
-      <tr><td>{% if d.doctor_id != "0" %}<a href="/shifokor/{{ d.doctor_id }}?{{ q }}">{{ d.name }}</a>{% else %}<span class="warn">{{ d.name }}</span>{% endif %}</td>
-        <td class="n">{{ d.total|pul }}</td><td class="n">{{ d.percent|pul }}%</td><td class="n">{{ d.salary|pul }}</td></tr>
-    {% else %}
-      <tr><td colspan="4" class="muted">Bu davrda ishlarga bog'langan to'lov yo'q.</td></tr>
-    {% endfor %}
-    </tbody>
-  </table>
-</div>
-<p class="muted noprint">Har bir summani bosing: u qaysi ishlar, to'lovlar yoki xarajatlardan yig'ilgani ochiladi.</p>
 {% endblock %}

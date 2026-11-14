@@ -35,6 +35,11 @@ def fake_cc(request: httpx.Request) -> httpx.Response:
     ok = lambda d: httpx.Response(200, json={"data": d, "result": "success", "error": None})  # noqa: E731
     if path == "/stock-products":
         return ok(PRODUCTS)
+    if path == "/spendings/":
+        if not (request.url.params["from"] <= "2025-03-05" <= request.url.params["to"]):
+            return ok([])
+        return ok([{"amount": "900000", "paid": "500000", "date_issued": "2025-03-05", "supplier": {"id": 77, "name": "Dental Market"},
+                    "spendings_category": {"name": "Materiallar"}, "note": "nakladnoy 0001 uchun"}])
     if path == "/stock-invoices":
         frm, to = request.url.params["from"], request.url.params["to"]
         return ok([i for i in INVOICES + NEW_INVOICES if frm <= i["date"] <= to])
@@ -235,11 +240,44 @@ def test_sklad_pages(env, tmp_path, monkeypatch):
                follow_redirects=True)
     assert "Saqlandi" in r.text and db.one("SELECT qty FROM products WHERE id='1'")["qty"] == 6
     assert "kam" in c.get("/sklad?f=kam").text
-    c.post("/xodimlar", data={"name": "Ali", "is_taker": "1"})
-    r = c.get("/xodimlar")
+    c.post("/bot/xodimlar", data={"name": "Ali", "is_taker": "1"})
+    r = c.get("/bot/xodimlar")
     assert "https://t.me/biodent_test_bot?start=" in r.text
-    c.post("/sotuvchilar", data={"name": "Ortho Supply", "phone": "+998901234567"})
-    assert "Ortho Supply" in c.get("/sotuvchilar").text
+    c.post("/sotuvchilar", data={"name": "Ortho Supply", "contact": "Nodira", "phone": "+998901234567"})
+    r = c.get("/sotuvchilar")
+    assert "Ortho Supply" in r.text and "Nodira" in r.text
+    # Dental Market: kirim 10×45 000 + 50×9 000 = 900 000, to'langan 500 000 → qarz 400 000
+    assert "900 000" in r.text and "500 000" in r.text and "400 000" in r.text
+    sid = db.one("SELECT id FROM suppliers WHERE name='Dental Market'")["id"]
+    r = c.get(f"/sotuvchi/{sid}")
+    assert "Nima oldik" in r.text and "Kompozit plomba A2" in r.text and "Qancha berdik" in r.text and "400 000" in r.text
+    c.post(f"/sotuvchilar/{sid}", data={"name": "Dental Market", "contact": "Sherzod", "phone": "+998901112233"})
+    assert db.one("SELECT contact FROM suppliers WHERE id=?", (sid,))["contact"] == "Sherzod"
+    # kartochka ko'rinishi va filtr
+    r = c.get("/sklad?v=cards&f=kam")
+    assert 'class="pcard"' in r.text and "Kompozit plomba A2" in r.text and "Anestetik" not in r.text
+    assert c.cookies.get("sklad_view") == "cards"
+    # mahsulot rasmi
+    import base64
+    png = base64.b64encode(bytes.fromhex("89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c6360000002000154a24f5d0000000049454e44ae426082")).decode()
+    assert c.post("/sklad/rasm/1", data={"data": "data:image/png;base64," + png}).status_code == 200
+    img = c.get("/sklad/rasm/1")
+    assert img.status_code == 200 and img.headers["content-type"] == "image/png" and img.content[:4] == b"\x89PNG"
+    assert '/sklad/rasm/1"' in c.get("/sklad?v=list").text
+    assert c.post("/sklad/rasm/1", data={"data": "javascript:alert(1)"}).status_code == 400
+    c.post("/sklad/rasm/1/ochirish")
+    assert c.get("/sklad/rasm/1").status_code == 404
     for path in ("/sklad/hisobotlar", "/buyurtmalar"):
         assert c.get(path).status_code == 200
     assert c.post("/bot/buyurtma-tekshir", follow_redirects=False).status_code == 303
+
+
+def test_order_becomes_arrived_on_income(env):
+    db, client, tg, bot = env
+    stock.sync(db, client, date(2015, 1, 1), date(2026, 11, 8))
+    from db import now
+    db.run("INSERT INTO orders(product_id, qty, price, status, created_at) VALUES('1', 10, 45000, 'qabul', ?)", (now(),))
+    NEW_INVOICES.append({"invoice_id": "30", "type": "INCOME", "date": "2026-11-07", "supplier_name": "Dental Market",
+                         "invoice_items": [{"product_id": 1, "count": 10, "price": 45000}]})
+    stock.sync(db, client, date(2015, 1, 1), date(2026, 11, 8))
+    assert db.one("SELECT status FROM orders")["status"] == "keldi"
