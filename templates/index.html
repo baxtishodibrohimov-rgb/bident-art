@@ -11,6 +11,6 @@
   <a class="kpi" href="/xarajatlar?{{ q }}"><span class="k">Xarajatlar</span>
     <span class="v num">{{ o.expenses_total|pul }}<small>so'm</small></span><span class="hint">klinika, shifokorlar, hamshiralar, material · tafsilot →</span></a>
   <a class="kpi {{ 'neg' if o.profit < 0 else 'pos' }}" href="/foyda?{{ q }}"><span class="k">Klinika sof foydasi</span>
-    <span class="v num">{{ o.profit|pul }}<small>so'm</small></span><span class="hint">bajarilgan ishlar − xarajatlar · tafsilot →</span></a>
+    <span class="v num">{{ o.profit|pul }}<small>so'm</small></span><span class="hint">kassaga tushgan − xarajatlar · tafsilot →</span></a>
 </div>
 {% endblock %}

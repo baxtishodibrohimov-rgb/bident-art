@@ -4,10 +4,10 @@
 <div class="titlerow"><h1>Klinika sof foydasi</h1>{% set action = "/foyda" %}{% include "_period.html" %}</div>
 {% set c = '--bad' if o.profit < 0 else '--good' %}
 <section class="panel" style="padding:16px;display:grid;gap:12px">
-  <p class="formula num">Bajarilgan ishlar <b>{{ o.done_total|pul }}</b> − xarajatlar <b>{{ o.expenses_total|pul }}</b> = <b style="color:var({{ c }})">{{ o.profit|pul }} so'm</b></p>
+  <p class="formula num">Kassaga tushgan <b>{{ o.kassa_total|pul }}</b> − xarajatlar <b>{{ o.expenses_total|pul }}</b> = <b style="color:var({{ c }})">{{ o.profit|pul }} so'm</b></p>
   <div class="scroll"><table style="min-width:420px">
     <tbody>
-      <tr class="strong"><td><a class="rowlink" href="/ishlar?{{ q }}">Bajarilgan ishlar</a></td><td class="r">{{ o.done_total|pul }}</td></tr>
+      <tr class="strong"><td><a class="rowlink" href="/kassa?{{ q }}">Kassaga tushgan</a></td><td class="r">{{ o.kassa_total|pul }}</td></tr>
       {% for href, name, v in o.parts() %}<tr><td class="indent"><a class="rowlink" href="{{ href }}{% if '#' not in href %}?{{ q }}{% endif %}">− {{ name }}</a></td><td class="r">{{ v|pul }}</td></tr>{% endfor %}
     </tbody>
     <tfoot><tr><td>Sof foyda</td><td class="r" style="color:var({{ c }})">{{ o.profit|pul }}</td></tr></tfoot>

@@ -2,7 +2,7 @@
 
 **Ulushlar o'zgarmas:** klinika — kassaga tushgan pulning 20%, har bir shifokor — o'ziga tushgan pulning 25%.
 **Bosh ekran:** bajarilgan ishlar, kassaga tushgan, xarajatlar (klinika ulushi + shifokorlar + hamshiralar + material rasxod)
-va klinika sof foydasi (bajarilgan ishlar − xarajatlar). Har bir summa bosilganda tafsiloti ochiladi.
+va klinika sof foydasi (kassaga tushgan − xarajatlar). Har bir summa bosilganda tafsiloti ochiladi.
 
 Bo'limlar: Bosh ekran · Shifokorlar (maosh va avans berish) · Sklad (qoldiq — ro'yxat/kartochka va rasmlar, kunlik hisobotlar,
 buyurtmalar, sotuvchilar va ular bilan hisob-kitob) · Hamshiralar (maosh, ⚙ sozlama, grafik, hamshira vazifalari) ·

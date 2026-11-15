@@ -5,7 +5,7 @@ Qoidalar (o'zgarmas):
 - Har bir shifokorning ulushi — unga shu davrda tushgan pulning 25%.
 
 Xarajatlar = klinika ulushi + shifokorlar maoshi + hamshiralar maoshi + material rasxod.
-Sof foyda = shu davrda bajarilgan ishlar − xarajatlar.
+Sof foyda = shu davrda kassaga tushgan pul − xarajatlar.
 
 Cliniccards xarajatlari ikkiga bo'linadi:
 - maosh xarajatlari (xodimga bog'langan yoki «зарплата/maosh» toifasidagi) — shifokorlarga
@@ -95,7 +95,7 @@ class Overview:
 
     @property
     def profit(self) -> Decimal:
-        return self.done_total - self.expenses_total
+        return self.kassa_total - self.expenses_total
 
     def parts(self) -> list[tuple[str, str, Decimal]]:
         """Xarajat qismlari: (havola, nomi, summa)."""

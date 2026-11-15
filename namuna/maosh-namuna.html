@@ -616,7 +616,7 @@ button.tile.link { font: inherit; text-align: left; cursor: pointer; color: var(
 
   function viewHome() {
     const c = costs(range), done = doneItems(range), pays = payments(range);
-    const profit = sum(done) - c.total;
+    const profit = c.rep.kassa - c.total;
     return `
       <h1 class="sr-only">${rangeLabel(range)}</h1>
       ${monthSelect()}
@@ -624,7 +624,7 @@ button.tile.link { font: inherit; text-align: left; cursor: pointer; color: var(
         ${kpi("ishlar", "Bajarilgan ishlar", sum(done), `${done.length} ta ish`)}
         ${kpi("kassa", "Kassaga tushgan", c.rep.kassa, `${pays.length} ta to'lov`, "main")}
         ${kpi("xarajatlar", "Xarajatlar", c.total, "klinika, shifokorlar, hamshiralar, material")}
-        ${kpi("foyda", "Klinika sof foydasi", profit, "bajarilgan ishlar − xarajatlar", profit < 0 ? "neg" : "pos")}
+        ${kpi("foyda", "Klinika sof foydasi", profit, "kassaga tushgan − xarajatlar", profit < 0 ? "neg" : "pos")}
       </div>`;
   }
 
@@ -638,13 +638,13 @@ button.tile.link { font: inherit; text-align: left; cursor: pointer; color: var(
   }
 
   function viewProfit() {
-    const c = costs(range), done = doneItems(range), profit = sum(done) - c.total;
+    const c = costs(range), profit = c.rep.kassa - c.total;
     return back + `<div class="titlerow"><h1>Klinika sof foydasi</h1>${monthSelect()}</div>
       <section class="panel" style="padding:16px;display:grid;gap:12px">
-        <p class="formula num">Bajarilgan ishlar <b>${pul(sum(done))}</b> − xarajatlar <b>${pul(c.total)}</b> = <b style="color:var(${profit < 0 ? "--bad" : "--good"})">${pul(profit)} so'm</b></p>
+        <p class="formula num">Kassaga tushgan <b>${pul(c.rep.kassa)}</b> − xarajatlar <b>${pul(c.total)}</b> = <b style="color:var(${profit < 0 ? "--bad" : "--good"})">${pul(profit)} so'm</b></p>
         <div class="scroll"><table style="min-width:420px">
           <tbody>
-            <tr class="strong"><td><a class="rowlink" href="#ishlar">Bajarilgan ishlar</a></td><td class="r">${pul(sum(done))}</td></tr>
+            <tr class="strong"><td><a class="rowlink" href="#kassa">Kassaga tushgan</a></td><td class="r">${pul(c.rep.kassa)}</td></tr>
             ${costRows(c).map(([h, n, v]) => `<tr><td class="indent"><a class="rowlink" href="#${h === "material" ? "xarajatlar" : h}">− ${n}</a></td><td class="r">${pul(v)}</td></tr>`).join("")}
           </tbody>
           <tfoot><tr><td>Sof foyda</td><td class="r" style="color:var(${profit < 0 ? "--bad" : "--good"})">${pul(profit)}</td></tr></tfoot>

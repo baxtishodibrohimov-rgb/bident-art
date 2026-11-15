@@ -275,7 +275,7 @@ def test_overview_numbers(svc):
     assert o.doctors_salary == Decimal("450000")   # 125 000 + 250 000 + 75 000 (har bir shifokor 25%)
     assert o.material_total == Decimal("900000") and o.material_count == 3
     assert o.expenses_total == Decimal("410000") + Decimal("450000") + Decimal("200000") + Decimal("900000")
-    assert o.profit == Decimal("150000") - o.expenses_total
+    assert o.profit == Decimal("2050000") - o.expenses_total   # sof foyda kassadan hisoblanadi
 
 
 
@@ -313,7 +313,7 @@ def test_dashboard_pages(svc, monkeypatch):
     r = c.get("/?oy=2026-11")
     assert r.status_code == 200
     for text in ("Bajarilgan ishlar", "Kassaga tushgan", "Xarajatlar", "Klinika sof foydasi",
-                 "150 000", "2 050 000", "1 760 000", "-1 610 000", "/foyda?oy=2026-11"):
+                 "150 000", "2 050 000", "1 760 000", "290 000", "/foyda?oy=2026-11"):
         assert text in r.text, text
     assert "Konsultatsiya" in c.get("/ishlar?oy=2026-11").text
     k = c.get("/kassa?oy=2026-11").text
@@ -326,7 +326,7 @@ def test_dashboard_pages(svc, monkeypatch):
         assert text in x, text
     assert "Ijara" not in x   # xarajatlar ro'yxati olib tashlangan, faqat 4 ta summa
     f = c.get("/foyda?oy=2026-11").text
-    assert "Klinika sof foydasi" in f and "-1 610 000" in f
+    assert "Klinika sof foydasi" in f and "290 000" in f and "Kassaga tushgan" in f
     d = c.get("/shifokorlar?oy=2026-11").text
     assert "Karimova madina" in d and "Berilgan summa" in d and "Berilmagan summa" in d
     assert c.get("/qanday-ishlaydi").status_code == 200
