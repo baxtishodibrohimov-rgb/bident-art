@@ -1,0 +1,1602 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Biodent maosh hisoboti</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600&display=swap">
+<style>
+/* Layout: sticky top bar, one working column (max 1180px); summary tiles, then the table, then the detail. */
+:root {
+  --bg: #f3f6f8;
+  --surface: #ffffff;
+  --surface-2: #eaf0f4;
+  --fg: #17222e;
+  --muted: #5d6c7b;
+  --line: #d9e2e9;
+  --accent: #1f5a85;
+  --accent-2: #3d8ac0;
+  --accent-soft: #e2eef7;
+  --good: #137a4b;
+  --good-soft: #e3f4ec;
+  --warn: #a85a00;
+  --warn-soft: #fdf1e1;
+  --bad: #b42318;
+  --bad-soft: #fdecea;
+  --bar: #1a4d72;
+  --bar-fg: #ffffff;
+  --shadow: 0 1px 2px rgba(23, 34, 46, .06), 0 6px 18px rgba(23, 34, 46, .06);
+  --f-display: "Unbounded", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Onest", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f161d; --surface: #16202a; --surface-2: #1c2935; --fg: #e5edf3; --muted: #95a6b6; --line: #273645;
+    --accent: #6fb0e0; --accent-2: #8cc4ec; --accent-soft: #1b3346; --good: #4cc98d; --good-soft: #143326;
+    --warn: #f0a74b; --warn-soft: #3a2a14; --bad: #f48b80; --bad-soft: #3d1c1a; --bar: #13212d; --bar-fg: #e5edf3;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.25); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f161d; --surface: #16202a; --surface-2: #1c2935; --fg: #e5edf3; --muted: #95a6b6; --line: #273645;
+  --accent: #6fb0e0; --accent-2: #8cc4ec; --accent-soft: #1b3346; --good: #4cc98d; --good-soft: #143326;
+  --warn: #f0a74b; --warn-soft: #3a2a14; --bad: #f48b80; --bad-soft: #3d1c1a; --bar: #13212d; --bar-fg: #e5edf3;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.25); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--f-body); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bar); }
+a { color: var(--accent); }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bar); color: var(--bar-fg);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.topbar .in { max-width: 1180px; margin: 0 auto; display: flex; align-items: center; gap: 6px 18px; flex-wrap: wrap; padding-block: 10px; }
+.brand { font: 600 15px/1 var(--f-display); letter-spacing: .01em; margin-right: auto; display: flex; align-items: center; gap: 10px; }
+.brand .mark { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: rgba(255,255,255,.14); }
+.nav { display: flex; gap: 2px; flex-wrap: wrap; }
+.nav a { color: var(--bar-fg); text-decoration: none; padding: 6px 10px; border-radius: 8px; opacity: .82; font-weight: 500; }
+.nav a:hover { opacity: 1; background: rgba(255,255,255,.1); }
+.nav a[aria-current="page"] { opacity: 1; background: rgba(255,255,255,.16); }
+.logout { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.3); color: var(--bar-fg); padding: 5px 12px; border-radius: 8px; cursor: pointer; }
+
+.demo-note { max-width: 1180px; margin: 14px auto 0; display: flex; gap: 10px; align-items: flex-start; background: var(--warn-soft);
+  color: var(--fg); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); border-radius: 10px; padding: 10px 14px; font-size: 14px; }
+.demo-note b { color: var(--warn); }
+
+main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 16px; }
+.head { display: flex; gap: 12px; align-items: end; justify-content: space-between; flex-wrap: wrap; margin-top: 20px; }
+h1 { font: 600 22px/1.25 var(--f-display); margin: 0; text-wrap: balance; letter-spacing: -.005em; }
+h2 { font-size: 17px; margin: 0; }
+.sub { color: var(--muted); margin: 4px 0 0; }
+.controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 7px 13px; border-radius: 9px; cursor: pointer; text-decoration: none; color: var(--fg); font-weight: 500; }
+.btn:hover { border-color: var(--accent-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+select.btn { appearance: auto; }
+
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 820px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; min-width: 0; }
+.tile .k { color: var(--muted); font-size: 13px; }
+.tile .v { font-size: 23px; font-weight: 700; margin-top: 2px; overflow-wrap: anywhere; }
+.tile .v small { font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 3px; }
+.tile.good .v { color: var(--good); } .tile.warn .v { color: var(--warn); }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); min-width: 0; }
+.panel-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding: 14px 16px 10px; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 620px; }
+th, td { padding: 9px 14px; border-top: 1px solid var(--line); text-align: left; vertical-align: top; }
+th { background: var(--surface-2); color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; border-top: 0; }
+td.r, th.r { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 55%, transparent); }
+tfoot td { font-weight: 700; border-top: 2px solid var(--fg); }
+.rowlink { color: var(--fg); font-weight: 600; text-decoration: none; }
+.rowlink:hover { color: var(--accent); text-decoration: underline; }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; margin-left: 6px; white-space: nowrap; }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); }
+.pill.good { background: var(--good-soft); color: var(--good); }
+.bar-cell { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+.minibar { width: 70px; height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; flex: none; }
+.minibar i { display: block; height: 100%; background: var(--accent-2); }
+.muted { color: var(--muted); }
+.note { color: var(--muted); font-size: 14px; max-width: 75ch; margin: 0; }
+
+.kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 1000px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .kpis { grid-template-columns: 1fr; } }
+.kpi { display: flex; flex-direction: column; gap: 3px; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 14px 16px; color: var(--fg); text-decoration: none; box-shadow: var(--shadow); }
+.kpi:hover { border-color: var(--accent-2); }
+.kpi .k { color: var(--muted); font-size: 13px; }
+.kpi .v { font-size: 22px; font-weight: 700; overflow-wrap: anywhere; }
+.kpi .v small { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 3px; }
+.kpi .hint { color: var(--accent); font-size: 12px; font-weight: 500; }
+.kpi.main { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+.formula { font-size: 18px; margin: 0; }
+.subnav { display: flex; gap: 6px; flex-wrap: wrap; }
+.subnav a { padding: 6px 12px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); text-decoration: none; font-weight: 500; }
+.subnav a.on { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.pill.off { background: var(--surface-2); color: var(--muted); }
+.split { display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin: 0 16px 12px; }
+.split i { display: block; height: 100%; }
+tr.strong td { font-weight: 700; }
+td.indent { padding-left: 32px; }
+.linkbox { font: 12px/1.4 ui-monospace, Menlo, monospace; background: var(--surface-2); padding: 3px 8px; border-radius: 6px; word-break: break-all; }
+.saved { color: var(--good); font-weight: 600; }
+.titlerow { display: flex; justify-content: space-between; align-items: center; gap: 10px 16px; flex-wrap: wrap; }
+.titlerow .period, .bar .period { margin-left: auto; }
+tr.subrow > td { background: var(--surface-2); padding: 8px 14px 12px 32px; }
+tr.subrow:hover { background: none; }
+.subbox table.mini { min-width: 0; width: 100%; background: var(--surface); border-radius: 8px; overflow: hidden; }
+.subbox table.mini th { background: var(--surface); }
+.sorth { all: unset; cursor: pointer; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; }
+.sorth:hover { color: var(--accent); } .sorth:focus-visible { outline: 2px solid var(--accent-2); }
+table.sched { min-width: 0; }
+table.sched th.c, table.sched td.c { padding: 4px 2px; text-align: center; min-width: 30px; }
+table.sched .rest { background: var(--warn-soft); }
+.cell { width: 28px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); font: 600 12px/1 var(--f-body); cursor: pointer; }
+.cell.on { background: var(--good-soft); border-color: color-mix(in srgb, var(--good) 40%, transparent); color: var(--good); }
+.cell.plus { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 45%, transparent); color: var(--warn); }
+.phone { max-width: 460px; width: 100%; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow); }
+.phone-h { display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.ava { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--surface); font-weight: 700; flex: none; }
+.chat { display: grid; gap: 8px; padding: 14px; background: var(--surface-2); max-height: 620px; overflow-y: auto; }
+.msg { display: grid; gap: 4px; max-width: 86%; }
+.msg.men { justify-self: end; }
+.bubble { padding: 8px 11px; border-radius: 12px; background: var(--surface); font-size: 14px; line-height: 1.45; box-shadow: 0 1px 1px rgba(0,0,0,.06); }
+.msg.men .bubble { background: var(--accent); color: var(--surface); }
+.kbd { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 4px; }
+.kbd span { text-align: center; font-size: 13px; padding: 6px 8px; border-radius: 8px; background: color-mix(in srgb, var(--accent) 14%, var(--surface)); color: var(--accent); font-weight: 600; }
+.period .btn.icon { width: 36px; padding: 6px 0; font-size: 18px; line-height: 1; }
+.period .custom { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.period .custom[hidden] { display: none; }
+.period .range-err { flex-basis: auto; }
+.period { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.period input[type=date] { padding: 6px 10px; }
+.chip { font: inherit; font-size: 13px; font-weight: 500; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
+.chip:hover { border-color: var(--accent-2); }
+.chip.on { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.range-err { color: var(--bad); margin: 0; font-size: 14px; flex-basis: 100%; }
+.debt-doc { padding: 0 0 4px; }
+.btn.icon { display: inline-grid; place-items: center; width: 36px; height: 36px; padding: 0; font-size: 18px; line-height: 1; }
+.modal-box.narrow { max-width: 520px; }
+.drow { display: grid; grid-template-columns: 1fr 64px 110px; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.drow.head { border-bottom: 0; padding-bottom: 0; }
+.drow.head span { font-size: 12px; color: var(--muted); font-weight: 600; }
+.drow input { width: 100%; text-align: right; }
+.tile.bad .v { color: var(--bad); }
+.supcard { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.supcard .k { font-size: 12px; margin-bottom: 2px; }
+.kpis.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1000px) { .kpis.four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .kpis.four { grid-template-columns: 1fr; } }
+.kpi.pos .v { color: var(--good); } .kpi.neg .v { color: var(--bad); }
+a.tile.link { text-decoration: none; color: var(--fg); } .tile.link:hover { border-color: var(--accent-2); }
+button.tile.link { font: inherit; text-align: left; cursor: pointer; color: var(--fg); background: var(--surface); }
+.tile.link.on { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent); }
+.tile .hint { color: var(--accent); font-size: 12px; font-weight: 500; margin-top: 2px; }
+.ph-col { width: 56px; }
+.ph { width: 44px; height: 44px; border-radius: 8px; border: 1px dashed var(--line); background: var(--surface-2); color: var(--muted);
+  font-size: 20px; line-height: 1; cursor: pointer; padding: 0; overflow: hidden; display: grid; place-items: center; }
+.ph:hover { border-color: var(--accent-2); color: var(--accent); }
+.ph.has { border-style: solid; }
+.ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.duties { display: grid; gap: 12px; }
+.duty-body { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; padding: 0 16px 16px; }
+@media (max-width: 760px) { .duty-body { grid-template-columns: 1fr; } }
+.duty .k { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+.tasks { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 4px; }
+.tasks li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; background: var(--surface-2); }
+.tasks li .btn.icon { width: 28px; height: 28px; font-size: 16px; flex: none; }
+.roles { display: grid; gap: 6px; }
+.role { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; font-size: 14px; }
+.role input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent); flex: none; }
+.role .muted { font-size: 12px; }
+.viewtoggle { display: inline-flex; gap: 0; justify-self: end; }
+.viewtoggle .btn { border-radius: 0; }
+.viewtoggle .btn:first-child { border-radius: 9px 0 0 9px; } .viewtoggle .btn:last-child { border-radius: 0 9px 9px 0; margin-left: -1px; }
+.viewtoggle .btn.on { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.pcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.pcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; min-width: 0; box-shadow: var(--shadow); }
+.pcard-img { aspect-ratio: 4 / 3; width: 100%; max-width: 100%; border: 0; border-bottom: 1px solid var(--line); background: var(--surface-2); color: var(--muted);
+  cursor: pointer; padding: 0; display: grid; place-items: center; font: 500 13px/1 var(--f-body); }
+.pcard-img:hover { color: var(--accent); }
+.pcard-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pcard-body { padding: 12px 14px; display: grid; gap: 6px; }
+.pcard-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.pcard-top .pill { margin-left: 0; }
+.pcard-qty { font-size: 18px; }
+.pcard-row { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.gear { color: var(--muted); } .gear:hover { color: var(--accent); }
+.modal { position: fixed; inset: 0; z-index: 30; background: rgba(10, 20, 30, .45); display: grid; place-items: center; overflow: auto;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.modal-box { width: 100%; max-width: 980px; background: var(--surface); border-radius: 14px; padding: 18px; display: grid; gap: 10px; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
+.modal-h, .modal-f { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.modal-f { justify-content: flex-end; margin-top: 6px; }
+.wrow { display: grid; grid-template-columns: 1.3fr 1fr 0.8fr 0.9fr 1fr 36px; gap: 6px; align-items: center; }
+.wrow + .wrow { margin-top: 6px; }
+.wrow.head span { font-size: 12px; color: var(--muted); font-weight: 600; }
+.wrow input { min-width: 0; width: 100%; }
+.del { color: var(--bad); }
+@media (max-width: 640px) { .wrow { grid-template-columns: 1fr 1fr 36px; padding-bottom: 8px; border-bottom: 1px solid var(--line); } .wrow.head { display: none; }
+  .wrow input[data-f=name] { grid-column: 1 / 3; grid-row: 1; } .wrow .del { grid-row: 1; grid-column: 3; }
+  .wrow input[data-f=pos] { grid-column: 1; grid-row: 2; } .wrow input[data-f=daily] { grid-column: 2 / 4; grid-row: 2; }
+  .wrow input[data-f=extra] { grid-column: 1; grid-row: 3; } .wrow input[data-f=tg] { grid-column: 2 / 4; grid-row: 3; } }
+.tiles.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 600px) { .tiles.three { grid-template-columns: 1fr; } }
+.foot-note { max-width: 1180px; margin: 24px auto 0; color: var(--muted); font-size: 12px; text-align: right; }
+.debt-doc + .debt-doc { border-top: 1px solid var(--line); }
+
+.settings td input { width: 96px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); text-align: right; }
+.saved { color: var(--good); font-weight: 600; }
+
+.how { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 820px) { .how { grid-template-columns: 1fr; } }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+.step .n { font: 600 13px/1 var(--f-display); color: var(--accent); }
+.step h3 { margin: 8px 0 6px; font-size: 16px; }
+.step p { margin: 0; color: var(--muted); font-size: 14px; }
+.timeline { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 4px; margin-top: 4px; }
+.timeline div { text-align: center; font-size: 12px; color: var(--muted); }
+.timeline .cell { height: 34px; border-radius: 6px; background: var(--surface-2); display: grid; place-items: center; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.timeline .cell.work { background: var(--accent-soft); color: var(--accent); }
+.timeline .cell.pay { background: var(--good-soft); color: var(--good); }
+.timeline .cell.sel { outline: 2px solid var(--good); }
+.code { font: 13px/1.5 ui-monospace, "SFMono-Regular", Menlo, monospace; background: var(--surface-2); border-radius: 8px; padding: 10px 12px; overflow-x: auto; white-space: pre; }
+
+/* login preview */
+.login-screen { position: fixed; inset: 0; z-index: 20; overflow: auto; display: grid; place-items: center;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  background: linear-gradient(140deg, #163b5c 0%, #1f5a85 50%, #5c9fd0 100%); }
+.login-card { width: 100%; max-width: 400px; background: var(--surface); color: var(--fg); border-radius: 18px; padding: 34px 30px 26px; box-shadow: 0 24px 60px rgba(8,20,35,.4); }
+.login-card .logo { width: 56px; height: 56px; border-radius: 16px; margin: 0 auto 14px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, #1f5a85, #3d8ac0); }
+.login-card h2 { font: 600 20px/1.3 var(--f-display); text-align: center; }
+.login-card .s { text-align: center; color: var(--muted); margin: 4px 0 22px; font-size: 14px; }
+.login-card label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.fld { position: relative; margin-bottom: 14px; }
+.fld input { width: 100%; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.fld input:focus { outline: none; border-color: var(--accent-2); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-2) 22%, transparent); }
+.eye { position: absolute; right: 7px; bottom: 6px; border: 0; background: none; cursor: pointer; color: var(--muted); padding: 6px; border-radius: 8px; }
+.chk { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 14px; margin: 2px 0 20px; }
+.go { width: 100%; border: 0; border-radius: 10px; padding: 12px; color: #fff; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #1f5a85, #3d8ac0); }
+.login-err { background: var(--bad-soft); color: var(--bad); border-radius: 10px; padding: 9px 12px; font-size: 14px; margin-bottom: 14px; }
+.login-hint { text-align: center; color: var(--muted); font-size: 12px; margin-top: 18px; }
+@media (prefers-reduced-motion: no-preference) { .panel, .tile { transition: border-color .15s; } }
+</style>
+
+<header class="topbar">
+  <div class="in">
+    <div class="brand"><span class="mark" aria-hidden="true">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></span>
+      Maosh hisoboti</div>
+    <nav class="nav" aria-label="Bo'limlar">
+      <a href="#bosh" data-nav="bosh">Bosh ekran</a>
+      <a href="#shifokorlar" data-nav="shifokorlar">Shifokorlar</a>
+      <a href="#sklad" data-nav="sklad">Sklad</a>
+      <a href="#xodimlar" data-nav="xodimlar">Hamshiralar</a>
+      <a href="#bot" data-nav="bot">Telegram bot</a>
+      <a href="#qanday-ishlaydi" data-nav="qanday-ishlaydi">Qanday ishlaydi</a>
+    </nav>
+    <button class="logout" id="logout" type="button">Chiqish</button>
+  </div>
+</header>
+
+<main>
+  <div class="wrap" id="view"></div>
+  <p class="foot-note">Namuna ma'lumot</p>
+</main>
+
+<div class="login-screen" id="login" hidden>
+  <form class="login-card" id="loginForm" novalidate>
+    <div class="logo" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></div>
+    <h2>Maosh hisoboti</h2>
+    <p class="s">Davom etish uchun tizimga kiring</p>
+    <div class="login-err" id="loginErr" hidden>Login va parolni kiriting.</div>
+    <div class="fld"><label for="lg">Login</label><input id="lg" type="text" autocomplete="off" placeholder="email yoki login"></div>
+    <div class="fld"><label for="pw">Parol</label><input id="pw" type="password" autocomplete="off" style="padding-right:44px">
+      <button type="button" class="eye" id="eye" aria-label="Parolni ko'rsatish"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+    <label class="chk"><input type="checkbox" id="rem" checked> Eslab qolish (30 kun)</label>
+    <button class="go" type="submit">Kirish</button>
+    <p class="login-hint">Namunada istalgan login va parol bilan kirish mumkin. Haqiqiy dasturda Railway Variables'dagi login va parol so'raladi.</p>
+  </form>
+</div>
+
+<script>
+(() => {
+  // ---- Namuna ma'lumot (Cliniccards API javobiga o'xshash) ----
+  const STAFF = [
+    { id: "501", name: "Karimova Madina" },
+    { id: "502", name: "Aliyev Bobur" },
+    { id: "503", name: "To'xtayev Sardor" },
+    { id: "504", name: "Yusupova Nilufar" },
+    { id: "505", name: "Rahimov Jasur" },
+  ];
+  const DEFAULT_PCT = { "501": 25, "502": 30, "503": 28, "504": 25, "505": 0 };
+  const PATIENTS = { p1: "Usmonov Akmal", p2: "Rasulova Dilnoza", p3: "Qodirov Ulug'bek", p4: "Ergasheva Malika",
+    p5: "Nazarov Otabek", p6: "Saidova Gulnora", p7: "Hamidov Sherzod", p8: "Mirzayeva Kamola", p9: "Tursunov Aziz", p10: "Abdullayeva Zarina" };
+  // Har bir ish: shifokor, bemor, nom, ish sanasi, narx, to'lovlar [sana, summa]
+  const ITEMS = [
+    ["501","p1","Plomba (kompozit)","2026-10-20",500000,[["2026-11-03",500000]]],
+    ["502","p2","Breket tizimi (metall)","2026-03-10",10000000,[["2026-03-10",2000000],["2026-04-05",1000000],["2026-05-05",1000000],["2026-06-05",1000000],["2026-07-05",1000000],["2026-08-05",1000000],["2026-09-05",1000000],["2026-10-05",1000000],["2026-11-05",1000000]]],
+    ["502","p3","MARPE apparati","2026-07-14",6500000,[["2026-07-14",2500000],["2026-09-02",2000000],["2026-11-04",1000000]]],
+    ["503","p4","Implant + abatment","2026-09-22",9000000,[["2026-09-22",4000000],["2026-10-18",3000000],["2026-11-06",1000000]]],
+    ["503","p5","Sinus-lifting","2026-11-02",3500000,[["2026-11-02",3500000]]],
+    ["504","p6","Kanal davolash (3 kanal)","2026-10-28",1200000,[["2026-10-28",600000],["2026-11-01",600000]]],
+    ["504","p7","Professional gigiena","2026-11-04",450000,[["2026-11-04",450000]]],
+    ["504","p8","Keramik vinir (2 dona)","2026-08-11",5200000,[["2026-08-11",2600000],["2026-10-10",1300000]]],
+    ["501","p9","Tish oqartirish","2026-09-15",1500000,[["2026-09-15",1500000]]],
+    ["501","p10","Plomba (kompozit)","2026-11-05",450000,[]],
+    ["505","p3","Konsultatsiya va rentgen","2026-11-01",150000,[["2026-11-01",150000]]],
+    [null,"p5","Panoramik rentgen","2026-11-02",120000,[["2026-11-02",120000]]],
+    ["503","p1","Tish olish (murakkab)","2026-10-02",700000,[["2026-10-02",700000]]],
+    ["502","p8","Elayner (Clear)","2026-10-01",14000000,[["2026-10-01",5000000],["2026-11-01",2000000]]],
+    ["503","p9","Implant + toj (2 dona)","2026-11-04",18000000,[["2026-11-04",8000000],["2026-11-11",4000000]]],
+    ["502","p6","Breket tizimi (keramik)","2026-11-06",12000000,[["2026-11-06",5000000]]],
+    ["504","p10","Keramik vinir (4 dona)","2026-11-09",9600000,[["2026-11-09",6000000],["2026-11-13",3600000]]],
+    ["501","p2","Kanal davolash + plomba","2026-11-10",1800000,[["2026-11-10",1800000]]],
+    ["504","p4","Professional gigiena","2026-11-12",450000,[["2026-11-12",450000]]],
+  ].map(([doc, pat, work, done, price, pays], i) => ({ id: String(i + 1), doc, pat, work, done, price,
+      pays: pays.map(([date, amount]) => ({ date, amount })) }));
+  // Kassa: ishga bog'lanmagan avans/depozitlar ham bor
+  const EXTRA_KASSA = [["2026-11-08", 800000, "p4"], ["2026-10-12", 300000, "p7"]];
+  // Kassaga tushgan barcha to'lovlar (GET /payments ga o'xshash): ish to'lovlari + avanslar
+  const PAYMENTS = [
+    ...ITEMS.flatMap((it, i) => it.pays.map((p, j) => ({ date: p.date, amount: p.amount, patient: PATIENTS[it.pat], doc: it.doc,
+      desk: (i + j) % 3 === 0 ? "Terminal (Uzcard/Humo)" : "Naqd kassa", note: it.work }))),
+    ...EXTRA_KASSA.map(([date, amount, pat]) => ({ date, amount, patient: PATIENTS[pat], doc: undefined, desk: "Naqd kassa", note: "Avans (ishga bog'lanmagan)" })),
+  ];
+  // Xarajatlar (GET /spendings ga o'xshash): sana, toifa, turi, yetkazib beruvchi, summa, izoh
+  const EXPENSES = [
+    ["2026-11-01", "Ijara", "Bino ijarasi", "Ijara beruvchi", 6000000, "noyabr"],
+    ["2026-11-03", "Materiallar", "Plomba materiallari", "Dental Market", 1850000, ""],
+    ["2026-11-05", "Materiallar", "Implant komponentlari", "Implant Pro", 3200000, ""],
+    ["2026-11-06", "Kommunal", "Elektr energiyasi", "Hududiy elektr tarmog'i", 720000, ""],
+    ["2026-11-06", "Materiallar", "Plomba materiallari", "Dental Market", -250000, "qaytarildi"],
+    ["2026-10-01", "Ijara", "Bino ijarasi", "Ijara beruvchi", 6000000, "oktabr"],
+    ["2026-10-09", "Materiallar", "Breket tizimlari", "Ortho Supply", 4100000, ""],
+    ["2026-10-15", "Texnik xizmat", "Kompressor ta'miri", "Med Servis", 950000, ""],
+    ["2026-10-20", "Kommunal", "Elektr energiyasi", "Hududiy elektr tarmog'i", 690000, ""],
+    ["2026-09-01", "Ijara", "Bino ijarasi", "Ijara beruvchi", 6000000, "sentabr"],
+    ["2026-09-12", "Materiallar", "Plomba materiallari", "Dental Market", 2300000, ""],
+    ["2026-08-01", "Ijara", "Bino ijarasi", "Ijara beruvchi", 6000000, "avgust"],
+    ["2026-08-18", "Marketing", "Instagram reklama", "Reklama agentligi", 1500000, ""],
+  ].map(([date, cat, sub, supplier, amount, note]) => ({ date, cat, sub, supplier, amount, note }));
+  // Shifokor bo'lmagan xodimlar (maosh shabloni): ism, lavozim, kunlik summa, noqulay kun qo'shimchasi
+  let WORKERS = [
+    { id: 1, name: "Aziza Karimova", pos: "Assistent", daily: 150000, extra: 50000, tg: "@aziza_k" },
+    { id: 2, name: "Bekzod Aliyev", pos: "Haydovchi", daily: 120000, extra: 40000, tg: "" },
+    { id: 3, name: "Dilnoza Rasulova", pos: "Administrator", daily: 130000, extra: 40000, tg: "512345678" },
+  ];
+  // Shifokorlarga berilgan maosh: [shifokor, qaysi davr uchun (dan, gacha), qachon berildi, summa]
+  const DOCTOR_PAYOUTS = [
+    ["502", "2026-10-01", "2026-10-31", "2026-11-03", 1500000], ["503", "2026-10-01", "2026-10-31", "2026-11-03", 925000],
+    ["504", "2026-10-01", "2026-10-31", "2026-11-03", 475000],
+    ["502", "2026-11-01", "2026-11-07", "2026-11-10", 1000000], ["503", "2026-11-01", "2026-11-07", "2026-11-10", 800000],
+    ["504", "2026-11-01", "2026-11-07", "2026-11-12", 262500], ["501", "2026-11-01", "2026-11-07", "2026-11-12", 60000],
+  ].map(([doc, from, to, date, amount], i) => ({ id: i + 1, type: "maosh", doc, from, to, date, amount, avans: 0, note: "" }));
+  const TODAY = "2026-11-15";
+  // Berilgan maosh davr bo'yicha hisoblanadi: to'lov qaysi davr uchun bo'lsa, o'sha davrga yoziladi
+  // Avans davrga bog'lanmaydi; maosh yozuvidagi «avans» — shu davr maoshidan ushlangan avans
+  const salaryPays = id => PAYOUTS.filter(p => p.doc === id && p.type !== "avans");
+  const paidOut = (id, r) => salaryPays(id).filter(p => p.from <= r.to && p.to >= r.from).reduce((a, p) => a + p.amount + (p.avans || 0), 0);
+  const avansLeft = id => PAYOUTS.filter(p => p.doc === id && p.type === "avans").reduce((a, p) => a + p.amount, 0)
+    - salaryPays(id).reduce((a, p) => a + (p.avans || 0), 0);
+  const REST_DAYS = [0]; // yakshanba (JS: 0)
+  // Sklad (Cliniccards nakladnoylaridan hisoblangan qoldiq)
+  const SUPPLIERS = [
+    { id: 1, name: "Dental Market", contact: "Sherzod Qodirov", phone: "+998 90 123 45 67", linked: true },
+    { id: 2, name: "Implant Pro", contact: "Farrux Ismoilov", phone: "+998 93 555 12 12", linked: true },
+    { id: 3, name: "Ortho Supply", contact: "Nodira Yo'ldosheva", phone: "+998 97 700 80 90", linked: false },
+    { id: 4, name: "Med Servis", contact: "Rustam Aliyev", phone: "+998 99 404 04 04", linked: false },
+  ];
+  // Sotuvchidan olingan tovarlar (Cliniccards kirim nakladnoylari): [sotuvchi, sana, nakladnoy, mahsulot, miqdor, birlik, narx]
+  const PURCHASES = [
+    [1, "2026-08-05", "0101-0000000041", "Kompozit plomba A2", 20, "dona", 44000],
+    [1, "2026-08-05", "0101-0000000041", "Anestetik Ubistezin", 100, "karpula", 8800],
+    [1, "2026-09-18", "0101-0000000057", "Bond (adgeziv)", 4, "flakon", 205000],
+    [1, "2026-10-21", "0101-0000000066", "Qo'lqop nitril M", 10, "quti", 63000],
+    [1, "2026-11-13", "0101-0000000078", "Kompozit plomba A2", 10, "dona", 45000],
+    [2, "2026-08-22", "0101-0000000046", "Implant 4.0×10", 8, "dona", 1080000],
+    [2, "2026-10-03", "0101-0000000061", "Abatment to'g'ri", 6, "dona", 450000],
+    [3, "2026-09-02", "0101-0000000052", "Breket tizimi (metall)", 6, "to'plam", 800000],
+    [3, "2026-10-14", "0101-0000000064", "Ortodontik sim 0.014", 30, "dona", 25000],
+    [4, "2026-10-15", "0101-0000000065", "Kompressor filtri", 2, "dona", 180000],
+  ].map(([sup, date, doc, product, qty, unit, price]) => ({ sup, date, doc, product, qty, unit, price, sum: qty * price }));
+  // Sotuvchilarga to'langan pul (Cliniccards xarajatlari): [sotuvchi, sana, summa]
+  const SUP_PAYMENTS = [
+    [1, "2026-08-10", 1760000], [1, "2026-09-20", 820000], [1, "2026-10-25", 300000],
+    [2, "2026-08-25", 5000000], [2, "2026-10-05", 2700000],
+    [3, "2026-09-05", 4800000], [3, "2026-10-15", 400000],
+    [4, "2026-10-16", 360000],
+  ].map(([sup, date, amount]) => ({ sup, date, amount }));
+  const PRODUCTS = [
+    { id: "60601", name: "Kompozit plomba A2", cat: "Terapiya", unit: "dona", qty: 4, min: 5, sup: 1, price: 45000 },
+    { id: "60602", name: "Anestetik Ubistezin", cat: "Anesteziya", unit: "karpula", qty: 46, min: 20, sup: 1, price: 9000 },
+    { id: "60603", name: "Bond (adgeziv)", cat: "Terapiya", unit: "flakon", qty: 2, min: 2, sup: 1, price: 210000 },
+    { id: "60604", name: "Qo'lqop nitril M", cat: "Gigiena", unit: "quti", qty: 0, min: 3, sup: 1, price: 65000 },
+    { id: "60605", name: "Implant 4.0×10", cat: "Implantologiya", unit: "dona", qty: 6, min: 3, sup: 2, price: 1100000 },
+    { id: "60606", name: "Abatment to'g'ri", cat: "Implantologiya", unit: "dona", qty: 3, min: 3, sup: 2, price: 450000 },
+    { id: "60607", name: "Breket tizimi (metall)", cat: "Ortodontiya", unit: "to'plam", qty: 5, min: 2, sup: 3, price: 820000 },
+    { id: "60608", name: "Ortodontik sim 0.014", cat: "Ortodontiya", unit: "dona", qty: 18, min: 10, sup: 3, price: 25000 },
+    { id: "60609", name: "Kompressor filtri", cat: "Texnika", unit: "dona", qty: 1, min: 0, sup: 4, price: 180000 },
+  ];
+  const STOCK_REPORTS = [
+    { day: "2026-11-13", who: "Aziza Karimova", items: [["Kompozit plomba A2", 3, "dona"], ["Anestetik Ubistezin", 4, "karpula"]], status: "tasdiqlandi", checker: "Sardor (sklad)" },
+    { day: "2026-11-12", who: "Dilnoza Rasulova", items: [["Qo'lqop nitril M", 2, "quti"]], status: "farq", checker: "Sardor (sklad)", diff: "Qo'lqop: kutilgan 1, haqiqatda 0" },
+    { day: "2026-11-12", who: "Aziza Karimova", items: [], status: "olinmadi" },
+    { day: "2026-11-11", who: "Aziza Karimova", items: [["Bond (adgeziv)", 1, "flakon"]], status: "cc_chiqarildi", checker: "Sardor (sklad)" },
+    { day: "2026-11-14", who: "Dilnoza Rasulova", items: [["Implant 4.0×10", 1, "dona"]], status: "tekshiruvda" },
+  ];
+  const ORDERS = [
+    { date: "2026-11-13 19:42", product: "Kompozit plomba A2", sup: "Dental Market", qty: 10, unit: "dona", price: 45000, status: "qabul" },
+    { date: "2026-11-12 19:35", product: "Qo'lqop nitril M", sup: "Dental Market", qty: 6, unit: "quti", price: 65000, status: "yuborildi" },
+    { date: "2026-11-14 08:50", product: "Abatment to'g'ri", sup: "Implant Pro", qty: 4, unit: "dona", price: 450000, status: "taklif" },
+    { date: "2026-11-02 19:20", product: "Ortodontik sim 0.014", sup: "Ortho Supply", qty: 20, unit: "dona", price: 25000, status: "bekor" },
+    { date: "2026-10-19 19:31", product: "Qo'lqop nitril M", sup: "Dental Market", qty: 10, unit: "quti", price: 63000, status: "keldi" },
+    { date: "2026-10-01 19:40", product: "Abatment to'g'ri", sup: "Implant Pro", qty: 6, unit: "dona", price: 450000, status: "keldi" },
+    { date: "2026-10-12 19:28", product: "Ortodontik sim 0.014", sup: "Ortho Supply", qty: 30, unit: "dona", price: 25000, status: "keldi" },
+  ];
+  const BOT_PEOPLE = [
+    { name: "Aziza Karimova", roles: ["Oladi"], linked: true },
+    { name: "Dilnoza Rasulova", roles: ["Oladi", "Davomat"], linked: true },
+    { name: "Sardor (sklad)", roles: ["Tekshiradi"], linked: true },
+    { name: "Bosh shifokor", roles: ["Admin"], linked: false },
+  ];
+  const STATUS_UZ = { tasdiqlandi: ["tasdiqlandi", "good"], farq: ["farq bilan tasdiqlandi", "warn"], olinmadi: ["olinmadi", "good"],
+    cc_chiqarildi: ["Cliniccards'dan chiqarildi", "good"], tekshiruvda: ["tekshiruvda", "warn"],
+    taklif: ["taklif — sizning qaroringiz", "warn"], yuborildi: ["sotuvchiga yuborildi", "warn"], qabul: ["sotuvchi qabul qildi", "warn"], keldi: ["keldi (kirim qilindi)", "good"], bekor: ["bekor qilindi", "off"] };
+
+  const MONTHS = ["2026-11", "2026-10", "2026-09", "2026-08"];
+  const lastDay = m => { const [y, mm] = m.split("-").map(Number); return `${m}-${String(new Date(y, mm, 0).getDate()).padStart(2, "0")}`; };
+  const PRESETS = [
+    ["1–15 noyabr", "2026-11-01", "2026-11-15"],
+    ["Avgust–noyabr", "2026-08-01", "2026-11-30"],
+    ["Shu yil", "2026-01-01", "2026-11-30"],
+  ];
+  const MONTH_NAMES = ["yanvar","fevral","mart","aprel","may","iyun","iyul","avgust","sentabr","oktabr","noyabr","dekabr"];
+
+  // ---- Holat ----
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  };
+  // O'zgarmas ulushlar: klinika — kassaning 20%, har bir shifokor — 25%
+  const CLINIC_PCT = 20, DOCTOR_PCT = 25;
+  let pct = Object.fromEntries(STAFF.map(d => [d.id, DOCTOR_PCT]));
+  { const saved = store.get("hisobot-xodimlar", null); if (Array.isArray(saved) && saved.length) WORKERS = saved; }
+  let doctorsPct = DOCTOR_PCT;
+  // Davomat: { "2026-11-13|1": 0 (keldi) | 1 (keldi + normadan ko'p) }; namunaviy ma'lumot + qo'lda o'zgarishlar
+  const ATT = (() => {
+    const out = {}, seed = s => { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); h ^= h >>> 15; return (h >>> 0) / 4294967296; };
+    for (let d = new Date(2026, 7, 1); d <= new Date(2026, 10, 14); d.setDate(d.getDate() + 1)) {
+      const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      if (d.getDay() === 0 && seed(day) < 0.55) continue;
+      for (const w of WORKERS) { const r = seed(day + w.id); if (r < 0.86) out[`${day}|${w.id}`] = r < 0.1 ? 1 : 0; }
+    }
+    const saved = store.get("hisobot-davomat", {});
+    for (const [k, v] of Object.entries(saved)) { if (v === null) delete out[k]; else out[k] = v; }
+    return out;
+  })();
+  // Maosh hisobining boshlanish sanasi: undan oldingi davr «yopilgan» (eski usulda berilgan) deb hisoblanadi
+  let PAYSTART = (() => { const v = store.get("hisobot-maosh-boshi", "2026-10-01"); return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "2026-10-01"; })();
+  // Boshlang'ich qoldiq: boshlanish sanasigacha shifokorga berilmay qolgan summa (bo'lsa)
+  let OPENING = (() => { const v = store.get("hisobot-maosh-qoldiq", {}); return v && typeof v === "object" ? v : {}; })();
+  let PAYOUTS = (() => { const v = store.get("hisobot-maosh-berildi", null); return Array.isArray(v) ? v : DOCTOR_PAYOUTS.map(p => ({ ...p })); })();
+  let clinicPct = CLINIC_PCT;
+  let range =store.get("hisobot-davr", { from: "2026-11-01", to: "2026-11-30" });
+  if (!range || !/^\d{4}-\d{2}-\d{2}$/.test(range.from) || !/^\d{4}-\d{2}-\d{2}$/.test(range.to)) range = { from: "2026-11-01", to: "2026-11-30" };
+
+  // ---- Yordamchilar ----
+  const $ = (s, el = document) => el.querySelector(s);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const pul = n => Math.round(n).toLocaleString("ru-RU").replace(/ /g, " ");
+  const monthLabel = m => { const [y, mm] = m.split("-"); return `${MONTH_NAMES[+mm - 1]} ${y}`; };
+  const dmy = d => d.split("-").reverse().join(".");
+  const isMonth = r => r.from.slice(8) === "01" && r.to === lastDay(r.from.slice(0, 7));
+  const rangeLabel = r => isMonth(r) ? monthLabel(r.from.slice(0, 7)) : (r.from === r.to ? dmy(r.from) : `${dmy(r.from)} – ${dmy(r.to)}`);
+  const inRange = (d, r) => d >= r.from && d <= r.to;
+  const docName = id => id ? (STAFF.find(s => s.id === id)?.name ?? "#" + id) : "Shifokor belgilanmagan";
+  const paid = it => it.pays.reduce((a, p) => a + p.amount, 0);
+
+  // ---- Asosiy mantiq: dasturdagi report.py bilan bir xil ----
+  function buildReport(r) {
+    const docs = new Map();
+    for (const it of ITEMS) {
+      const mp = it.pays.filter(p => inRange(p.date, r));
+      const sum = mp.reduce((a, p) => a + p.amount, 0);
+      if (!sum) continue;
+      const key = it.doc || "0";
+      if (!docs.has(key)) docs.set(key, { id: key, name: docName(it.doc), pct: it.doc ? (pct[it.doc] || 0) : 0, rows: [] });
+      const d = docs.get(key);
+      d.rows.push({ ...it, patient: PATIENTS[it.pat], monthPaid: sum, dates: mp.map(p => p.date), paidTotal: paid(it), share: sum * d.pct / 100 });
+    }
+    const list = [...docs.values()].map(d => ({ ...d,
+      total: d.rows.reduce((a, r) => a + r.monthPaid, 0),
+      salary: d.rows.reduce((a, r) => a + r.share, 0),
+      patients: new Set(d.rows.map(r => r.pat)).size,
+    })).sort((a, b) => (a.id === "0") - (b.id === "0") || b.total - a.total);
+    const total = list.reduce((a, d) => a + d.total, 0);
+    const kassa = PAYMENTS.filter(p => inRange(p.date, r)).reduce((a, p) => a + p.amount, 0);
+    return { list, total, salary: list.reduce((a, d) => a + d.salary, 0), kassa, diff: kassa - total };
+  }
+
+  // Davr tanlash: bitta qator — ‹ [ro'yxat] › va kerak bo'lsa sana oralig'i
+  const periodOptions = () => [
+    ...PRESETS.map(([n, f, t]) => ({ v: `${f}|${t}`, n, g: "Tezkor" })),
+    ...MONTHS.map(m => ({ v: `${m}-01|${lastDay(m)}`, n: monthLabel(m), g: "Oylar" })),
+  ];
+  const monthSelect = () => `<form class="period" id="rangeForm">
+      <input class="btn" type="date" id="dan" value="${range.from}" aria-label="Dan"><span class="muted">—</span>
+      <input class="btn" type="date" id="gacha" value="${range.to}" aria-label="Gacha">
+      <span class="range-err" id="rangeErr" hidden>«Dan» sanasi «Gacha»dan keyin bo'lmasin.</span>
+    </form>`;
+  const isoDate = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  function shiftRange(dir) {
+    if (isMonth(range)) {
+      const d = new Date(range.from + "T12:00:00"); d.setMonth(d.getMonth() + dir);
+      const m = isoDate(d).slice(0, 7);
+      return [`${m}-01`, lastDay(m)];
+    }
+    const a = new Date(range.from + "T12:00:00"), b = new Date(range.to + "T12:00:00");
+    const len = Math.round((b - a) / 864e5) + 1;
+    a.setDate(a.getDate() + dir * len); b.setDate(b.getDate() + dir * len);
+    return [isoDate(a), isoDate(b)];
+  }
+
+  const groupBy = (rows, key) => {
+    const m = new Map();
+    for (const r of rows) { const k = key(r); if (!m.has(k)) m.set(k, []); m.get(k).push(r); }
+    return [...m.entries()].map(([k, rows]) => ({ k, rows, sum: rows.reduce((a, r) => a + r.amount, 0) })).sort((a, b) => b.sum - a.sum);
+  };
+  const doneItems = r => ITEMS.filter(it => inRange(it.done, r)).map(it => ({ ...it, amount: it.price, paid: paid(it), left: Math.max(0, it.price - paid(it)) }));
+  const payments = r => PAYMENTS.filter(p => inRange(p.date, r)).sort((a, b) => a.date.localeCompare(b.date));
+  const expenses = r => EXPENSES.filter(e => inRange(e.date, r)).sort((a, b) => a.date.localeCompare(b.date));
+  const sum = rows => rows.reduce((a, x) => a + x.amount, 0);
+  const back = "";
+  const kpi = (href, label, value, hint, cls = "") => `<a class="kpi ${cls}" href="#${href}"><span class="k">${label}</span>
+    <span class="v num">${pul(value)}<small>so'm</small></span><span class="hint">${hint} · tafsilot →</span></a>`;
+
+  // ---- Hamshiralar maoshi ----
+  const isRest = day => REST_DAYS.includes(new Date(day + "T12:00:00").getDay());
+  const daysOf = r => { const out = []; for (let d = new Date(r.from + "T12:00:00"); d <= new Date(r.to + "T12:00:00"); d.setDate(d.getDate() + 1))
+    out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`); return out; };
+  function payroll(r) {
+    return WORKERS.map(w => {
+      const worked = [], extraDays = [];
+      for (const day of daysOf(r)) {
+        const m = ATT[`${day}|${w.id}`];
+        if (m === undefined || m === null) continue;
+        worked.push(day);
+        if (m === 1 || isRest(day)) extraDays.push(day);
+      }
+      return { w, worked, extraDays, base: worked.length * w.daily, extra: extraDays.length * w.extra, total: worked.length * w.daily + extraDays.length * w.extra };
+    });
+  }
+  const payrollTotal = r => payroll(r).reduce((a, x) => a + x.total, 0);
+  const tag = (text, cls) => `<span class="pill ${cls}">${esc(text)}</span>`;
+  const subnav = (items, cur) => `<nav class="subnav">${items.map(([h, n]) => `<a href="#${h}" class="${h === cur ? "on" : ""}">${n}</a>`).join("")}</nav>`;
+  const SKLAD_NAV = [["sklad", "Qoldiq"], ["sklad-hisobotlar", "Kunlik hisobotlar"], ["buyurtmalar", "Buyurtmalar"], ["sotuvchilar", "Sotuvchilar"]];
+  const BOT_NAV = [["bot", "Suhbatlar"], ["bot-xodimlar", "Xodimlar va vazifalar"]];
+  const XODIM_NAV = [["xodimlar", "Hamshiralar va maosh"], ["grafik", "Grafik"], ["vazifalar", "Hamshira vazifalari"]];
+  // Botdagi vazifalar: har kuni bot kimdan nima so'raydi
+  const BOT_ROLES = [
+    ["taker", "Skladdan material oladi", "har kuni 19:00 da «skladdan nima oldingiz?» deb so'raladi"],
+    ["checker", "Skladni tekshiradi", "ertalab skladni sanab, qoldiqni tasdiqlaydi"],
+    ["attendance", "Davomat beradi", "har kuni 20:00 da «kimlar keldi?» deb so'raladi"],
+    ["admin", "Admin xabarlarini oladi", "Cliniccards eslatmalari va buyurtma takliflari keladi"],
+  ];
+  const DEFAULT_DUTIES = {
+    1: { tasks: ["Shifokorga assistentlik qilish", "Asboblarni sterilizatsiya qilish", "Kabinetni ish kuniga tayyorlash"], roles: { taker: true } },
+    2: { tasks: ["Sotuvchilardan material va buyurtmalarni olib kelish", "Shifokorlarni olib kelish va olib ketish"], roles: {} },
+    3: { tasks: ["Bemorlarni qabul qilish va navbatga yozish", "Kassa: to'lovlarni qabul qilish", "Bemorlarga qo'ng'iroq qilib eslatish"], roles: { attendance: true, taker: true } },
+  };
+  const stockStatus = p => p.qty <= 0 ? "tugagan" : (p.min && p.qty <= p.min ? "kam" : "yetarli");
+  const STOCK_CLS = { tugagan: "bad", kam: "warn", yetarli: "good" };
+  let stockFilter = "";
+  let PHOTOS = (() => { const v = store.get("hisobot-rasmlar", {}); return v && typeof v === "object" ? v : {}; })();
+  let photoProduct = null;
+  let stockView = (() => { const v = store.get("hisobot-sklad-view", "list"); return v === "cards" ? "cards" : "list"; })();
+  let DUTIES = (() => { const v = store.get("hisobot-vazifalar", null); return v && typeof v === "object" ? v : JSON.parse(JSON.stringify(DEFAULT_DUTIES)); })();
+  const dutyOf = id => (DUTIES[id] = DUTIES[id] || { tasks: [], roles: {} });
+
+  // ---- Ko'rinishlar ----
+  // Xarajatlar = klinika ulushi (kassaning 20%) + shifokorlar maoshi + hamshiralar maoshi + material rasxod
+  function costs(r) {
+    const rep = buildReport(r), exp = expenses(r);
+    const clinic = rep.kassa * clinicPct / 100, doctors = rep.salary, staff = payrollTotal(r), material = sum(exp);
+    return { rep, exp, clinic, doctors, staff, material, total: clinic + doctors + staff + material };
+  }
+
+  function viewHome() {
+    const c = costs(range), done = doneItems(range), pays = payments(range);
+    const profit = sum(done) - c.total;
+    return `
+      <h1 class="sr-only">${rangeLabel(range)}</h1>
+      ${monthSelect()}
+      <div class="kpis four">
+        ${kpi("ishlar", "Bajarilgan ishlar", sum(done), `${done.length} ta ish`)}
+        ${kpi("kassa", "Kassaga tushgan", c.rep.kassa, `${pays.length} ta to'lov`, "main")}
+        ${kpi("xarajatlar", "Xarajatlar", c.total, "klinika, shifokorlar, hamshiralar, material")}
+        ${kpi("foyda", "Klinika sof foydasi", profit, "bajarilgan ishlar − xarajatlar", profit < 0 ? "neg" : "pos")}
+      </div>`;
+  }
+
+  function costRows(c) {
+    return [
+      ["klinika", `Klinika ulushi (kassaning ${clinicPct}%)`, c.clinic],
+      ["shifokorlar", "Shifokorlar maoshi", c.doctors],
+      ["xodimlar", "Hamshiralar maoshi", c.staff],
+      ["material", "Material rasxod", c.material],
+    ];
+  }
+
+  function viewProfit() {
+    const c = costs(range), done = doneItems(range), profit = sum(done) - c.total;
+    return back + `<div class="titlerow"><h1>Klinika sof foydasi</h1>${monthSelect()}</div>
+      <section class="panel" style="padding:16px;display:grid;gap:12px">
+        <p class="formula num">Bajarilgan ishlar <b>${pul(sum(done))}</b> − xarajatlar <b>${pul(c.total)}</b> = <b style="color:var(${profit < 0 ? "--bad" : "--good"})">${pul(profit)} so'm</b></p>
+        <div class="scroll"><table style="min-width:420px">
+          <tbody>
+            <tr class="strong"><td><a class="rowlink" href="#ishlar">Bajarilgan ishlar</a></td><td class="r">${pul(sum(done))}</td></tr>
+            ${costRows(c).map(([h, n, v]) => `<tr><td class="indent"><a class="rowlink" href="#${h === "material" ? "xarajatlar" : h}">− ${n}</a></td><td class="r">${pul(v)}</td></tr>`).join("")}
+          </tbody>
+          <tfoot><tr><td>Sof foyda</td><td class="r" style="color:var(${profit < 0 ? "--bad" : "--good"})">${pul(profit)}</td></tr></tfoot>
+        </table></div>
+      </section>`;
+  }
+
+  function distribution(r, exp) {
+    const expPct = 100 - clinicPct - doctorsPct;
+    const clinic = r.kassa * clinicPct / 100, doctors = r.kassa * doctorsPct / 100, budget = r.kassa - clinic - doctors;
+    const staff = payrollTotal(range), cc = sum(exp), used = staff + cc, left = budget - used;
+    return `<section class="panel">
+      <div class="panel-h"><h2>Kassaning taqsimoti</h2><span class="muted" style="font-size:13px">kassaga tushgan ${pul(r.kassa)} so'm = 100%</span></div>
+      <div class="split" aria-hidden="true"><i style="width:${clinicPct}%;background:var(--accent)"></i><i style="width:${doctorsPct}%;background:var(--accent-2)"></i><i style="width:${expPct}%;background:var(--accent-soft)"></i></div>
+      <div class="scroll"><table style="min-width:560px">
+        <thead><tr><th>Ulush</th><th class="r">Foiz</th><th class="r">Ajratilgan</th><th class="r">Ishlatilgan</th><th class="r">Qoldi</th></tr></thead>
+        <tbody>
+          <tr><td><a class="rowlink" href="#klinika">Klinika</a></td><td class="r">${clinicPct}%</td><td class="r">${pul(clinic)}</td><td class="r muted">—</td><td class="r muted">—</td></tr>
+          <tr><td><a class="rowlink" href="#shifokorlar">Shifokorlar</a></td><td class="r">${doctorsPct}%</td><td class="r">${pul(doctors)}</td><td class="r">${pul(r.salary)}</td><td class="r">${pul(doctors - r.salary)}</td></tr>
+          <tr class="strong"><td>Xarajatlar</td><td class="r">${expPct}%</td><td class="r">${pul(budget)}</td><td class="r">${pul(used)}</td>
+            <td class="r" style="color:var(${left < 0 ? "--bad" : "--good"})">${pul(left)}</td></tr>
+          <tr><td class="indent"><a class="rowlink" href="#xodimlar">hamshiralar maoshi</a></td><td></td><td></td><td class="r">${pul(staff)}</td><td></td></tr>
+          <tr><td class="indent"><a class="rowlink" href="#xarajatlar">Cliniccards xarajatlari</a></td><td></td><td></td><td class="r">${pul(cc)}</td><td></td></tr>
+        </tbody></table></div>
+    </section>`;
+  }
+
+  function viewWorkers() {
+    const pays = payroll(range), total = pays.reduce((a, x) => a + x.total, 0);
+    return `<h1 class="sr-only">Hamshiralar maoshi · ${rangeLabel(range)}</h1>
+      <div class="bar">${subnav(XODIM_NAV, "xodimlar")}<span class="controls" style="margin-left:auto">${monthSelect()}<button type="button" class="btn icon gear" id="openWorkers" aria-label="Hamshiralar sozlamasi" title="Hamshiralar, maosh va vazifalar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button></span></div>
+      <div class="tiles">
+        <div class="tile"><div class="k">Jami maosh</div><div class="v num">${pul(total)}<small>so'm</small></div></div>
+        <div class="tile"><div class="k">Hamshiralar</div><div class="v num">${WORKERS.length}</div></div>
+        <div class="tile"><div class="k">Ishlangan kunlar</div><div class="v num">${pays.reduce((a, x) => a + x.worked.length, 0)}</div></div>
+        <div class="tile warn"><div class="k">Qo'shimcha kunlar</div><div class="v num">${pays.reduce((a, x) => a + x.extraDays.length, 0)}</div></div>
+      </div>
+      <section class="panel"><div class="scroll"><table style="min-width:420px">
+        <thead><tr><th>Hamshira</th><th class="r">Ishladi</th><th class="r">Qo'sh. kun</th><th class="r">Maosh</th></tr></thead>
+        <tbody>${pays.map(x => `<tr><td><b>${esc(x.w.name)}</b></td>
+          <td class="r">${x.worked.length}</td><td class="r">${x.extraDays.length}</td><td class="r"><b>${pul(x.total)}</b></td></tr>`).join("")}</tbody>
+        <tfoot><tr><td colspan="3">Jami</td><td class="r">${pul(total)}</td></tr></tfoot>
+      </table></div></section>
+      ${workerModal()}`;
+  }
+
+  const GEAR_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
+  const gearBtn = (id, label) => `<button type="button" class="btn icon gear" id="${id}" aria-label="${label}" title="${label}">${GEAR_SVG}</button>`;
+
+  function doctorModal() {
+    return `<div class="modal" id="doctorsModal" hidden role="dialog" aria-modal="true" aria-labelledby="dm-title">
+      <form class="modal-box narrow" id="doctorsForm" novalidate>
+        <div class="modal-h"><h2 id="dm-title">Shifokorlar foizlari</h2><button type="button" class="btn icon" data-close aria-label="Yopish">×</button></div>
+        <p class="muted" style="margin:0;font-size:13px">Shifokorlar ro'yxati Cliniccards'dan olinadi. Bu yerda faqat har birining foizi kiritiladi.</p>
+        <div class="drow head"><span>Shifokor</span><span>ID</span><span>Foiz, %</span></div>
+        ${STAFF.map(d => `<div class="drow"><span><b>${esc(d.name)}</b></span><span class="muted num">${d.id}</span>
+          <input class="btn num" type="number" min="0" max="100" step="0.5" data-doc="${d.id}" value="${pct[d.id] ?? 0}" aria-label="${esc(d.name)} foizi"></div>`).join("")}
+        <p class="range-err" id="dErr" hidden>Foiz 0 dan 100 gacha bo'lishi kerak.</p>
+        <div class="modal-f"><button type="button" class="btn" data-close>Bekor qilish</button><button type="submit" class="btn primary">Saqlash</button></div>
+      </form>
+    </div>`;
+  }
+
+  function viewDuties() {
+    return `<h1 class="sr-only">Hamshira vazifalari</h1>
+      ${subnav(XODIM_NAV, "vazifalar")}
+      <div class="duties">${WORKERS.map(w => { const d = dutyOf(w.id);
+        return `<section class="panel duty" data-wid="${w.id}">
+          <div class="panel-h"><div><h2>${esc(w.name)}</h2><span class="muted" style="font-size:13px">${esc(w.pos || "")}</span></div></div>
+          <div class="duty-body">
+            <div>
+              <div class="k muted">Ish vazifalari</div>
+              <ul class="tasks">${d.tasks.map((t, i) => `<li><span>${esc(t)}</span><button type="button" class="btn icon del" data-deltask="${i}" aria-label="O'chirish" title="O'chirish">×</button></li>`).join("") || '<li class="muted">Hali vazifa yozilmagan.</li>'}</ul>
+              <form class="controls addtask"><input class="btn" name="t" placeholder="Yangi vazifa, masalan: kassani yopish" aria-label="Yangi vazifa" style="flex:1;min-width:0"><button class="btn primary" type="submit">Qo'shish</button></form>
+            </div>
+            <div>
+              <div class="k muted">Botdagi vazifalari</div>
+              <div class="roles">${BOT_ROLES.map(([k, n, hint]) => `<label class="role"><input type="checkbox" data-role="${k}" ${d.roles[k] ? "checked" : ""}>
+                <span><b>${n}</b><br><span class="muted">${hint}</span></span></label>`).join("")}</div>
+            </div>
+          </div>
+        </section>`; }).join("")}</div>
+      <p class="muted" style="font-size:13px;margin:0">Hamshiralar ro'yxati «Hamshiralar va maosh» bo'limidagi ⚙ sozlamadan olinadi.</p>`;
+  }
+
+  function workerRow(w) {
+    return `<div class="wrow" data-id="${w.id ?? ""}">
+      <input class="btn" data-f="name" value="${esc(w.name || "")}" placeholder="Ism-familiya" aria-label="Ism-familiya">
+      <input class="btn" data-f="pos" value="${esc(w.pos || "")}" placeholder="Lavozim / vazifa" aria-label="Lavozim / vazifa">
+      <input class="btn num" data-f="daily" type="number" min="0" step="1000" value="${w.daily ?? ""}" placeholder="Kunlik summa" aria-label="Kunlik summa">
+      <input class="btn num" data-f="extra" type="number" min="0" step="1000" value="${w.extra ?? ""}" placeholder="Noqulay kun qo'shimchasi" aria-label="Noqulay kun qo'shimchasi">
+      <input class="btn" data-f="tg" value="${esc(w.tg || "")}" placeholder="@username yoki ID" aria-label="Telegram ID yoki username">
+      <button type="button" class="btn icon del" aria-label="O'chirish" title="O'chirish">×</button>
+    </div>`;
+  }
+  function workerModal() {
+    return `<div class="modal" id="workersModal" hidden role="dialog" aria-modal="true" aria-labelledby="wm-title">
+      <form class="modal-box" id="workersForm" novalidate>
+        <div class="modal-h"><h2 id="wm-title">Hamshiralar, maosh va vazifalar</h2><button type="button" class="btn icon" data-close aria-label="Yopish">×</button></div>
+        <div class="wrow head"><span>Ism-familiya</span><span>Lavozim / vazifa</span><span>Kunlik summa</span><span>Noqulay kun qo'shimchasi</span><span>Telegram</span><span></span></div>
+        <div id="wrows">${WORKERS.map(workerRow).join("")}</div>
+        <button type="button" class="btn" id="addWorker">+ Hamshira qo'shish</button>
+        <p class="muted" style="margin:0;font-size:12px">Telegram: hamshiraning @username'i yoki raqamli ID'si. Bot unga xabar yubora olishi uchun hamshira botni bir marta ochib «Start» bosishi kerak.</p>
+        <p class="range-err" id="wErr" hidden></p>
+        <div class="modal-f"><button type="button" class="btn" data-close>Bekor qilish</button><button type="submit" class="btn primary">Saqlash</button></div>
+      </form>
+    </div>`;
+  }
+
+  function viewSchedule() {
+    const days = daysOf(range);
+    if (days.length > 62) return `<div class="head"><div><h1>Grafik</h1></div></div><div class="bar">${subnav(XODIM_NAV, "grafik")}${monthSelect()}</div>
+      <section class="panel"><div class="panel-h"><span class="muted">Grafik uchun 2 oydan uzun bo'lmagan davr tanlang.</span></div></section>`;
+    const pays = payroll(range), wd = ["Ya", "Du", "Se", "Ch", "Pa", "Ju", "Sh"];
+    const clinicWorked = day => WORKERS.some(w => ATT[`${day}|${w.id}`] !== undefined);
+    return `<div class="head"><div><h1>Grafik · ${rangeLabel(range)}</h1>
+      <p class="sub">Har kuni bot davomat beradigan hamshiradan so'raydi: «Klinika ishladimi? Kimlar keldi? Kimlar normadan ko'p ishladi?». Katakni bosib o'zgartiring: bo'sh → ✓ → ✓+ → bo'sh. Sariq ustun — dam olish kuni.</p></div></div>
+      <div class="bar">${subnav(XODIM_NAV, "grafik")}${monthSelect()}</div>
+      <section class="panel"><div class="scroll"><table class="sched">
+        <thead><tr><th>Hamshira</th>${days.map(d => { const x = new Date(d + "T12:00:00"); return `<th class="c ${isRest(d) ? "rest" : ""}">${x.getDate()}<br><span class="muted">${wd[x.getDay()]}</span></th>`; }).join("")}
+          <th class="r">Kun</th><th class="r">Qo'sh.</th><th class="r">Jami</th></tr>
+          <tr><td class="muted">Klinika</td>${days.map(d => `<td class="c ${isRest(d) ? "rest" : ""}">${clinicWorked(d) ? '<span style="color:var(--good)">●</span>' : '<span class="muted">—</span>'}</td>`).join("")}<td colspan="3"></td></tr></thead>
+        <tbody>${pays.map(x => `<tr><td><b>${esc(x.w.name)}</b><br><span class="muted">${esc(x.w.pos)}</span></td>${days.map(d => {
+          const m = ATT[`${d}|${x.w.id}`], on = m !== undefined, plus = on && (m === 1 || isRest(d));
+          return `<td class="c ${isRest(d) ? "rest" : ""}"><button type="button" class="cell ${on ? "on" : ""} ${plus ? "plus" : ""}" data-cell="${d}|${x.w.id}" aria-label="${esc(x.w.name)}, ${d}">${on ? (plus ? "✓+" : "✓") : ""}</button></td>`;
+        }).join("")}<td class="r">${x.worked.length}</td><td class="r">${x.extraDays.length}</td><td class="r"><b>${pul(x.total)}</b></td></tr>`).join("")}</tbody>
+        <tfoot><tr><td colspan="${days.length + 3}">Jami maosh</td><td class="r">${pul(pays.reduce((a, x) => a + x.total, 0))}</td></tr></tfoot>
+      </table></div></section>`;
+  }
+
+  function viewStock() {
+    const all = PRODUCTS, rows = stockFilter ? all.filter(p => stockStatus(p) === stockFilter) : all;
+    const n = k => all.filter(p => stockStatus(p) === k).length;
+    const sup = id => SUPPLIERS.find(s => s.id === id);
+    const value = all.reduce((a, p) => a + Math.max(0, p.qty) * p.price, 0);
+    return `<h1 class="sr-only">Sklad qoldig'i</h1>
+      ${subnav(SKLAD_NAV, "sklad")}
+      <div class="tiles three">
+        <button type="button" class="tile link ${stockFilter === "" ? "on" : ""}" data-sf="" aria-pressed="${stockFilter === ""}"><div class="k">Mahsulotlar — hammasi</div><div class="v num">${all.length}<small>tur</small></div><div class="hint">jami qiymat ${pul(value)} so'm</div></button>
+        <button type="button" class="tile link ${stockFilter === "kam" ? "on" : ""} warn" data-sf="kam" aria-pressed="${stockFilter === "kam"}"><div class="k">Kam qolgan</div><div class="v num">${n("kam")}</div><div class="hint">ko'rsatish →</div></button>
+        <button type="button" class="tile link ${stockFilter === "tugagan" ? "on" : ""} ${n("tugagan") ? "bad" : "good"}" data-sf="tugagan" aria-pressed="${stockFilter === "tugagan"}"><div class="k">Tugagan</div><div class="v num">${n("tugagan")}</div><div class="hint">ko'rsatish →</div></button>
+      </div>
+      <div class="viewtoggle" role="group" aria-label="Ko'rinish">
+        <button type="button" class="btn ${stockView === "list" ? "on" : ""}" data-sv="list" aria-pressed="${stockView === "list"}">☰ Ro'yxat</button>
+        <button type="button" class="btn ${stockView === "cards" ? "on" : ""}" data-sv="cards" aria-pressed="${stockView === "cards"}">▦ Kartochka</button>
+      </div>
+      ${stockView === "cards" ? `<div class="pcards">${rows.map(p => { const st = stockStatus(p), s = sup(p.sup);
+        return `<article class="pcard">
+          <button type="button" class="pcard-img ${PHOTOS[p.id] ? "has" : ""}" data-photo="${p.id}" aria-label="${esc(p.name)} rasmi">${PHOTOS[p.id] ? `<img src="${PHOTOS[p.id]}" alt="">` : `<span>+ rasm qo'shish</span>`}</button>
+          <div class="pcard-body">
+            <div class="pcard-top"><b>${esc(p.name)}</b>${tag(st, STOCK_CLS[st])}</div>
+            <div class="muted" style="font-size:13px">${esc(p.cat)}</div>
+            <div class="pcard-qty num"><b>${p.qty}</b> ${esc(p.unit)} <span class="muted">· chegara ${p.min || "—"}</span></div>
+            <div class="pcard-row"><span class="muted">Narx</span><span class="num">${pul(p.price)}</span></div>
+            <div class="pcard-row"><span class="muted">Qiymati</span><span class="num"><b>${pul(Math.max(0, p.qty) * p.price)}</b></span></div>
+            <div class="pcard-row"><span class="muted">Sotuvchi</span>${s ? `<a class="rowlink" href="#sotuvchi-${s.id}">${esc(s.name)}</a>` : "—"}</div>
+          </div>
+        </article>`; }).join("") || '<p class="muted">Bu bo\'limda mahsulot yo\'q.</p>'}</div>
+      <p class="muted num" style="margin:0;text-align:right">Jami (${rows.length} ta mahsulot): <b>${pul(rows.reduce((a, p) => a + Math.max(0, p.qty) * p.price, 0))} so'm</b></p>` : `
+      <section class="panel"><div class="scroll"><table>
+        <thead><tr><th class="ph-col">Rasm</th><th>Mahsulot</th><th>Toifa</th><th class="r">Miqdor</th><th class="r">Chegara</th><th>Holat</th><th class="r">Narx</th><th class="r">Qiymati</th><th>Sotuvchi</th></tr></thead>
+        <tbody>${rows.map(p => { const st = stockStatus(p), s = sup(p.sup);
+          return `<tr><td class="ph-col"><button type="button" class="ph ${PHOTOS[p.id] ? "has" : ""}" data-photo="${p.id}" aria-label="${esc(p.name)} rasmi">${PHOTOS[p.id] ? `<img src="${PHOTOS[p.id]}" alt="">` : "+"}</button></td>
+            <td><b>${esc(p.name)}</b></td><td class="muted">${esc(p.cat)}</td><td class="r"><b>${p.qty}</b> ${esc(p.unit)}</td><td class="r">${p.min || "—"}</td>
+            <td>${tag(st, STOCK_CLS[st])}</td><td class="r">${pul(p.price)}</td><td class="r">${pul(Math.max(0, p.qty) * p.price)}</td>
+            <td>${s ? `<a class="rowlink" href="#sotuvchi-${s.id}">${esc(s.name)}</a>` : "—"}</td></tr>`; }).join("")}</tbody>
+        <tfoot><tr><td colspan="7">Jami (${rows.length} ta mahsulot)</td><td class="r">${pul(rows.reduce((a, p) => a + Math.max(0, p.qty) * p.price, 0))}</td><td></td></tr></tfoot>
+      </table></div></section>`}
+      <input type="file" id="photoInput" accept="image/*" hidden>
+      <div class="modal" id="photoModal" hidden role="dialog" aria-modal="true" aria-labelledby="pm-title">
+        <div class="modal-box narrow">
+          <div class="modal-h"><h2 id="pm-title"></h2><button type="button" class="btn icon" data-close aria-label="Yopish">×</button></div>
+          <img id="photoBig" alt="" style="width:100%;max-height:60vh;object-fit:contain;border-radius:10px;background:var(--surface-2)">
+          <div class="modal-f"><button type="button" class="btn" id="photoDelete">O'chirish</button><button type="button" class="btn primary" id="photoReplace">Almashtirish</button></div>
+        </div>
+      </div>`;
+  }
+
+  // Rasmni kichraytirib (eng uzun tomoni 640px) data URL qilib qaytaradi
+  function shrinkImage(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("Faylni o'qib bo'lmadi"));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error("Bu fayl rasm emas"));
+        img.onload = () => {
+          const k = Math.min(1, 640 / Math.max(img.width, img.height));
+          const c = document.createElement("canvas");
+          c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+          c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+          resolve(c.toDataURL("image/jpeg", 0.82));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function viewStockReports() {
+    return `<div class="head"><div><h1>Kunlik sklad hisobotlari</h1>
+      <p class="sub">19:00 da bot hamshiralardan «skladdan nima oldingiz?» deb so'raydi; ertasi kuni ertalab tekshiruvchi skladni sanab tasdiqlaydi; keyin chiqim Cliniccards'da bir marta kiritiladi.</p></div></div>
+      ${subnav(SKLAD_NAV, "sklad-hisobotlar")}
+      <section class="panel"><div class="scroll"><table>
+        <thead><tr><th>Kun</th><th>Hamshira</th><th>Nima oldi</th><th>Holat</th><th>Tekshirdi</th></tr></thead>
+        <tbody>${STOCK_REPORTS.map(r => `<tr><td class="num">${dmy(r.day)}</td><td>${esc(r.who)}</td>
+          <td>${r.items.length ? r.items.map(([n, q, u]) => `${esc(n)} — ${q} ${esc(u)}`).join("<br>") : '<span class="muted">—</span>'}${r.diff ? `<br><span style="color:var(--warn)">${esc(r.diff)}</span>` : ""}</td>
+          <td>${tag(...STATUS_UZ[r.status])}</td><td>${esc(r.checker || "")}</td></tr>`).join("")}</tbody>
+      </table></div></section>`;
+  }
+
+  function viewOrders() {
+    const cnt = st => ORDERS.filter(o => st.includes(o.status)).length;
+    const arrived = ORDERS.filter(o => o.status === "keldi");
+    return `<h1 class="sr-only">Sotuvchilarga buyurtmalar</h1>
+      ${subnav(SKLAD_NAV, "buyurtmalar")}
+      <div class="tiles">
+        <div class="tile"><div class="k">Jami buyurtmalar</div><div class="v num">${ORDERS.length}</div></div>
+        <div class="tile good"><div class="k">Kelgan buyurtmalar</div><div class="v num">${arrived.length}</div></div>
+        <div class="tile warn"><div class="k">Kutilmoqda</div><div class="v num">${cnt(["taklif", "yuborildi", "qabul"])}</div></div>
+        <div class="tile"><div class="k">Kelganlar summasi</div><div class="v num">${pul(arrived.reduce((a, o) => a + o.qty * o.price, 0))}<small>so'm</small></div></div>
+      </div>
+      <section class="panel"><div class="scroll"><table>
+        <thead><tr><th>Sana</th><th>Mahsulot</th><th>Sotuvchi</th><th class="r">Miqdor</th><th class="r">Summa</th><th>Holat</th></tr></thead>
+        <tbody>${ORDERS.slice().sort((a, b) => b.date.localeCompare(a.date)).map(o => `<tr><td class="num">${esc(o.date)}</td><td>${esc(o.product)}</td><td>${esc(o.sup)}</td><td class="r">${o.qty} ${esc(o.unit)}</td>
+          <td class="r">${pul(o.qty * o.price)}</td><td>${tag(...STATUS_UZ[o.status])}</td></tr>`).join("")}</tbody>
+      </table></div></section>`;
+  }
+
+  const supTotals = s => {
+    const bought = PURCHASES.filter(x => x.sup === s.id), paid = SUP_PAYMENTS.filter(x => x.sup === s.id);
+    const b = bought.reduce((a, x) => a + x.sum, 0), pd = paid.reduce((a, x) => a + x.amount, 0);
+    return { bought, paid, b, pd, debt: b - pd };
+  };
+
+  function viewSuppliers() {
+    const t = SUPPLIERS.map(s => ({ s, ...supTotals(s) }));
+    const sumB = t.reduce((a, x) => a + x.b, 0), sumP = t.reduce((a, x) => a + x.pd, 0);
+    return `<h1 class="sr-only">Sotuvchilar</h1>
+      ${subnav(SKLAD_NAV, "sotuvchilar")}
+      <div class="tiles three">
+        <div class="tile"><div class="k">Jami olingan tovar</div><div class="v num">${pul(sumB)}<small>so'm</small></div></div>
+        <div class="tile good"><div class="k">To'langan</div><div class="v num">${pul(sumP)}<small>so'm</small></div></div>
+        <div class="tile ${sumB - sumP > 0 ? "warn" : "good"}"><div class="k">Qarzimiz</div><div class="v num">${pul(sumB - sumP)}<small>so'm</small></div></div>
+      </div>
+      <section class="panel"><div class="scroll"><table>
+        <thead><tr><th>Do'kon</th><th>Sotuvchi</th><th>Telefon</th><th class="r">Olingan</th><th class="r">To'langan</th><th class="r">Qarz</th><th>Telegram</th></tr></thead>
+        <tbody>${t.map(x => `<tr><td><a class="rowlink" href="#sotuvchi-${x.s.id}">${esc(x.s.name)}</a></td><td>${esc(x.s.contact)}</td><td class="num">${esc(x.s.phone)}</td>
+          <td class="r">${pul(x.b)}</td><td class="r">${pul(x.pd)}</td>
+          <td class="r" style="color:var(${x.debt > 0 ? "--warn" : "--good"});font-weight:600">${pul(x.debt)}</td>
+          <td>${x.s.linked ? tag("ulangan", "good") : tag("ulanmagan", "off")}</td></tr>`).join("")}</tbody>
+        <tfoot><tr><td colspan="3">Jami</td><td class="r">${pul(sumB)}</td><td class="r">${pul(sumP)}</td><td class="r">${pul(sumB - sumP)}</td><td></td></tr></tfoot>
+      </table></div></section>`;
+  }
+
+  function viewSupplier(id) {
+    const s = SUPPLIERS.find(x => String(x.id) === String(id));
+    if (!s) return `${subnav(SKLAD_NAV, "sotuvchilar")}<section class="panel"><div class="panel-h"><span class="muted">Sotuvchi topilmadi.</span></div></section>`;
+    const x = supTotals(s);
+    return `<h1 class="sr-only">${esc(s.name)}</h1>
+      ${subnav(SKLAD_NAV, "sotuvchilar")}
+      <section class="panel" style="padding:16px">
+        <div class="supcard">
+          <div><div class="k muted">Do'kon</div><b style="font-size:18px">${esc(s.name)}</b></div>
+          <div><div class="k muted">Sotuvchi</div>${esc(s.contact)}</div>
+          <div><div class="k muted">Telefon</div><span class="num">${esc(s.phone)}</span></div>
+          <div><div class="k muted">Telegram</div>${s.linked ? tag("ulangan", "good") : `<span class="linkbox">t.me/biodent_bot?start=s${s.id}x7Kq2</span>`}</div>
+        </div>
+      </section>
+      <div class="tiles three">
+        <div class="tile"><div class="k">Olingan tovar</div><div class="v num">${pul(x.b)}<small>so'm</small></div></div>
+        <div class="tile good"><div class="k">To'langan</div><div class="v num">${pul(x.pd)}<small>so'm</small></div></div>
+        <div class="tile ${x.debt > 0 ? "warn" : "good"}"><div class="k">Qarzimiz</div><div class="v num">${pul(x.debt)}<small>so'm</small></div></div>
+      </div>
+      <section class="panel"><div class="panel-h"><h2>Nima oldik</h2></div><div class="scroll"><table>
+        <thead><tr><th>Sana</th><th>Nakladnoy</th><th>Mahsulot</th><th class="r">Miqdor</th><th class="r">Narx</th><th class="r">Summa</th></tr></thead>
+        <tbody>${x.bought.map(r => `<tr><td class="num">${dmy(r.date)}</td><td class="muted num">${esc(r.doc)}</td><td>${esc(r.product)}</td><td class="r">${r.qty} ${esc(r.unit)}</td>
+          <td class="r">${pul(r.price)}</td><td class="r">${pul(r.sum)}</td></tr>`).join("") || `<tr><td colspan="6" class="muted">Hali tovar olinmagan.</td></tr>`}</tbody>
+        <tfoot><tr><td colspan="5">Jami</td><td class="r">${pul(x.b)}</td></tr></tfoot>
+      </table></div></section>
+      <section class="panel"><div class="panel-h"><h2>Qancha berdik</h2></div><div class="scroll"><table style="min-width:320px">
+        <thead><tr><th>Sana</th><th class="r">Summa</th></tr></thead>
+        <tbody>${x.paid.map(r => `<tr><td class="num">${dmy(r.date)}</td><td class="r">${pul(r.amount)}</td></tr>`).join("") || `<tr><td colspan="2" class="muted">To'lov yo'q.</td></tr>`}</tbody>
+        <tfoot><tr><td>Jami</td><td class="r">${pul(x.pd)}</td></tr></tfoot>
+      </table></div></section>`;
+  }
+
+  function viewBotPeople() {
+    return `<div class="head"><div><h1>Xodimlar va bot</h1>
+      <p class="sub"><b>Oladi</b> — har kuni «skladdan narsa oldingizmi?» so'raladi. <b>Tekshiradi</b> — skladni sanab tasdiqlaydi. <b>Admin</b> — eslatmalar va buyurtma takliflari keladi. <b>Davomat</b> — har kuni «klinika ishladimi, kimlar keldi?» so'raladi.</p></div></div>
+      ${subnav(BOT_NAV, "bot-xodimlar")}
+      <section class="panel"><div class="scroll"><table>
+        <thead><tr><th>Ism</th><th>Vazifa</th><th>Telegram</th></tr></thead>
+        <tbody>${BOT_PEOPLE.map((x, i) => `<tr><td><b>${esc(x.name)}</b></td><td>${x.roles.map(r => tag(r, "good")).join(" ")}</td>
+          <td>${x.linked ? tag("ulangan", "good") : `<span class="linkbox">t.me/biodent_bot?start=p${i}Qw8Lm</span>`}</td></tr>`).join("")}</tbody>
+      </table></div></section>
+      <div class="controls"><button class="btn" type="button">Sklad so'rovini hozir yuborish</button><button class="btn" type="button">Davomat so'rovini hozir yuborish</button>
+        <span class="muted">So'rov vaqtlari: sklad 19:00, davomat 20:00 (Toshkent vaqti)</span></div>`;
+  }
+
+  // Telegram suhbatlari namunasi: [kimdan ("bot" | "men"), matn, tugmalar?]
+  const CHATS = {
+    "Sklad hisoboti": { who: "Aziza Karimova · Oladi", msgs: [
+      ["bot", "Assalomu alaykum, Aziza!\nBugun (13.11.2026) skladdan biror narsa oldingizmi?", ["Ha, oldim", "Yo'q"]],
+      ["men", "Ha, oldim"], ["bot", "Qaysi mahsulotni oldingiz? Nomini (yoki bir qismini) yozing."],
+      ["men", "plomba"], ["bot", "Qaysi biri?", ["Kompozit plomba A2 (7 dona)"]], ["men", "Kompozit plomba A2"],
+      ["bot", "Kompozit plomba A2 — nechta oldingiz? (dona)"], ["men", "3"],
+      ["bot", "Yozildi:\n• Kompozit plomba A2 — 3 dona", ["Yana qo'shish", "Tugatdim"]], ["men", "Tugatdim"],
+      ["bot", "Rahmat! Hisobot tekshiruvchiga yuborildi."]] },
+    "Sklad tekshiruvi": { who: "Sardor · Tekshiradi", msgs: [
+      ["bot", "Sklad tekshiruvi. Aziza Karimova 13.11.2026 kuni oldi:\n• Kompozit plomba A2 — 3 dona → skladda 4 dona qolishi kerak\n\nSkladga borib tekshiring. Qoldiq to'g'rimi?", ["To'g'ri", "Noto'g'ri"]],
+      ["men", "To'g'ri"], ["bot", "Rahmat! Tekshiruv yozildi."]] },
+    "Admin": { who: "Bosh shifokor · Admin", msgs: [
+      ["bot", "Tekshirildi (Sardor). Aziza Karimova 13.11.2026 kuni oldi:\n• Kompozit plomba A2 — 3 dona\n\nCliniccards'dan chiqarish kerak (Склад → Списание).", ["Chiqarildi"]],
+      ["bot", "Skladda kam qoldi: Kompozit plomba A2 — 4 dona (chegara 5).\nTaklif: 10 dona × 45 000 = ~450 000 so'm\nSotuvchi: Dental Market\n\nSotuvchiga buyurtma yuborilsinmi?", ["Yuborish", "Bekor"]],
+      ["men", "Yuborish"], ["bot", "Buyurtma Dental Market'ga yuborildi: Kompozit plomba A2 — 10 dona"],
+      ["bot", "Dental Market buyurtmani qabul qildi: Kompozit plomba A2 — 10 dona"]] },
+    "Sotuvchi": { who: "Dental Market · Sotuvchi", msgs: [
+      ["bot", "Assalomu alaykum! Biodent klinikasidan buyurtma:\nKompozit plomba A2 — 10 dona\n\nIltimos, qabul qilganingizni tasdiqlang.", ["Qabul qildim"]],
+      ["men", "Qabul qildim"], ["bot", "Rahmat! Buyurtmangiz qayd etildi."]] },
+    "Davomat": { who: "Dilnoza Rasulova · Davomat", msgs: [
+      ["bot", "Davomat: bugun 13.11.2026 (Ju) klinika ishladimi?", ["Ha, ishladi", "Yo'q, dam olish"]], ["men", "Ha, ishladi"],
+      ["bot", "Kimlar keldi? Kelmaganlarni bosib olib tashlang, keyin «Tayyor».", ["✅ Aziza Karimova", "✅ Bekzod Aliyev", "⬜ Dilnoza Rasulova", "Tayyor"]],
+      ["men", "Tayyor"], ["bot", "Kimlar normadan ko'p ishladi? Belgilang (hech kim bo'lmasa, darhol «Tayyor»).", ["⬜ Aziza Karimova", "✅ Bekzod Aliyev", "Tayyor"]],
+      ["men", "Tayyor"], ["bot", "Rahmat! Davomat 13.11.2026:\n• Aziza Karimova — 150 000 so'm\n• Bekzod Aliyev (+qo'shimcha) — 160 000 so'm\nJami: 310 000 so'm."]] },
+  };
+  let chatTab = "Sklad hisoboti";
+  function viewBot() {
+    const c = CHATS[chatTab];
+    return `<div class="head"><div><h1>Telegram bot</h1>
+      <p class="sub">Bot xodimlar, tekshiruvchi, siz va sotuvchilar bilan shunday gaplashadi. Telegram boti odamga birinchi bo'lib yoza olmaydi: har kim dasturdagi maxsus havolani bir marta ochib «Start» bosadi.</p></div></div>
+      ${subnav(BOT_NAV, "bot")}
+      <div class="controls">${Object.keys(CHATS).map(k => `<button type="button" class="chip ${k === chatTab ? "on" : ""}" data-chat="${esc(k)}">${esc(k)}</button>`).join("")}</div>
+      <section class="phone">
+        <div class="phone-h"><span class="ava" aria-hidden="true">B</span><div><b>Biodent bot</b><br><span class="muted">${esc(c.who)}</span></div></div>
+        <div class="chat">${c.msgs.map(([from, text, buttons]) => `<div class="msg ${from}"><div class="bubble">${esc(text).replace(/\n/g, "<br>")}</div>
+          ${buttons ? `<div class="kbd">${buttons.map(b => `<span>${esc(b)}</span>`).join("")}</div>` : ""}</div>`).join("")}</div>
+      </section>`;
+  }
+
+  function viewDone() {
+    const done = doneItems(range), groups = groupBy(done, it => it.doc || "0");
+    const paidSum = done.reduce((a, x) => a + x.paid, 0), leftSum = done.reduce((a, x) => a + x.left, 0);
+    return back + `<div class="titlerow"><h1>Bajarilgan ishlar</h1>${monthSelect()}</div>
+      <div class="tiles">
+        <div class="tile"><div class="k">Jami ish summasi</div><div class="v num">${pul(sum(done))}<small>so'm</small></div></div>
+        <div class="tile good"><div class="k">Shundan to'langan</div><div class="v num">${pul(paidSum)}<small>so'm</small></div></div>
+        <div class="tile warn"><div class="k">Qoldiq (qarz)</div><div class="v num">${pul(leftSum)}<small>so'm</small></div></div>
+        <div class="tile"><div class="k">Ishlar soni</div><div class="v num">${done.length}</div></div>
+      </div>
+      <section class="panel">${groups.map(g => `<div class="debt-doc">
+        <div class="panel-h"><h2>${esc(docName(g.k === "0" ? null : g.k))}</h2><span class="pill good num">${pul(g.sum)}</span></div>
+        <div class="scroll"><table><thead><tr><th>Ish sanasi</th><th>Bemor</th><th>Ish</th><th class="r">Narx</th><th class="r">To'langan</th><th class="r">Qoldiq</th></tr></thead>
+        <tbody>${g.rows.sort((a, b) => a.done.localeCompare(b.done)).map(x => `<tr><td class="num">${x.done}</td><td>${esc(PATIENTS[x.pat])}</td><td>${esc(x.work)}</td>
+          <td class="r">${pul(x.price)}</td><td class="r">${pul(x.paid)}</td><td class="r">${pul(x.left)}</td></tr>`).join("")}</tbody></table></div></div>`).join("") ||
+        `<div class="panel-h"><span class="muted">Bu davrda bajarilgan ish yo'q.</span></div>`}</section>`;
+  }
+
+  function kassaGroups() { return groupBy(payments(range), p => p.desk); }
+
+  // Kassa jadvali filtri va saralash (faqat shu brauzer xotirasida, sahifa yangilansa tozalanadi)
+  let kf = { q: "", doc: "", min: "", max: "", sort: "date", dir: 1 };
+  const kDoc = x => x.doc ? docName(x.doc) : x.doc === null ? "belgilanmagan" : "";
+  function kassaFiltered() {
+    const q = kf.q.trim().toLowerCase(), min = kf.min === "" ? -Infinity : Number(kf.min), max = kf.max === "" ? Infinity : Number(kf.max);
+    const keep = x => (!q || x.patient.toLowerCase().includes(q))
+      && (!kf.doc || (kf.doc === "none" ? x.doc === null : kf.doc === "avans" ? x.doc === undefined : x.doc === kf.doc))
+      && x.amount >= min && x.amount <= max;
+    const key = { date: x => x.date, patient: x => x.patient, doc: x => kDoc(x), amount: x => x.amount }[kf.sort];
+    const cmp = (a, b) => { const A = key(a), B = key(b); return (typeof A === "number" ? A - B : String(A).localeCompare(String(B))) * kf.dir; };
+    return groupBy(payments(range).filter(keep), p => p.desk).map(g => ({ ...g, rows: g.rows.slice().sort(cmp) }));
+  }
+  const sortTh = (k, label, cls = "") => `<th class="${cls}"><button type="button" class="sorth" data-ksort="${k}" aria-label="${label} bo'yicha saralash">${label}${kf.sort === k ? (kf.dir > 0 ? " ▲" : " ▼") : ""}</button></th>`;
+
+  function viewKassa() {
+    const all = payments(range), groups = kassaFiltered(), shown = groups.reduce((a, g) => a + g.rows.length, 0);
+    const docIds = [...new Set(all.map(x => x.doc).filter(Boolean))];
+    const active = kf.q || kf.doc || kf.min !== "" || kf.max !== "";
+    return back + `<div class="titlerow"><h1>Kassaga tushgan pul</h1>${monthSelect()}</div>
+      <form class="controls" id="kFilter" onsubmit="return false">
+        <input class="btn" id="kq" placeholder="Bemor ism-familiyasi" value="${esc(kf.q)}" aria-label="Bemor bo'yicha qidirish" style="flex:1;min-width:180px">
+        <select class="btn" id="kdoc" aria-label="Shifokor bo'yicha"><option value="">Barcha shifokorlar</option>
+          ${docIds.map(id => `<option value="${id}" ${kf.doc === id ? "selected" : ""}>${esc(docName(id))}</option>`).join("")}
+          <option value="none" ${kf.doc === "none" ? "selected" : ""}>Shifokor belgilanmagan</option>
+          <option value="avans" ${kf.doc === "avans" ? "selected" : ""}>Ishga bog'lanmagan (avans)</option></select>
+        <input class="btn num" id="kmin" type="number" min="0" step="1000" placeholder="Summa dan" value="${esc(kf.min)}" aria-label="Summa dan" style="width:130px">
+        <input class="btn num" id="kmax" type="number" min="0" step="1000" placeholder="Summa gacha" value="${esc(kf.max)}" aria-label="Summa gacha" style="width:130px">
+        ${active ? `<button type="button" class="btn" id="kclear">Tozalash</button><span class="muted">${shown} / ${all.length} ta to'lov</span>` : ""}
+      </form>
+      <section class="panel">${groups.map(g => `<div class="debt-doc">
+        <div class="panel-h"><h2>${esc(g.k)}</h2><span class="pill good num">${g.rows.length} ta · ${pul(g.sum)}</span></div>
+        <div class="scroll"><table><thead><tr>${sortTh("date", "Sana")}${sortTh("patient", "Bemor")}<th>Nima uchun</th>${sortTh("doc", "Shifokor")}${sortTh("amount", "Summa", "r")}</tr></thead>
+        <tbody>${g.rows.map(x => `<tr><td class="num">${x.date}</td><td>${esc(x.patient)}</td><td class="muted">${esc(x.note)}</td>
+          <td>${x.doc ? `<a class="rowlink" href="#shifokor-${x.doc}">${esc(docName(x.doc))}</a>` : x.doc === null ? '<span style="color:var(--warn)">belgilanmagan</span>' : '<span class="muted">—</span>'}</td><td class="r">${pul(x.amount)}</td></tr>`).join("")}</tbody>
+        <tfoot><tr><td colspan="4">Jami</td><td class="r">${pul(g.sum)}</td></tr></tfoot></table></div></div>`).join("") ||
+        `<div class="panel-h"><span class="muted">${active ? "Filtrga mos to'lov topilmadi." : "Bu davrda to'lov yo'q."}</span></div>`}</section>`;
+  }
+
+  function viewClinic() {
+    const groups = kassaGroups(), total = groups.reduce((a, g) => a + g.sum, 0);
+    return back + `<div class="titlerow"><h1>Klinikaga beriladigan summa</h1>${monthSelect()}</div>
+      <section class="panel" style="padding:16px;display:grid;gap:12px">
+        <p class="formula num">Kassaga tushgan <b>${pul(total)}</b> × <b>${clinicPct}%</b> = <b>${pul(total * clinicPct / 100)} so'm</b></p>
+        <div class="scroll"><table style="min-width:420px"><thead><tr><th>Kassa</th><th class="r">Tushgan</th><th class="r">Klinika ulushi (${clinicPct}%)</th></tr></thead>
+        <tbody>${groups.map(g => `<tr><td><a class="rowlink" href="#kassa">${esc(g.k)}</a></td><td class="r">${pul(g.sum)}</td><td class="r">${pul(g.sum * clinicPct / 100)}</td></tr>`).join("")}</tbody>
+        <tfoot><tr><td>Jami</td><td class="r">${pul(total)}</td><td class="r">${pul(total * clinicPct / 100)}</td></tr></tfoot></table></div>
+      </section>
+      <p class="note">Foizni «Foizlar» sahifasida o'zgartirish mumkin.</p>`;
+  }
+
+  function viewExpenses() {
+    const c = costs(range);
+    return back + `<div class="titlerow"><h1>Xarajatlar</h1>${monthSelect()}</div>
+      <div class="tiles">${costRows(c).map(([h, n, v]) => `<a class="tile link" href="#${h === "material" ? "material" : h}"><div class="k">${n}</div><div class="v num">${pul(v)}<small>so'm</small></div></a>`).join("")}</div>`;
+  }
+
+  function viewSummary() {
+    const r = buildReport(range);
+    const max = Math.max(1, ...r.list.map(d => d.total));
+    const docs = r.list.filter(d => d.id !== "0");
+    // Boshlanish sanasidan oldingi qism «yopilgan»: berilmagan faqat PAYSTART dan keyingi maoshdan hisoblanadi
+    const tracked = clipToStart(range), trep = tracked ? buildReport(tracked) : null;
+    const trackedSalary = id => trep ? (trep.list.find(x => x.id === id)?.salary || 0) : 0;
+    // Berilgan = qo'lga berilgan pul: maosh (o'z davri bo'yicha) + avans (berilgan sanasi bo'yicha)
+    // Berilmagan = maosh − maosh bilan yopilgani (naqd + ushlangan avans) − hali ushlanmagan avans; minus = shifokor oldindan olgan
+    const inR = (id, f) => salaryPays(id).filter(p => p.from <= range.to && p.to >= range.from).reduce((a, p) => a + f(p), 0);
+    const avIn = id => PAYOUTS.filter(p => p.doc === id && p.type === "avans" && inRange(p.date, range)).reduce((a, p) => a + p.amount, 0);
+    const givenOf = id => inR(id, p => p.amount) + avIn(id);
+    const leftOf = id => trackedSalary(id) - inR(id, p => p.amount + (p.avans || 0)) - Math.min(avansLeft(id), avIn(id));
+    const given = docs.reduce((a, d) => a + givenOf(d.id), 0);
+    const avTotal = docs.reduce((a, d) => a + avIn(d.id), 0);
+    const notGiven = docs.reduce((a, d) => a + leftOf(d.id), 0);
+    const money = (v, posVar = "--warn") => v < 0 ? `<span style="color:var(--bad);font-weight:600" title="shifokor oldindan olgan">−${pul(-v)}</span>` : `<span style="color:var(${v > 0 ? posVar : "--good"});font-weight:600">${pul(v)}</span>`;
+    return back + `
+      <h1 class="sr-only">Shifokorlarga beriladigan summa · ${rangeLabel(range)}</h1>
+      ${monthSelect()}
+      ${range.from < PAYSTART ? `<p class="demo-note" style="margin:0"><span><b>Hisob ${dmy(PAYSTART)} dan boshlangan.</b> Undan oldingi maosh eski usulda berilgan deb hisoblanadi, shuning uchun «Berilmagan» ustuniga faqat ${dmy(PAYSTART)} dan keyingi summa kiradi.</span></p>` : ""}
+      <div class="tiles three">
+        <div class="tile"><div class="k">Jami maosh</div><div class="v num">${pul(r.salary)}<small>so'm</small></div></div>
+        <div class="tile good"><div class="k">Berilgan summa</div><div class="v num">${pul(given)}<small>so'm</small></div>${avTotal ? `<div class="hint" style="color:var(--muted)">shundan avans ${pul(avTotal)}</div>` : ""}</div>
+        <div class="tile ${notGiven > 0 ? "warn" : notGiven < 0 ? "bad" : "good"}"><div class="k">Berilmagan summa</div><div class="v num">${notGiven < 0 ? "−" : ""}${pul(Math.abs(notGiven))}<small>so'm</small></div></div>
+      </div>
+      <section class="panel">
+        <div class="panel-h"><h2>Shifokorlar</h2><span class="muted" style="font-size:13px">ismni bossangiz, berilgan maoshlar ochiladi</span></div>
+        <div class="scroll"><table>
+          <thead><tr><th>Shifokor</th><th class="r">Bemorlar</th><th class="r">Tushgan</th><th class="r">Foiz</th><th class="r">Maosh</th><th class="r">Berilgan</th><th class="r">Avans</th><th class="r">Berilmagan</th><th></th></tr></thead>
+          <tbody>${r.list.map(d => `<tr>
+            <td>${d.id === "0" ? `<span style="color:var(--warn);font-weight:600">${esc(d.name)}</span><span class="pill warn">Cliniccards'da tuzatish kerak</span>`
+              : `<button type="button" class="rowlink sorth" style="font-weight:600" data-docopen="${d.id}" aria-expanded="${openDoc === d.id}">${openDoc === d.id ? "▾" : "▸"} ${esc(d.name)}</button>${d.pct ? "" : '<span class="pill bad">foiz qo\'yilmagan</span>'}`}</td>
+            <td class="r">${d.patients}</td>
+            <td class="r">${pul(d.total)}</td>
+            <td class="r">${d.pct}%</td><td class="r">${pul(d.salary)}</td>
+            ${d.id === "0" ? '<td class="r muted">—</td><td class="r muted">—</td><td class="r muted">—</td><td></td>' : (() => { const g = givenOf(d.id), av = avIn(d.id), rest = avansLeft(d.id), left = leftOf(d.id);
+              return `<td class="r">${pul(g)}</td>
+              <td class="r">${av ? `<span style="color:var(--warn);font-weight:600">${pul(av)}</span>` : '<span class="muted">—</span>'}${rest > 0 ? `<br><span class="muted" style="font-size:12px">ushlanmagan ${pul(rest)}</span>` : ""}</td>
+              <td class="r">${money(left)}</td>
+              <td class="r"><button type="button" class="btn primary" data-pay="${d.id}" style="padding:5px 10px;white-space:nowrap">Maosh berish</button></td>`; })()}</tr>${openDoc === d.id ? `<tr class="subrow"><td colspan="9">${doctorPays(d.id)}</td></tr>` : ""}`).join("") ||
+            `<tr><td colspan="9" class="muted">Bu davrda ishlarga bog'langan to'lov yo'q.</td></tr>`}</tbody>
+          <tfoot><tr><td>Jami</td><td></td><td class="r">${pul(r.total)}</td><td></td><td class="r">${pul(r.salary)}</td><td class="r">${pul(given)}</td><td class="r">${pul(avTotal)}</td><td class="r">${money(notGiven)}</td><td></td></tr></tfoot>
+        </table></div>
+      </section>
+      <details class="panel" style="padding:12px 16px">
+        <summary><b>Maosh hisobi qachondan boshlanadi</b> · <span class="num">${dmy(PAYSTART)}</span></summary>
+        <p class="note" style="margin:8px 0">Shu sanadan oldingi maosh eski usulda berilgan deb hisoblanadi. O'sha sanagacha biror shifokorga berilmay qolgan pul bo'lsa, uni boshlang'ich qoldiq qilib yozing.</p>
+        <form id="startForm" style="display:grid;gap:8px;max-width:520px" novalidate>
+          <label>Boshlanish sanasi <input class="btn" type="date" id="payStart" value="${PAYSTART}"></label>
+          ${DOCS().map(s => `<div class="drow"><span>${esc(s.name)}</span><span></span><input class="btn num" type="number" min="0" step="1000" data-open="${s.id}" value="${Number(OPENING[s.id]) || ""}" placeholder="0" aria-label="${esc(s.name)} boshlang'ich qoldig'i"></div>`).join("")}
+          <div class="modal-f" style="margin:0"><button type="submit" class="btn">Saqlash</button></div>
+        </form>
+      </details>
+      ${payModal()}`;
+  }
+
+  // ---- Maosh berish ----
+  const clipToStart = r => { const from = r.from < PAYSTART ? PAYSTART : r.from; return from <= r.to ? { from, to: r.to } : null; };
+  const salaryOf = (id, r) => buildReport(r).list.find(x => x.id === id)?.salary || 0;
+  const DOCS = () => STAFF.filter(s => s.id);
+  // Boshlanishdan bugungacha: boshlang'ich qoldiq + hisoblangan maosh − berilgan maosh − ushlanmagan avans
+  const owedNow = id => (Number(OPENING[id]) || 0) + (PAYSTART <= TODAY ? salaryOf(id, { from: PAYSTART, to: TODAY }) : 0)
+    - salaryPays(id).reduce((a, p) => a + p.amount + (p.avans || 0), 0) - avansLeft(id);
+  const addDay = (d, n) => { const x = new Date(d + "T12:00:00"); x.setDate(x.getDate() + n); return isoDate(x); };
+  const coveredBy = (id, day) => salaryPays(id).some(p => p.from <= day && day <= p.to);
+  const nextFrom = id => {
+    const last = salaryPays(id).map(p => p.to).sort().pop();
+    return !last || last < PAYSTART ? PAYSTART : addDay(last, 1);
+  };
+  // Tanlangan shifokorning maosh va avans tarixi
+  function payHistHtml(id) {
+    const rows = PAYOUTS.filter(p => p.doc === id).sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id);
+    const total = rows.filter(p => p.type !== "avans").reduce((a, p) => a + p.amount, 0), adv = rows.filter(p => p.type === "avans").reduce((a, p) => a + p.amount, 0);
+    return `<div class="bar"><h2 style="font-size:16px">Berilgan maoshlar</h2>
+        <span class="muted num" style="font-size:13px">maosh ${pul(total)} so'm · avans ${pul(adv)} so'm</span></div>
+      <div class="scroll"><table style="min-width:520px">
+        <thead><tr><th>Qachon berildi</th><th>Qaysi davr uchun</th><th class="r">Maosh</th><th class="r">Avans</th><th></th></tr></thead>
+        <tbody>${rows.map(p => `<tr><td class="num">${dmy(p.date)}</td>
+          <td>${p.type === "avans" ? '<span class="muted">—</span>' : `<span class="num">${dmy(p.from)} – ${dmy(p.to)}</span>${p.avans ? `<br><span class="muted">oldingi avansdan ushlandi ${pul(p.avans)}</span>` : ""}`}</td>
+          <td class="r">${p.type === "avans" ? '<span class="muted">—</span>' : pul(p.amount)}</td>
+          <td class="r">${p.type === "avans" ? `<b style="color:var(--warn)">${pul(p.amount)}</b>` : '<span class="muted">—</span>'}</td>
+          <td class="r"><button type="button" class="btn icon del" data-delpay="${p.id}" aria-label="O'chirish" title="O'chirish">×</button></td></tr>`).join("") ||
+          '<tr><td colspan="5" class="muted">Bu shifokorga hali maosh berilmagan.</td></tr>'}</tbody>
+      </table></div>`;
+  }
+  function payModal() {
+    return `<div class="modal" id="payModal" hidden role="dialog" aria-modal="true" aria-labelledby="pay-title">
+      <div class="modal-box" style="max-width:640px;position:relative">
+        <div class="modal-h"><h2 id="pay-title"></h2><button type="button" class="btn icon" data-close aria-label="Yopish">×</button></div>
+        <form id="payForm" style="display:grid;gap:10px" novalidate>
+          <p class="muted" id="payPeriod" style="margin:0"></p>
+          <div class="tiles three" id="payCalc"></div>
+          <div class="controls">
+            <label for="payAmount">Beriladigan summa</label>
+            <input class="btn num" type="number" min="0" step="1000" id="payAmount" style="width:180px">
+            <button type="submit" class="btn primary">Maosh berish</button>
+          </div>
+        </form>
+        <section id="payHist" style="display:grid;gap:8px"></section>
+        <div class="modal" id="payErrBox" hidden role="alertdialog" aria-modal="true" aria-labelledby="pe-title" style="position:absolute;border-radius:14px">
+          <div class="modal-box narrow" style="max-width:400px">
+            <h2 id="pe-title" style="color:var(--bad)">Xato kiritdingiz</h2>
+            <p id="peText" style="margin:0"></p>
+            <div class="modal-f"><button type="button" class="btn" id="peClose">Yopish</button><button type="button" class="btn primary" id="peAvans">Avans</button></div>
+          </div>
+        </div>
+        <div class="modal" id="payAvBox" hidden role="dialog" aria-modal="true" aria-labelledby="pa-title" style="position:absolute;border-radius:14px">
+          <form class="modal-box narrow" id="avForm" style="max-width:420px" novalidate>
+            <h2 id="pa-title"></h2>
+            <div class="pcard-row"><span class="muted" id="paPeriod"></span></div>
+            <div class="pcard-row"><span>Ishlagan puli (maosh)</span><b class="num" id="paEarned"></b></div>
+            <label for="paAmount">Avans summasi</label>
+            <input class="btn num" type="number" min="0" step="1000" id="paAmount" placeholder="Summani kiriting">
+            <div class="pcard-row" style="border-top:1px solid var(--line);padding-top:8px"><span>Jami beriladi</span><b class="num" id="paTotal"></b></div>
+            <p class="muted" style="margin:0;font-size:13px">Avans keyingi maoshdan avtomatik ushlab qolinadi.</p>
+            <p class="range-err" id="paErr" hidden>Avans summasini kiriting.</p>
+            <div class="modal-f"><button type="button" class="btn" id="paCancel">Bekor qilish</button><button type="submit" class="btn primary">Berish</button></div>
+          </form>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ---- Excel (xlsx) yuklab olish: SheetJS kerak bo'lganda yuklanadi, fayl «downloads» orqali beriladi ----
+  let xlsxLib = null;
+  const loadXlsx = () => xlsxLib || (xlsxLib = new Promise((ok, bad) => {
+    const sc = document.createElement("script");
+    sc.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+    sc.onload = () => ok(window.XLSX); sc.onerror = () => { xlsxLib = null; bad(new Error("load")); };
+    document.head.appendChild(sc);
+  }));
+  async function saveXlsx(btn, filename, sheet, rows, opts = {}) {
+    const label = btn.textContent; btn.disabled = true; btn.textContent = "Tayyorlanmoqda…";
+    const say = t => { btn.textContent = t; setTimeout(() => { btn.textContent = label; }, 2500); };
+    try {
+      const dl = window.claude ? await window.claude.use("downloads") : null;
+      if (!dl) return say("Bu yerda yuklab bo'lmaydi");
+      const X = await loadXlsx();
+      const wb = X.utils.book_new(), ws = X.utils.aoa_to_sheet(rows);
+      const body = opts.merges ? rows.slice(1) : rows;
+      ws["!cols"] = (body.find(r => r.length > 1) || rows[0]).map((_, i) => ({ wch: Math.min(40, Math.max(10, ...body.map(r => String(r[i] ?? "").length + 2))) }));
+      if (opts.merges) ws["!merges"] = opts.merges;
+      X.utils.book_append_sheet(wb, ws, sheet.slice(0, 31));
+      await dl.save({ filename, data: X.write(wb, { type: "array", bookType: "xlsx" }) });
+      say("Yuklandi ✓");
+    } catch (e) {
+      say(e && e.code === "declined" ? "Bekor qilindi" : e && e.code === "rate_limited" ? "Biroz kuting" : "Yuklab bo'lmadi");
+    } finally { btn.disabled = false; }
+  }
+  const safeName = t => t.replace(/[^\p{L}\p{N}]+/gu, "_").replace(/^_|_$/g, "");
+  const xlsBtn = key => `<button type="button" class="btn" data-xls="${key}" style="padding:5px 12px">⬇ Excel</button>`;
+  let xlsData = {};
+
+  // Shifokorlar jadvalida ism bosilganda shu sahifaning o'zida, jadval ostida ochiladi
+  let openDoc = null;
+  function viewDoctor(id) { openDoc = id; return viewSummary(); }
+  function doctorPays(id) {
+    const name = docName(id);
+    const pays = PAYOUTS.filter(p => p.doc === id && inRange(p.date, range)).sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id);
+    const sumM = pays.filter(p => p.type !== "avans").reduce((a, p) => a + p.amount, 0), sumA = pays.filter(p => p.type === "avans").reduce((a, p) => a + p.amount, 0);
+    xlsData = { maosh: [`${safeName(name)}_maosh_${dmy(range.from)}-${dmy(range.to)}.xlsx`, "Berilgan maosh", [["Qachon berildi", "Qaysi davr uchun", "Maosh", "Avans"],
+      ...pays.map(p => [dmy(p.date), p.type === "avans" ? "" : `${dmy(p.from)} – ${dmy(p.to)}`, p.type === "avans" ? "" : p.amount, p.type === "avans" ? p.amount : ""]),
+      ["Jami", "", sumM, sumA]]] };
+    // Har bir berilgan maosh uchun alohida fayl: davr ichidagi bemorlar va ulush, ushlangan avans, berilgan summa
+    for (const p of pays) {
+      const base = [["Shifokor", name], ["Berilgan sana", dmy(p.date)]];
+      if (p.type === "avans") { xlsData["p" + p.id] = [`${safeName(name)}_avans_${dmy(p.date)}.xlsx`, "Avans", [...base, ["Turi", "Avans"], ["Summa", p.amount]]]; continue; }
+      // Kassaga tushgan har bir to'lov: Sana | F.I.SH. | Summa | Shifokor (ulushi)
+      const pr = { from: p.from, to: p.to }, pctD = pct[id] || 0;
+      const lines = ITEMS.filter(it => it.doc === id).flatMap(it => it.pays.filter(x => inRange(x.date, pr)).map(x => ({ date: x.date, pat: PATIENTS[it.pat], sum: x.amount })))
+        .sort((x, y) => x.date.localeCompare(y.date));
+      const sameYear = p.from.slice(0, 4) === p.to.slice(0, 4);
+      const per = sameYear ? `${dmy(p.from).slice(0, 5)}–${dmy(p.to).slice(0, 5)} ${p.to.slice(0, 4)}-yil` : `${dmy(p.from)}–${dmy(p.to)}`;
+      const tS = lines.reduce((a, x) => a + x.sum, 0), tD = Math.round(tS * pctD / 100);
+      const out = [[`Shifokor ${name} ${per} uchun oylik maoshi`], [],
+        ["Sana", "F.I.SH.", "Summa", "Shifokor"],
+        ...lines.map(x => [dmy(x.date), x.pat, x.sum, Math.round(x.sum * pctD / 100)]),
+        ["Jami", "", tS, tD], []];
+      if (p.avans) out.push(["Oldingi avansdan ushlandi", "", "", p.avans]);
+      out.push(["Shifokor oldi", "", "", p.amount]);
+      xlsData["p" + p.id] = [`${safeName(name)}_maosh_${dmy(p.date)}.xlsx`, "Maosh", out, { merges: [{ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }] }];
+    }
+    return `<div class="subbox">
+        <table class="mini">
+          <thead><tr><th>Qachon berildi</th><th>Qaysi davr uchun</th><th class="r">Maosh</th><th class="r">Avans</th><th class="r">Excel</th></tr></thead>
+          <tbody>${pays.map(p => `<tr><td class="num">${dmy(p.date)}</td>
+            <td>${p.type === "avans" ? '<span class="muted">—</span>' : `<span class="num">${dmy(p.from)} – ${dmy(p.to)}</span>`}</td>
+            <td class="r">${p.type === "avans" ? '<span class="muted">—</span>' : pul(p.amount)}</td>
+            <td class="r">${p.type === "avans" ? `<b style="color:var(--warn)">${pul(p.amount)}</b>` : '<span class="muted">—</span>'}</td>
+            <td class="r"><button type="button" class="btn" data-xls="p${p.id}" style="padding:3px 10px;font-size:13px" title="Shu to'lov uchun Excel">⬇</button></td></tr>`).join("") ||
+            '<tr><td colspan="5" class="muted">Bu davrda maosh berilmagan.</td></tr>'}</tbody>
+          ${pays.length ? `<tfoot><tr><td colspan="2">Jami</td><td class="r">${pul(sumM)}</td><td class="r">${pul(sumA)}</td><td></td></tr></tfoot>` : ""}
+        </table>
+        ${pays.length ? `<div style="text-align:right;margin-top:6px">${xlsBtn("maosh").replace("⬇ Excel", "⬇ Excel — barcha davr")}</div>` : ""}
+      </div>`;
+  }
+
+  function viewDebts() {
+    const groups = new Map();
+    for (const it of ITEMS) {
+      const left = it.price - paid(it);
+      if (left <= 0) continue;
+      const k = it.doc || "0";
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push({ ...it, left, paid: paid(it) });
+    }
+    const list = [...groups.entries()].map(([k, rows]) => ({ k, rows: rows.sort((a, b) => b.left - a.left), sum: rows.reduce((a, r) => a + r.left, 0) }))
+      .sort((a, b) => b.sum - a.sum);
+    const all = list.reduce((a, g) => a + g.sum, 0);
+    return `<div class="head"><div><h1>Qarzdorlar va kutilayotgan to'lovlar</h1>
+      <p class="sub">Bajarilgan, lekin to'liq to'lanmagan ishlar. Jami qoldiq: <b class="num">${pul(all)} so'm</b></p></div></div>
+      <section class="panel">${list.map(g => `<div class="debt-doc">
+        <div class="panel-h"><h2>${esc(docName(g.k === "0" ? null : g.k))}</h2><span class="pill warn num">qoldiq ${pul(g.sum)}</span></div>
+        <div class="scroll"><table><thead><tr><th>Bemor</th><th>Ish</th><th>Ish sanasi</th><th class="r">Narx</th><th class="r">To'langan</th><th class="r">Qoldiq</th></tr></thead>
+        <tbody>${g.rows.map(x => `<tr><td>${esc(PATIENTS[x.pat])}</td><td>${esc(x.work)}</td><td class="num">${x.done}</td>
+          <td class="r">${pul(x.price)}</td><td class="r">${pul(x.paid)}</td><td class="r" style="font-weight:600">${pul(x.left)}</td></tr>`).join("")}</tbody></table></div></div>`).join("")}
+      </section>`;
+  }
+
+  function viewSettings(saved) {
+    return `<div class="head"><div><h1>Shifokor foizlari</h1>
+      <p class="sub">Cliniccards API foizlarni bermaydi, shuning uchun ular shu yerda bir marta kiritiladi. Настройки → Зарплата dagi foiz bilan bir xil bo'lsin.</p></div></div>
+      <form class="panel settings" id="pctForm">
+        <div class="scroll"><table style="min-width:420px"><thead><tr><th>Xodim</th><th>ID</th><th class="r">Foiz, %</th></tr></thead>
+        <tbody>${STAFF.map(s => `<tr><td>${esc(s.name)}</td><td class="muted num">${s.id}</td>
+          <td class="r"><input id="pct-${s.id}" type="number" min="0" max="100" step="0.5" value="${pct[s.id] ?? 0}" aria-label="${esc(s.name)} foizi"></td></tr>`).join("")}</tbody></table></div>
+        <div class="panel-h"><label for="clinic-pct"><b>Klinika ulushi</b>: kassaga tushgan pulning
+          <input id="clinic-pct" type="number" min="0" max="100" step="0.5" value="${clinicPct}" style="width:80px"> %</label>
+          <label for="doctors-pct"><b>Shifokorlar ulushi</b>: <input id="doctors-pct" type="number" min="0" max="100" step="0.5" value="${doctorsPct}" style="width:80px"> %</label>
+          <span class="muted">Qolgani xarajatlarga: ${100 - clinicPct - doctorsPct}%</span></div>
+        <div class="panel-h"><div class="controls"><button class="btn primary" type="submit">Saqlash</button>
+          <button class="btn" type="button" id="resetPct">Namunaga qaytarish</button></div>
+          ${saved ? '<span class="saved" role="status">Saqlandi. Hisobot yangi foiz bilan qayta hisoblandi.</span>' : ""}</div>
+      </form>
+      <p class="note">Namunada foizlar faqat shu brauzerda saqlanadi. Haqiqiy dasturda ular serverdagi foizlar.json faylida turadi va hamma uchun bir xil.</p>`;
+  }
+
+  function viewHow() {
+    const months = ["mar","apr","may","iyn","iyl","avg","sen","okt","noy"];
+    return `<div class="head"><div><h1>Qanday hisoblaydi</h1>
+      <p class="sub">Ish bir oyda qilinadi, pul boshqa oyda tushadi. Maosh esa kassaga tushgan puldan beriladi.</p></div></div>
+      <section class="panel" style="padding:16px">
+        <h2>Misol: breket, 10 000 000 so'm, martda qo'yilgan</h2>
+        <p class="note" style="margin:6px 0 10px">Bemor har oy to'laydi. Noyabr hisobotiga faqat noyabrda tushgan 1 000 000 kiradi; mart ishi bo'lsa ham. Bitta oy o'rniga istalgan sana oralig'ini ham tanlash mumkin, masalan 1–15 noyabr.</p>
+        <div class="timeline">${months.map(m => `<div>${m}</div>`).join("")}
+          ${["2,0","1,0","1,0","1,0","1,0","1,0","1,0","1,0","1,0"].map((v, i) => `<div class="cell ${i === 0 ? "work" : "pay"} ${i === 8 ? "sel" : ""}" title="${v} mln">${v}</div>`).join("")}</div>
+        <p class="note" style="margin-top:8px;font-size:13px">mln so'm · ko'k: ish qilingan oy · yashil: to'lov tushgan oy · ramka: tanlangan oy</p>
+      </section>
+      <div class="how">
+        <div class="step"><div class="n">1-qadam</div><h3>Ishlarni yig'ish</h3><p>API'dan Cliniccards'ning butun davridagi bajarilgan ishlar olinadi: <code>GET /planItems/DONE</code> va <code>INVOICED</code>, 6 oylik bo'laklarda.</p></div>
+        <div class="step"><div class="n">2-qadam</div><h3>Davr to'lovlari</h3><p>Har bir ishning <code>payments</code> ro'yxatidan sanasi tanlangan davrga tushganlari qo'shiladi.</p></div>
+        <div class="step"><div class="n">3-qadam</div><h3>Shifokor va foiz</h3><p><code>done_by_doctor_id</code> bo'yicha guruhlanadi, foiz qo'llanadi. Kassa jami bilan solishtiriladi.</p></div>
+      </div>
+      <section class="panel" style="padding:16px;display:grid;gap:10px">
+        <h2>Tekshiruv</h2>
+        <p class="note">Madina, noyabr 2026: oktabrdagi ish uchun noyabrda tushgan 500 000 so'mdan 25% = <b>125 000</b>. Bu Cliniccards'dagi «Начисления» bilan mos keladi. Oktabr maoshida esa bu ish 0.</p>
+        <div class="code">Cliniccards API  →  Dastur (Railway)          →  Oylik hisobot
+GET /planItems      faqat shu oy to'lovlari       shifokorlar jadvali
+GET /staff          shifokor foizini qo'llaydi    bemor bo'yicha tafsilot
+GET /payments       kassa va klinika ulushi       Excel va chop etish
+GET /spendings      xarajatlar toifa bo'yicha     har bir summa tafsiloti
+GET /stock-*        sklad qoldig'i (faqat o'qish)  buyurtma va bot eslatmalari</div>
+      </section>`;
+  }
+
+  // ---- Marshrut ----
+  function render() {
+    const h = location.hash.slice(1) || "bosh";
+    let html, nav = h;
+    if (h.startsWith("shifokor-")) { html = viewDoctor(h.slice(9)); nav = "shifokorlar"; }
+    else if (h === "shifokorlar") { openDoc = null; html = viewSummary(); }
+    else if (h === "ishlar") { html = viewDone(); nav = "bosh"; }
+    else if (h === "kassa") { html = viewKassa(); nav = "bosh"; }
+    else if (h === "klinika") { html = viewClinic(); nav = "bosh"; }
+    else if (h === "xarajatlar") { html = viewExpenses(); nav = "bosh"; }
+    else if (h === "material") { html = viewExpenses(); nav = "bosh"; setTimeout(() => { const el = document.getElementById("material-list"); if (el) el.scrollIntoView(); }, 0); }
+    else if (h === "foyda") { html = viewProfit(); nav = "bosh"; }
+    else if (h === "foizlar") { html = viewHome(); nav = "bosh"; }
+    else if (h === "qanday-ishlaydi") html = viewHow();
+    else if (h === "xodimlar") html = viewWorkers();
+    else if (h === "grafik") { html = viewSchedule(); nav = "xodimlar"; }
+    else if (h === "vazifalar") { html = viewDuties(); nav = "xodimlar"; }
+    else if (h === "sklad") html = viewStock();
+    else if (h === "sklad-hisobotlar") { html = viewStockReports(); nav = "sklad"; }
+    else if (h === "buyurtmalar") { html = viewOrders(); nav = "sklad"; }
+    else if (h === "sotuvchilar") { html = viewSuppliers(); nav = "sklad"; }
+    else if (h.startsWith("sotuvchi-")) { html = viewSupplier(h.slice(9)); nav = "sklad"; }
+    else if (h === "bot-xodimlar") { html = viewBotPeople(); nav = "bot"; }
+    else if (h === "bot") html = viewBot();
+    else { html = viewHome(); nav = "bosh"; }
+    window.scrollTo(0, 0);
+    $("#view").innerHTML = html;
+    document.querySelectorAll("[data-nav]").forEach(a => a.dataset.nav === nav ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
+    bind();
+  }
+
+  function bind() {
+    const setRange = (from, to) => { range = { from, to }; store.set("hisobot-davr", range); render(); };
+    const rf = $("#rangeForm");
+    const applyRange = () => {
+      const f = $("#dan").value, t = $("#gacha").value;
+      if (!f || !t || f > t) { $("#rangeErr").hidden = false; return; }
+      setRange(f, t);
+    };
+    if (rf) {
+      rf.addEventListener("submit", e => { e.preventDefault(); applyRange(); });
+      rf.querySelectorAll("input[type=date]").forEach(i => i.addEventListener("change", applyRange));
+    }
+    const dm = $("#doctorsModal");
+    if (dm) {
+      const close = () => { dm.hidden = true; };
+      $("#openDoctors").addEventListener("click", () => { dm.hidden = false; const f = dm.querySelector("input"); if (f) f.focus(); });
+      dm.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", close));
+      dm.addEventListener("click", e => { if (e.target === dm) close(); });
+      dm.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+      $("#doctorsForm").addEventListener("submit", e => {
+        e.preventDefault();
+        const next = {};
+        for (const i of dm.querySelectorAll("[data-doc]")) {
+          const v = i.value.trim() === "" ? 0 : Number(i.value);
+          if (!(v >= 0 && v <= 100)) { $("#dErr").hidden = false; i.focus(); return; }
+          next[i.dataset.doc] = v;
+        }
+        pct = next; store.set("hisobot-foizlar", pct); render();
+      });
+    }
+    document.querySelectorAll("[data-xls]").forEach(b => b.addEventListener("click", () => { const x = xlsData[b.dataset.xls]; if (x) saveXlsx(b, ...x); }));
+    document.querySelectorAll("[data-docopen]").forEach(b => b.addEventListener("click", () => {
+      const id = b.dataset.docopen, y = window.scrollY; openDoc = openDoc === id ? null : id;
+      $("#view").innerHTML = viewSummary(); bind(); window.scrollTo(0, y);
+    }));
+    const pm2 = $("#payModal");
+    if (pm2) {
+      const amt = $("#payAmount"), eb = $("#payErrBox"), ab = $("#payAvBox"), pa = $("#paAmount");
+      let cur = null, plan = null;
+      const tile = (k, v, cls = "", hint = "") => `<div class="tile ${cls}"><div class="k">${k}</div><div class="v num">${pul(v)}<small>so'm</small></div>${hint ? `<div class="hint" style="color:var(--muted)">${hint}</div>` : ""}</div>`;
+      // Oxirgi maosh berilgan kunning ertasidan bugungacha ishlagan puli; oldin berilgan avans shundan ushlanadi
+      const fill = () => {
+        const id = cur, adv = avansLeft(id), f = nextFrom(id);
+        $("#pay-title").textContent = "Maosh berish — " + docName(id);
+        $("#payHist").innerHTML = payHistHtml(id);
+        if (f > TODAY) {
+          $("#payPeriod").textContent = `Maosh ${dmy(addDay(f, -1))} gacha berib bo'lingan.`;
+          plan = { from: f, to: f, earned: 0, avans: 0, can: 0, none: true };
+        } else {
+          const earned = salaryOf(id, { from: f, to: TODAY }), use = Math.min(adv, earned);
+          plan = { from: f, to: TODAY, earned, avans: use, can: earned - use };
+          $("#payPeriod").innerHTML = `Oxirgi maoshdan bugungacha: <b class="num">${dmy(f)} – ${dmy(TODAY)}</b>`;
+        }
+        // Ishlagan puli = shu davrda ishlagani − olgan avansi; avans ko'p bo'lsa minus bo'lib turadi
+        const net = plan.earned - adv;
+        $("#payCalc").innerHTML = `<div class="tile ${net < 0 ? "bad" : ""}" style="grid-column:span 2"><div class="k">Ishlagan puli</div>
+            <div class="v num">${net < 0 ? "−" : ""}${pul(Math.abs(net))}<small>so'm</small></div>
+            <div class="hint num" style="color:var(--muted)">ishladi ${pul(plan.earned)} − avans ${pul(adv)}</div></div>`
+          + tile("Berish mumkin", plan.can, plan.can ? "good" : "");
+        amt.value = plan.can || "";
+      };
+      const open = id => { cur = id; eb.hidden = true; ab.hidden = true; pm2.hidden = false; fill(); amt.focus(); };
+      document.querySelectorAll("[data-pay]").forEach(b => b.addEventListener("click", () => open(b.dataset.pay)));
+      const close = () => { pm2.hidden = true; };
+      pm2.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", close));
+      pm2.addEventListener("click", e => { if (e.target === pm2) close(); });
+      pm2.addEventListener("keydown", e => { if (e.key === "Escape") { if (!ab.hidden) ab.hidden = true; else if (!eb.hidden) eb.hidden = true; else close(); } });
+      $("#peClose").addEventListener("click", () => { eb.hidden = true; amt.focus(); });
+      // Avans oynasi: maosh — ishlagan puli, avans maydoni bo'sh, summani o'zingiz yozasiz
+      const total = () => { $("#paTotal").textContent = pul(plan.can + (Number(pa.value) || 0)) + " so'm"; };
+      $("#peAvans").addEventListener("click", () => {
+        eb.hidden = true; ab.hidden = false; $("#paErr").hidden = true;
+        $("#pa-title").textContent = docName(cur);
+        $("#paPeriod").textContent = plan.none ? "Maosh bugungacha berib bo'lingan — faqat avans beriladi." : `Maosh davri: ${dmy(plan.from)} – ${dmy(plan.to)}`;
+        $("#paEarned").textContent = pul(plan.can) + " so'm";
+        pa.value = ""; total(); pa.focus();
+      });
+      pa.addEventListener("input", total);
+      $("#paCancel").addEventListener("click", () => { ab.hidden = true; amt.focus(); });
+      const after = () => { const id = cur; render(); const b = document.querySelector(`[data-pay="${id}"]`); if (b) b.click(); };
+      const nextId = () => Math.max(0, ...PAYOUTS.map(p => p.id)) + 1;
+      const pushSalary = a => PAYOUTS.push({ id: nextId(), type: "maosh", doc: cur, from: plan.from, to: plan.to, date: TODAY, amount: a, avans: plan.avans, note: "" });
+      $("#avForm").addEventListener("submit", e => {
+        e.preventDefault();
+        const v = Number(pa.value);
+        if (!(v > 0)) { $("#paErr").hidden = false; pa.focus(); return; }
+        if (!plan.none && (plan.can > 0 || plan.avans > 0)) pushSalary(plan.can);
+        PAYOUTS.push({ id: nextId(), type: "avans", doc: cur, date: TODAY, amount: v, note: "" });
+        store.set("hisobot-maosh-berildi", PAYOUTS); after();
+      });
+      $("#payForm").addEventListener("submit", e => {
+        e.preventDefault();
+        const a = Number(amt.value);
+        if (!(a > 0)) { amt.focus(); return; }
+        if (a > plan.can) {
+          $("#peText").innerHTML = `${esc(docName(cur))} shu davrda <b class="num">${pul(plan.can)} so'm</b> ishlagan, siz <b class="num">${pul(a)} so'm</b> kiritdingiz. Ishlaganidan ko'p berish uchun «Avans» tugmasini bosing.`;
+          eb.hidden = false; $("#peAvans").focus(); return;
+        }
+        // To'liq bermasa ham davr yopiladi: qolgani «Berilmagan» ustunida ko'rinadi
+        pushSalary(a); store.set("hisobot-maosh-berildi", PAYOUTS); after();
+      });
+      $("#payHist").addEventListener("click", e => {
+        const b = e.target.closest("[data-delpay]"); if (!b) return;
+        PAYOUTS = PAYOUTS.filter(p => String(p.id) !== b.dataset.delpay); store.set("hisobot-maosh-berildi", PAYOUTS); after();
+      });
+    }
+    const sf = $("#startForm");
+    if (sf) sf.addEventListener("submit", e => {
+      e.preventDefault();
+      const s = $("#payStart").value; if (!s) return;
+      PAYSTART = s; store.set("hisobot-maosh-boshi", s);
+      OPENING = {}; sf.querySelectorAll("[data-open]").forEach(i => { const v = Number(i.value); if (v > 0) OPENING[i.dataset.open] = v; });
+      store.set("hisobot-maosh-qoldiq", OPENING); render();
+    });
+    const wm = $("#workersModal");
+    if (wm) {
+      const close = () => { wm.hidden = true; };
+      $("#openWorkers").addEventListener("click", () => { wm.hidden = false; const f = wm.querySelector("input"); if (f) f.focus(); });
+      wm.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", close));
+      wm.addEventListener("click", e => { if (e.target === wm) close(); });
+      wm.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+      const wire = row => row.querySelector(".del").addEventListener("click", () => row.parentNode.removeChild(row));
+      wm.querySelectorAll("#wrows .wrow").forEach(wire);
+      $("#addWorker").addEventListener("click", () => {
+        $("#wrows").insertAdjacentHTML("beforeend", workerRow({}));
+        const row = $("#wrows").lastElementChild; wire(row); row.querySelector("input").focus();
+      });
+      $("#workersForm").addEventListener("submit", e => {
+        e.preventDefault();
+        const rows = [...wm.querySelectorAll("#wrows .wrow")], err = $("#wErr");
+        let next = Math.max(0, ...WORKERS.map(w => w.id)) + 1;
+        const out = [];
+        for (const r of rows) {
+          const v = f => r.querySelector(`[data-f=${f}]`).value.trim();
+          if (!v("name") && !v("daily")) continue;
+          const daily = Number(v("daily") || 0), extra = Number(v("extra") || 0);
+          if (!v("name")) { err.textContent = "Har bir hamshiraning ism-familiyasini kiriting."; err.hidden = false; return; }
+          if (!(daily > 0) || extra < 0) { err.textContent = `${v("name")}: kunlik summa 0 dan katta, qo'shimcha manfiy bo'lmasligi kerak.`; err.hidden = false; return; }
+          const tg = v("tg").replace(/\s+/g, "");
+          if (tg && !/^(@[A-Za-z0-9_]{5,32}|-?\d{5,15})$/.test(tg)) { err.textContent = `${v("name")}: Telegram — @username (kamida 5 belgi) yoki raqamli ID bo'lishi kerak.`; err.hidden = false; return; }
+          out.push({ id: r.dataset.id ? Number(r.dataset.id) : next++, name: v("name"), pos: v("pos"), daily, extra, tg });
+        }
+        if (!out.length) { err.textContent = "Kamida bitta hamshira bo'lishi kerak."; err.hidden = false; return; }
+        WORKERS = out; store.set("hisobot-xodimlar", WORKERS); render();
+      });
+    }
+    const pin = $("#photoInput"), pm = $("#photoModal");
+    if (pin && pm) {
+      const pick = id => { photoProduct = id; pin.value = ""; pin.click(); };
+      document.querySelectorAll("[data-photo]").forEach(b => b.addEventListener("click", () => {
+        const id = b.dataset.photo;
+        if (!PHOTOS[id]) return pick(id);
+        photoProduct = id;
+        $("#pm-title").textContent = (PRODUCTS.find(x => x.id === id) || {}).name || "";
+        $("#photoBig").src = PHOTOS[id]; pm.hidden = false;
+      }));
+      pin.addEventListener("change", async () => {
+        const f = pin.files && pin.files[0];
+        if (!f || !photoProduct) return;
+        try {
+          PHOTOS[photoProduct] = await shrinkImage(f);
+          store.set("hisobot-rasmlar", PHOTOS);
+        } catch (e) { /* rasm bo'lmasa — e'tiborsiz */ }
+        render();
+      });
+      const close = () => { pm.hidden = true; };
+      pm.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", close));
+      pm.addEventListener("click", e => { if (e.target === pm) close(); });
+      pm.addEventListener("keydown", e => { if (e.key === "Escape") close(); });
+      $("#photoReplace").addEventListener("click", () => { close(); pick(photoProduct); });
+      $("#photoDelete").addEventListener("click", () => { delete PHOTOS[photoProduct]; store.set("hisobot-rasmlar", PHOTOS); close(); render(); });
+    }
+    document.querySelectorAll(".duty").forEach(card => {
+      const id = card.dataset.wid, d = dutyOf(id), save = () => store.set("hisobot-vazifalar", DUTIES);
+      card.querySelector(".addtask").addEventListener("submit", e => {
+        e.preventDefault(); const t = e.target.t.value.trim(); if (!t) return;
+        d.tasks.push(t); save(); render();
+        const again = document.querySelector(`.duty[data-wid="${id}"] .addtask input`); if (again) again.focus();
+      });
+      card.querySelectorAll("[data-deltask]").forEach(b => b.addEventListener("click", () => { d.tasks.splice(Number(b.dataset.deltask), 1); save(); render(); }));
+      card.querySelectorAll("[data-role]").forEach(c => c.addEventListener("change", () => { d.roles[c.dataset.role] = c.checked; save(); }));
+    });
+    document.querySelectorAll("[data-sv]").forEach(b => b.addEventListener("click", () => { stockView = b.dataset.sv; store.set("hisobot-sklad-view", stockView); render(); }));
+    document.querySelectorAll("[data-sf]").forEach(b => b.addEventListener("click", () => { stockFilter = b.dataset.sf; render(); }));
+    if ($("#kFilter")) {
+      const upd = (id, field) => $("#" + id).addEventListener("input", e => {
+        kf[field] = e.target.value; const pos = e.target.selectionStart;
+        render(); const el = $("#" + id); el.focus(); try { if (pos != null) el.setSelectionRange(pos, pos); } catch {}
+      });
+      upd("kq", "q"); upd("kmin", "min"); upd("kmax", "max");
+      $("#kdoc").addEventListener("change", e => { kf.doc = e.target.value; render(); });
+      const c = $("#kclear"); if (c) c.addEventListener("click", () => { kf = { ...kf, q: "", doc: "", min: "", max: "" }; render(); });
+      document.querySelectorAll("[data-ksort]").forEach(b => b.addEventListener("click", () => {
+        const k = b.dataset.ksort; kf.dir = kf.sort === k ? -kf.dir : (k === "amount" ? -1 : 1); kf.sort = k; render();
+      }));
+    }
+    document.querySelectorAll("[data-chat]").forEach(b => b.addEventListener("click", () => { chatTab = b.dataset.chat; render(); }));
+    document.querySelectorAll("[data-cell]").forEach(b => b.addEventListener("click", () => {
+      const k = b.dataset.cell, m = ATT[k], day = k.split("|")[0];
+      const next = m === undefined ? 0 : (m === 0 && !isRest(day) ? 1 : undefined);
+      if (next === undefined) delete ATT[k]; else ATT[k] = next;
+      const saved = store.get("hisobot-davomat", {}); saved[k] = next === undefined ? null : next;
+      for (const key of Object.keys(saved)) if (saved[key] === null) { delete ATT[key]; }
+      store.set("hisobot-davomat", saved);
+      const y = window.scrollY; render(); window.scrollTo(0, y);
+    }));
+    const f = $("#pctForm");
+    if (f) {
+      f.addEventListener("submit", e => {
+        e.preventDefault();
+        for (const s of STAFF) {
+          const v = parseFloat($("#pct-" + s.id).value);
+          pct[s.id] = isNaN(v) ? 0 : Math.min(100, Math.max(0, v));
+        }
+        store.set("hisobot-foizlar", pct);
+        const c = parseFloat($("#clinic-pct").value);
+        clinicPct = isNaN(c) ? 20 : Math.min(100, Math.max(0, c));
+        const dp = parseFloat($("#doctors-pct").value);
+        doctorsPct = isNaN(dp) ? 25 : Math.min(100 - clinicPct, Math.max(0, dp));
+        store.set("hisobot-klinika", clinicPct);
+        store.set("hisobot-shifokorlar", doctorsPct);
+        $("#view").innerHTML = viewSettings(true); bind();
+      });
+      $("#resetPct").addEventListener("click", () => { pct = { ...DEFAULT_PCT }; clinicPct = 20; doctorsPct = 25; store.set("hisobot-shifokorlar", 25); store.set("hisobot-foizlar", {}); store.set("hisobot-klinika", 20); $("#view").innerHTML = viewSettings(false); bind(); });
+    }
+  }
+
+  // ---- Kirish sahifasi (namuna) ----
+  $("#logout").addEventListener("click", () => { $("#login").hidden = false; $("#lg").value = ""; $("#pw").value = ""; $("#loginErr").hidden = true; $("#lg").focus(); });
+  $("#eye").addEventListener("click", () => { const p = $("#pw"); p.type = p.type === "password" ? "text" : "password"; });
+  $("#loginForm").addEventListener("submit", e => {
+    e.preventDefault();
+    if (!$("#lg").value.trim() || !$("#pw").value) { $("#loginErr").hidden = false; return; }
+    $("#login").hidden = true;
+  });
+
+  window.addEventListener("hashchange", render);
+  render();
+})();
+</script>
+
+</body></html>
