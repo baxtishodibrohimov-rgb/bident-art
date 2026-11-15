@@ -1,13 +1,11 @@
 # Cliniccards maosh hisoboti
 
 **Ulushlar o'zgarmas:** klinika — kassaga tushgan pulning 20%, har bir shifokor — o'ziga tushgan pulning 25%.
-**Bosh ekran:** bajarilgan ishlar, kassaga tushgan, xarajatlar (klinika ulushi + shifokorlar + xodimlar + material rasxod)
+**Bosh ekran:** bajarilgan ishlar, kassaga tushgan, xarajatlar (klinika ulushi + shifokorlar + hamshiralar + material rasxod)
 va klinika sof foydasi (bajarilgan ishlar − xarajatlar). Har bir summa bosilganda tafsiloti ochiladi.
-Cliniccards'dagi maosh xarajatlari (xodimga bog'langan yoki «Зарплата» toifasi) shifokorlarga «berilgan» summa sifatida
-olinadi va material rasxodga qo'shilmaydi.
 
-Bo'limlar: Bosh ekran · Shifokorlar · Qarzdorlar · Sklad (qoldiq — ro'yxat/kartochka va rasmlar, kunlik hisobotlar,
-buyurtmalar, sotuvchilar va ular bilan hisob-kitob) · Xodimlar (maosh, ⚙ sozlama, grafik, xodim vazifalari) ·
+Bo'limlar: Bosh ekran · Shifokorlar (maosh va avans berish) · Sklad (qoldiq — ro'yxat/kartochka va rasmlar, kunlik hisobotlar,
+buyurtmalar, sotuvchilar va ular bilan hisob-kitob) · Hamshiralar (maosh, ⚙ sozlama, grafik, hamshira vazifalari) ·
 Telegram bot (suhbatlar, bot xodimlari) · Qanday ishlaydi.
 
 Cliniccards API orqali **shu oyda kassaga tushgan pul** bo'yicha shifokorlar maoshini hisoblaydigan kichik dastur.
@@ -20,19 +18,28 @@ Masalan, martda qo'yilgan breket uchun noyabrda tushgan 1 000 000 noyabr maoshig
 | --- | --- |
 | **Bosh ekran** (`/`) | Tanlangan oy yoki sana oralig'i bo'yicha 5 ta summa: bajarilgan ishlar, kassaga tushgan, klinikaga (kassaning 20%), shifokorlarga, xarajatlar. Har birini bosganda tafsiloti ochiladi |
 | **Bajarilgan ishlar** (`/ishlar`) | Shu davrda bajarilgan ishlar, shifokor bo'yicha: narx, to'langan, qoldiq |
-| **Kassa** (`/kassa`) | Barcha to'lovlar (`GET /payments`), kassa bo'yicha |
+| **Kassa** (`/kassa`) | Barcha to'lovlar (`GET /payments`), kassa bo'yicha; har bir to'lov qaysi shifokor ishi uchunligi. Bemor, shifokor va summa bo'yicha filtr, ustunlar bo'yicha saralash |
 | **Klinika ulushi** (`/klinika`) | Kassa × klinika foizi, kassa bo'yicha |
-| **Shifokorlar** (`/shifokorlar`) | Kim qancha pul olib keldi, foizi va maoshi. Kassa jami bilan solishtirish («Farq») |
-| **Xarajatlar** (`/xarajatlar`) | Cliniccards xarajatlari (`GET /spendings`), toifa bo'yicha |
-| **Shifokor** (`/shifokor/<id>`) | Bemor, ish, ish sanasi, shu davrda tushgan pul, to'lov sanasi, shifokor ulushi |
-| **Excel / Chop etish** | Har ikkala sahifadan tayyor ro'yxat |
-| **Qarzdorlar** (`/qarzdorlar`) | Bajarilgan, lekin to'liq to'lanmagan ishlar: keyingi oylarda kutilayotgan pul |
-| **Foizlar** (`/sozlamalar`) | Har bir shifokor foizi (API Cliniccards'dagi foizni bermaydi, shuning uchun bir marta shu yerda kiritiladi) |
+| **Shifokorlar** (`/shifokorlar`) | Kim qancha pul olib keldi, maoshi, berilgan (maosh + avans), avans, berilmagan. Ism bosilsa — o'sha qator ostida berilgan maoshlar va Excel |
+| **Xarajatlar** (`/xarajatlar`) | 4 ta summa: klinika ulushi, shifokorlar maoshi, hamshiralar maoshi, material rasxod |
+| **Excel** | Barcha shifokorlar; har bir berilgan maosh (Sana · F.I.SH. · Summa · Shifokor); shifokorning davrdagi barcha to'lovlari |
+
+## Shifokorga maosh berish
+
+- Jadvaldagi har bir shifokor qatorida **«Maosh berish»** tugmasi. Davr o'zi aniqlanadi: oxirgi maosh berilgan kunning
+  ertasidan bugungacha. Oynada shu davrda ishlagan puli (oldin olgan avansi ayirilgan) va berish mumkin bo'lgan summa chiqadi.
+- Ishlaganidan ko'p summa kiritilsa — «Xato kiritdingiz» oynasi (Yopish | Avans). «Avans» bosilsa: ishlagan puli maosh
+  sifatida, ustiga siz yozgan avans beriladi. Avans keyingi maoshdan avtomatik ushlanadi.
+- «Berilgan» — shu davrda qo'lga berilgan pul (maosh o'z davri bo'yicha, avans berilgan sanasi bo'yicha).
+  «Berilmagan» manfiy bo'lsa (qizil) — shifokor oldindan olgan.
+- **Maosh hisobi qachondan boshlanadi** (jadval ostida): shu sanadan oldingi davr eski usulda berilgan deb hisoblanadi.
+  O'sha sanagacha berilmay qolgan pul «boshlang'ich qoldiq» qilib yoziladi va birinchi maoshga qo'shiladi.
+- Ma'lumot `DB_FAYL` bazasida (`doctor_payouts`) saqlanadi; xato yozuvni oynadagi × bilan o'chirish mumkin.
 
 «Shifokor belgilanmagan» qatori: ishda `done_by_doctor_id` bo'sh, ya'ni Cliniccards'da «Работы выполнил» to'ldirilmagan.
 Bunday ishni Cliniccards'da tuzatish kerak.
 
-## Xodimlar (shifokor bo'lmagan) va davomat
+## Hamshiralar va davomat
 
 Kassa taqsimoti: klinika 20%, shifokorlar 25%, qolgan 55% xarajatlar. Xodimlar maoshi 55% ichidan hisoblanadi;
 bosh ekranda «Kassaning taqsimoti» jadvali 55% dan qancha ishlatilgani va qolganini ko'rsatadi.

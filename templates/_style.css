@@ -279,5 +279,17 @@ input[type=text], input[type=tel], input[type=number], input[type=date], select 
 .warn { color: var(--warn); } .ok { color: var(--good); }
 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
 td.n, th.n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-button:not(.btn):not(.logout):not(.cell):not(.ph):not(.pcard-img):not(.tile):not(.eye):not(.go) { font: inherit; border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 7px 13px; border-radius: 9px; cursor: pointer; }
+button:not(.btn):not(.logout):not(.cell):not(.ph):not(.pcard-img):not(.tile):not(.eye):not(.go):not(.sorth) { font: inherit; border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 7px 13px; border-radius: 9px; cursor: pointer; }
 button.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+
+/* Sarlavha va sana bir qatorda, sana o'ng burchakda */
+.titlerow { display: flex; justify-content: space-between; align-items: center; gap: 10px 16px; flex-wrap: wrap; }
+.titlerow .period, .bar .period { margin-left: auto; }
+/* Saralanadigan ustun sarlavhasi va ochiladigan qator */
+.sorth { all: unset; cursor: pointer; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; }
+.sorth:hover { color: var(--accent); } .sorth:focus-visible { outline: 2px solid var(--accent-2); }
+tr.subrow > td { background: var(--surface-2); padding: 8px 14px 12px 32px; }
+tr.subrow:hover { background: none; }
+.subbox table.mini { min-width: 0; width: 100%; background: var(--surface); border-radius: 8px; overflow: hidden; }
+.subbox table.mini th { background: var(--surface); }
+.neg { color: var(--bad); font-weight: 600; }

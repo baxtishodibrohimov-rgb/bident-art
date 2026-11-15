@@ -1,8 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Sof foyda — {{ p.label }}{% endblock %}
 {% block content %}
-<h1>Klinika sof foydasi</h1>
-{% set action = "/foyda" %}{% include "_period.html" %}
+<div class="titlerow"><h1>Klinika sof foydasi</h1>{% set action = "/foyda" %}{% include "_period.html" %}</div>
 {% set c = '--bad' if o.profit < 0 else '--good' %}
 <section class="panel" style="padding:16px;display:grid;gap:12px">
   <p class="formula num">Bajarilgan ishlar <b>{{ o.done_total|pul }}</b> − xarajatlar <b>{{ o.expenses_total|pul }}</b> = <b style="color:var({{ c }})">{{ o.profit|pul }} so'm</b></p>

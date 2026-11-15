@@ -181,7 +181,8 @@ def test_login_flow(svc, monkeypatch):
                follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"] == "/shifokor/501?oy=2026-11"
     assert "httponly" in r.headers["set-cookie"].lower()
-    assert "Usmonov Akmal" in c.get("/shifokor/501?oy=2026-11").text
+    r = c.get("/shifokor/501?oy=2026-11")   # alohida sahifa yo'q: jadvalda o'sha qator ochiladi
+    assert "Karimova madina" in r.text and 'data-sub="501" >' in r.text.replace("  ", " ")
     c.post("/logout")
     assert c.get("/", follow_redirects=False).status_code == 303
 
@@ -209,10 +210,10 @@ def test_web(svc, tmp_path, monkeypatch):
     c.post("/login", data={"login": "admin", "parol": "maxfiy"})
     r = c.get("/shifokorlar?oy=2026-11")
     assert r.status_code == 200 and "125 000" in r.text and "Chiqish" in r.text
-    r = c.get("/shifokor/501?oy=2026-11")
-    assert "Usmonov Akmal" in r.text and "Konsultatsiya" not in r.text
+    r = c.get("/shifokor/501?oy=2026-11", follow_redirects=False)
+    assert r.headers["location"] == "/shifokorlar?oy=2026-11&ochiq=501#d-501"
     assert c.get("/excel?oy=2026-11&shifokor=501").content[:2] == b"PK"
-    assert c.get("/qarzdorlar").status_code == 200
+    assert "Qarzdorlar" not in c.get("/").text and "Hamshiralar" in c.get("/").text
     # foizlar o'zgarmas: sozlama sahifasi yo'q
     assert c.get("/sozlamalar", follow_redirects=False).headers["location"] == "/"
     assert "Foizlar" not in c.get("/").text
@@ -256,10 +257,11 @@ def test_web_date_range(svc, monkeypatch):
     c.post("/login", data={"login": "admin", "parol": "maxfiy"})
     r = c.get("/shifokorlar?dan=2026-10-01&gacha=2026-11-30")
     assert r.status_code == 200 and "01.10.2026 – 30.11.2026" in r.text
-    assert "/shifokor/502?dan=2026-10-01&amp;gacha=2026-11-30" in r.text
-    assert r.text.count('type="date"') == 2
-    r = c.get("/shifokor/502?dan=2026-10-01&gacha=2026-11-30")
+    assert "/shifokor/502/maosh.xlsx" not in r.text   # hali maosh berilmagan
+    assert r.text.count('type="date"') == 3          # davr + «hisob qachondan boshlanadi»
     assert "2 000 000" in r.text
+    r = c.get("/shifokor/502?dan=2026-10-01&gacha=2026-11-30", follow_redirects=False)
+    assert r.headers["location"] == "/shifokorlar?dan=2026-10-01&gacha=2026-11-30&ochiq=502#d-502"
     x = c.get("/excel?dan=2026-10-01&gacha=2026-11-30")
     assert x.content[:2] == b"PK" and "2026-10-01_2026-11-30" in x.headers["content-disposition"]
     assert c.get("/?dan=2026-11-30&gacha=2026-11-01").status_code == 400
@@ -316,10 +318,13 @@ def test_dashboard_pages(svc, monkeypatch):
     assert "Konsultatsiya" in c.get("/ishlar?oy=2026-11").text
     k = c.get("/kassa?oy=2026-11").text
     assert "Terminal" in k and "1 300 000" in k
+    assert "Karimova madina" in k and "Aliyev Bobur" in k and "belgilanmagan" in k   # to'lov qaysi shifokor ishi uchun
+    assert 'id="kdoc"' in k
     assert "410 000" in c.get("/klinika?oy=2026-11").text
     x = c.get("/xarajatlar?oy=2026-11").text
-    for text in ("Klinika ulushi", "Shifokorlar maoshi", "Xodimlar maoshi", "Material rasxod", "Ijara", "-100 000", "1 760 000"):
+    for text in ("Klinika ulushi", "Shifokorlar maoshi", "Hamshiralar maoshi", "Material rasxod", "900 000"):
         assert text in x, text
+    assert "Ijara" not in x   # xarajatlar ro'yxati olib tashlangan, faqat 4 ta summa
     f = c.get("/foyda?oy=2026-11").text
     assert "Klinika sof foydasi" in f and "-1 610 000" in f
     d = c.get("/shifokorlar?oy=2026-11").text

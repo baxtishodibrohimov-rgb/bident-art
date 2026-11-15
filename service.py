@@ -14,7 +14,7 @@ from client import CliniccardsClient
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 
-from report import (DONE_STATUSES, MonthReport, Period, as_period, build_debts, build_report,
+from report import (DONE_STATUSES, NO_DOCTOR, MonthReport, Period, as_period, build_debts, build_report,
                     dedupe_items, money, month_ranges, patient_name)
 
 DEFAULT_START = "2015-01-01"
@@ -232,10 +232,6 @@ class Service:
             material_count=len(material),
         )
 
-    def doctor_payouts(self, period) -> dict:
-        salary, _ = finance.split_spendings(self.spendings(period))
-        return finance.payouts_by_doctor(salary, self.staff())
-
     def material_detail(self, period):
         _, material = finance.split_spendings(self.spendings(period))
         return details.expenses(material)
@@ -297,7 +293,43 @@ class Service:
 
     def kassa_detail(self, period):
         pays = self.payments(period)
-        return details.kassa(pays, self.patient_names(p.get("patient_id") for p in pays))
+        return details.kassa(pays, self.patient_names(p.get("patient_id") for p in pays),
+                             self.payment_doctors(period), self.doctor_names())
+
+    def doctor_names(self) -> dict[str, str]:
+        from report import staff_name
+        return {str(s.get("doctor_id")): staff_name(s) for s in self.staff()}
+
+    def payment_doctors(self, period) -> dict:
+        """Kassadagi to'lov qaysi shifokor ishi uchun: {payment_id yoki (bemor, vaqt, summa): doctor_id}."""
+        p = as_period(period)
+        out: dict = {}
+        for it in dedupe_items(self.items(p.end)):
+            doc = str(it.get("done_by_doctor_id") or NO_DOCTOR)
+            for pay in it.get("payments") or []:
+                if not p.contains(pay.get("date")):
+                    continue
+                if pay.get("payment_id") not in (None, ""):
+                    out[str(pay.get("payment_id"))] = doc
+                out[details.pay_key(it.get("patient_id"), pay.get("date"), pay.get("amount"))] = doc
+        return out
+
+    def doctor_lines(self, doctor_id: str, period) -> list[dict]:
+        """Shifokor ishlari uchun shu davrda kassaga tushgan har bir to'lov: sana, bemor, summa."""
+        p = as_period(period)
+        lines = []
+        for it in dedupe_items(self.items(p.end)):
+            if str(it.get("done_by_doctor_id") or NO_DOCTOR) != str(doctor_id):
+                continue
+            for pay in it.get("payments") or []:
+                if p.contains(pay.get("date")):
+                    lines.append({"date": str(pay.get("date"))[:10], "patient_id": str(it.get("patient_id") or ""),
+                                  "amount": money(pay.get("amount"))})
+        names = self.patient_names(x["patient_id"] for x in lines)
+        for x in lines:
+            x["patient"] = names.get(x["patient_id"], f"#{x['patient_id']}")
+        lines.sort(key=lambda x: (x["date"], x["patient"]))
+        return lines
 
     def expenses_detail(self, period):
         return details.expenses(self.spendings(period))

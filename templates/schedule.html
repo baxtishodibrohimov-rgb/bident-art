@@ -2,11 +2,10 @@
 {% block title %}Grafik — {{ p.label }}{% endblock %}
 {% block content %}
 <h1 class="sr-only">Grafik · {{ p.label }}</h1>
-{% include "_xodim_nav.html" %}
-{% set action = "/grafik" %}{% include "_period.html" %}
+{% set action = "/grafik" %}{% include "_xodim_nav.html" %}
 <section class="panel"><div class="scroll"><table class="sched">
   <thead>
-    <tr><th>Xodim</th>{% for d in days %}<th class="c {{ 'rest' if d.weekday() in rest }}">{{ d.day }}<br><span class="muted">{{ wd[d.weekday()] }}</span></th>{% endfor %}
+    <tr><th>Hamshira</th>{% for d in days %}<th class="c {{ 'rest' if d.weekday() in rest }}">{{ d.day }}<br><span class="muted">{{ wd[d.weekday()] }}</span></th>{% endfor %}
       <th class="r">Kun</th><th class="r">Qo'sh.</th><th class="r">Jami</th></tr>
     <tr><td class="muted">Klinika</td>{% for d in days %}{% set c = clinic.get(d.isoformat()) %}<td class="c {{ 'rest' if d.weekday() in rest }}">{% if c == 1 %}<span style="color:var(--good)">●</span>{% elif c == 0 %}<span class="muted">—</span>{% endif %}</td>{% endfor %}<td colspan="3"></td></tr>
   </thead>
@@ -20,9 +19,9 @@
           <button class="cell {{ 'on' if m is not none }} {{ 'plus' if plus }}" type="submit" aria-label="{{ w.worker.full_name }}, {{ d.isoformat() }}">{{ '' if m is none else ('✓+' if plus else '✓') }}</button>
         </form></td>{% endfor %}
       <td class="r">{{ w.worked|length }}</td><td class="r">{{ w.extra_days|length }}</td><td class="r"><b>{{ w.total|pul }}</b></td></tr>
-  {% else %}<tr><td colspan="{{ days|length + 4 }}" class="muted">Xodim yo'q.</td></tr>{% endfor %}
+  {% else %}<tr><td colspan="{{ days|length + 4 }}" class="muted">Hamshira yo'q.</td></tr>{% endfor %}
   </tbody>
   <tfoot><tr><td colspan="{{ days|length + 3 }}">Jami maosh</td><td class="r">{{ total|pul }}</td></tr></tfoot>
 </table></div></section>
-<p class="muted" style="margin:0;font-size:13px">Har kuni bot davomat beradigan xodimdan so'raydi. Katakni bosib o'zgartiring: bo'sh → ✓ → ✓+ → bo'sh. Sariq ustun — dam olish kuni (qo'shimcha avtomatik).</p>
+<p class="muted" style="margin:0;font-size:13px">Har kuni bot davomat beradigan hamshiradan so'raydi. Katakni bosib o'zgartiring: bo'sh → ✓ → ✓+ → bo'sh. Sariq ustun — dam olish kuni (qo'shimcha avtomatik).</p>
 {% endblock %}

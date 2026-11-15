@@ -3,31 +3,187 @@
 {% block content %}
 <h1 class="sr-only">Shifokorlarga beriladigan summa · {{ p.label }}</h1>
 {% set action = "/shifokorlar" %}{% include "_period.html" %}
+{% macro money(v) %}{% if v < 0 %}<span class="neg" title="shifokor oldindan olgan">−{{ (-v)|pul }}</span>{% else %}<span style="color:var({{ '--warn' if v > 0 else '--good' }});font-weight:600">{{ v|pul }}</span>{% endif %}{% endmacro %}
+{% if p.start < start %}<p class="demo-note" style="margin:0"><span><b>Maosh hisobi {{ start.strftime('%d.%m.%Y') }} dan boshlangan.</b> Undan oldingi maosh eski usulda berilgan deb hisoblanadi, shuning uchun «Berilmagan» ustuniga faqat shu sanadan keyingi summa kiradi.</span></p>{% endif %}
 <div class="tiles three">
   <div class="tile"><div class="k">Jami maosh</div><div class="v num">{{ rep.salary|pul }}<small>so'm</small></div></div>
-  <div class="tile good"><div class="k">Berilgan summa</div><div class="v num">{{ given|pul }}<small>so'm</small></div></div>
-  <div class="tile {{ 'warn' if not_given > 0 else 'good' }}"><div class="k">Berilmagan summa</div><div class="v num">{{ not_given|pul }}<small>so'm</small></div></div>
+  <div class="tile good"><div class="k">Berilgan summa</div><div class="v num">{{ given|pul }}<small>so'm</small></div>{% if avans %}<div class="hint" style="color:var(--muted)">shundan avans {{ avans|pul }}</div>{% endif %}</div>
+  <div class="tile {{ 'warn' if not_given > 0 else ('bad' if not_given < 0 else 'good') }}"><div class="k">Berilmagan summa</div><div class="v num">{{ '−' if not_given < 0 }}{{ (not_given|abs)|pul }}<small>so'm</small></div></div>
 </div>
-{% set mx = (rep.doctors|map(attribute="total")|max) if rep.doctors else 1 %}
 <section class="panel">
-  <div class="panel-h"><h2>Shifokorlar</h2><a class="btn" href="/excel?{{ q }}">Excel</a></div>
+  <div class="panel-h"><h2>Shifokorlar</h2><span class="controls"><span class="muted" style="font-size:13px">ismni bossangiz, berilgan maoshlar ochiladi</span><a class="btn" href="/excel?{{ q }}">Excel</a></span></div>
   <div class="scroll"><table>
-    <thead><tr><th>Shifokor</th><th class="r">Bemorlar</th><th class="r">Tushgan</th><th class="r">Foiz</th><th class="r">Maosh</th><th class="r">Berilgan</th><th class="r">Berilmagan</th></tr></thead>
+    <thead><tr><th>Shifokor</th><th class="r">Bemorlar</th><th class="r">Tushgan</th><th class="r">Foiz</th><th class="r">Maosh</th><th class="r">Berilgan</th><th class="r">Avans</th><th class="r">Berilmagan</th><th></th></tr></thead>
     <tbody>
     {% for d in rep.doctors %}
-      <tr>
-        <td>{% if d.doctor_id == "0" %}<span style="color:var(--warn);font-weight:600">{{ d.name }}</span><span class="pill warn">Cliniccards'da tuzatish kerak</span>
-            {% else %}<a class="rowlink" href="/shifokor/{{ d.doctor_id }}?{{ q }}">{{ d.name }}</a>{% endif %}</td>
-        <td class="r">{{ d.patients }}</td>
-        <td class="r"><div class="bar-cell"><span class="minibar" aria-hidden="true"><i style="width:{{ (d.total / mx * 100) if mx else 0 }}%"></i></span>{{ d.total|pul }}</div></td>
-        <td class="r">{{ d.percent|pul }}%</td><td class="r">{{ d.salary|pul }}</td>
-        {% if d.doctor_id == "0" %}<td class="r muted">—</td><td class="r muted">—</td>
-        {% else %}{% set g = paid.get(d.doctor_id, 0) %}{% set left = d.salary - g %}
-          <td class="r">{{ g|pul }}</td><td class="r" style="color:var({{ '--warn' if left > 0 else '--good' }});font-weight:600">{{ (left if left > 0 else 0)|pul }}</td>{% endif %}
+      {% if d.doctor_id == "0" %}
+      <tr><td><span style="color:var(--warn);font-weight:600">{{ d.name }}</span><span class="pill warn">Cliniccards'da tuzatish kerak</span></td>
+        <td class="r">{{ d.patients }}</td><td class="r">{{ d.total|pul }}</td><td class="r">{{ d.percent|pul }}%</td><td class="r">{{ d.salary|pul }}</td>
+        <td class="r muted">—</td><td class="r muted">—</td><td class="r muted">—</td><td></td></tr>
+      {% else %}{% set s = stats[d.doctor_id] %}{% set open = ochiq == d.doctor_id %}
+      <tr id="d-{{ d.doctor_id }}">
+        <td><button type="button" class="rowlink sorth" style="font-weight:600" data-toggle="{{ d.doctor_id }}" aria-expanded="{{ 'true' if open else 'false' }}"><span class="arrow">{{ '▾' if open else '▸' }}</span> {{ d.name }}</button></td>
+        <td class="r">{{ d.patients }}</td><td class="r">{{ d.total|pul }}</td><td class="r">{{ d.percent|pul }}%</td><td class="r">{{ d.salary|pul }}</td>
+        <td class="r">{{ s.given|pul }}</td>
+        <td class="r">{% if s.avans %}<span style="color:var(--warn);font-weight:600">{{ s.avans|pul }}</span>{% else %}<span class="muted">—</span>{% endif %}{% if s.avans_left %}<br><span class="muted" style="font-size:12px">ushlanmagan {{ s.avans_left|pul }}</span>{% endif %}</td>
+        <td class="r">{{ money(s.left) }}</td>
+        <td class="r"><button type="button" class="btn primary" data-pay="{{ d.doctor_id }}" style="padding:5px 10px;white-space:nowrap">Maosh berish</button></td>
       </tr>
-    {% else %}<tr><td colspan="7" class="muted">Bu davrda ishlarga bog'langan to'lov yo'q.</td></tr>{% endfor %}
+      <tr class="subrow" data-sub="{{ d.doctor_id }}" {% if not open %}hidden{% endif %}><td colspan="9"><div class="subbox">
+        {% set rows = pays[d.doctor_id] %}
+        <table class="mini">
+          <thead><tr><th>Qachon berildi</th><th>Qaysi davr uchun</th><th class="r">Maosh</th><th class="r">Avans</th><th class="r">Excel</th></tr></thead>
+          <tbody>{% for r in rows %}<tr><td class="num">{{ r.paid_on[8:10] }}.{{ r.paid_on[5:7] }}.{{ r.paid_on[:4] }}</td>
+            <td>{% if r.kind == 'avans' %}<span class="muted">—</span>{% else %}<span class="num">{{ r.period_from[8:10] }}.{{ r.period_from[5:7] }}.{{ r.period_from[:4] }} – {{ r.period_to[8:10] }}.{{ r.period_to[5:7] }}.{{ r.period_to[:4] }}</span>{% endif %}</td>
+            <td class="r">{% if r.kind == 'avans' %}<span class="muted">—</span>{% else %}{{ r.amount|pul }}{% endif %}</td>
+            <td class="r">{% if r.kind == 'avans' %}<b style="color:var(--warn)">{{ r.amount|pul }}</b>{% else %}<span class="muted">—</span>{% endif %}</td>
+            <td class="r"><a class="btn" href="/maosh/{{ r.id }}/excel" style="padding:3px 10px;font-size:13px" title="Shu to'lov uchun Excel">⬇</a></td></tr>
+          {% else %}<tr><td colspan="5" class="muted">Bu davrda maosh berilmagan.</td></tr>{% endfor %}</tbody>
+          {% if rows %}<tfoot><tr><td colspan="2">Jami</td><td class="r">{{ rows|selectattr('kind', 'equalto', 'maosh')|sum(attribute='amount')|pul }}</td><td class="r">{{ rows|selectattr('kind', 'equalto', 'avans')|sum(attribute='amount')|pul }}</td><td></td></tr></tfoot>{% endif %}
+        </table>
+        {% if rows %}<div style="text-align:right;margin-top:6px"><a class="btn" href="/shifokor/{{ d.doctor_id }}/maosh.xlsx?{{ q }}" style="padding:5px 12px">⬇ Excel — barcha davr</a></div>{% endif %}
+      </div></td></tr>
+      {% endif %}
+    {% else %}<tr><td colspan="9" class="muted">Bu davrda ishlarga bog'langan to'lov yo'q.</td></tr>{% endfor %}
     </tbody>
-    <tfoot><tr><td>Jami</td><td></td><td class="r">{{ rep.total|pul }}</td><td></td><td class="r">{{ rep.salary|pul }}</td><td class="r">{{ given|pul }}</td><td class="r">{{ not_given|pul }}</td></tr></tfoot>
+    <tfoot><tr><td>Jami</td><td></td><td class="r">{{ rep.total|pul }}</td><td></td><td class="r">{{ rep.salary|pul }}</td><td class="r">{{ given|pul }}</td><td class="r">{{ avans|pul }}</td><td class="r">{{ money(not_given) }}</td><td></td></tr></tfoot>
   </table></div>
 </section>
+
+<details class="panel" style="padding:12px 16px">
+  <summary><b>Maosh hisobi qachondan boshlanadi</b> · <span class="num">{{ start.strftime('%d.%m.%Y') }}</span></summary>
+  <p class="note" style="margin:8px 0">Shu sanadan oldingi maosh eski usulda berilgan deb hisoblanadi. O'sha sanagacha biror shifokorga berilmay qolgan pul bo'lsa, uni boshlang'ich qoldiq qilib yozing — u birinchi maoshga qo'shiladi.</p>
+  <form method="post" action="/maosh/boshlanish" style="display:grid;gap:8px;max-width:520px">
+    <input type="hidden" name="qaytish" value="/shifokorlar?{{ q }}">
+    <label>Boshlanish sanasi <input class="btn" type="date" name="boshlanish" value="{{ start }}" required></label>
+    {% for doc, name in staff %}<div class="drow"><span>{{ name }}</span><span></span><input class="btn num" type="number" min="0" step="1000" name="qoldiq_{{ doc }}" value="{{ openings.get(doc, '') }}" placeholder="0" aria-label="{{ name }} boshlang'ich qoldig'i"></div>{% endfor %}
+    <div class="modal-f" style="margin:0"><button type="submit" class="btn">Saqlash</button></div>
+  </form>
+</details>
+
+<div class="modal" id="payModal" hidden role="dialog" aria-modal="true" aria-labelledby="pay-title">
+  <div class="modal-box" style="max-width:640px;position:relative">
+    <div class="modal-h"><h2 id="pay-title">Maosh berish</h2><button type="button" class="btn icon" data-close aria-label="Yopish">×</button></div>
+    <form id="payForm" style="display:grid;gap:10px" novalidate>
+      <p class="muted" id="payPeriod" style="margin:0">Hisoblanmoqda…</p>
+      <div class="tiles three" id="payCalc"></div>
+      <div class="controls">
+        <label for="payAmount">Beriladigan summa</label>
+        <input class="btn num" type="number" min="0" step="1000" id="payAmount" style="width:180px">
+        <button type="submit" class="btn primary" id="paySubmit">Maosh berish</button>
+      </div>
+      <p class="range-err" id="payMsg" hidden></p>
+    </form>
+    <section id="payHist" style="display:grid;gap:8px"></section>
+    <div class="modal" id="payErrBox" hidden role="alertdialog" aria-modal="true" aria-labelledby="pe-title" style="position:absolute;border-radius:14px">
+      <div class="modal-box narrow" style="max-width:400px">
+        <h2 id="pe-title" style="color:var(--bad)">Xato kiritdingiz</h2>
+        <p id="peText" style="margin:0"></p>
+        <div class="modal-f"><button type="button" class="btn" id="peClose">Yopish</button><button type="button" class="btn primary" id="peAvans">Avans</button></div>
+      </div>
+    </div>
+    <div class="modal" id="payAvBox" hidden role="dialog" aria-modal="true" aria-labelledby="pa-title" style="position:absolute;border-radius:14px">
+      <form class="modal-box narrow" id="avForm" style="max-width:420px" novalidate>
+        <h2 id="pa-title"></h2>
+        <div class="pcard-row"><span class="muted" id="paPeriod"></span></div>
+        <div class="pcard-row"><span>Ishlagan puli (maosh)</span><b class="num" id="paEarned"></b></div>
+        <label for="paAmount">Avans summasi</label>
+        <input class="btn num" type="number" min="0" step="1000" id="paAmount" placeholder="Summani kiriting">
+        <div class="pcard-row" style="border-top:1px solid var(--line);padding-top:8px"><span>Jami beriladi</span><b class="num" id="paTotal"></b></div>
+        <p class="muted" style="margin:0;font-size:13px">Avans keyingi maoshdan avtomatik ushlab qolinadi.</p>
+        <p class="range-err" id="paErr" hidden>Avans summasini kiriting.</p>
+        <div class="modal-f"><button type="button" class="btn" id="paCancel">Bekor qilish</button><button type="submit" class="btn primary">Berish</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const pul = n => Math.round(n).toLocaleString("ru-RU").replace(/\s/g, " ");
+  const dmy = d => d ? d.slice(8, 10) + "." + d.slice(5, 7) + "." + d.slice(0, 4) : "";
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  // Ism bosilganda shu qator ostida berilgan maoshlar ochiladi/yopiladi
+  document.querySelectorAll("[data-toggle]").forEach(b => b.addEventListener("click", () => {
+    const sub = document.querySelector(`[data-sub="${b.dataset.toggle}"]`), open = sub.hidden;
+    sub.hidden = !open; b.setAttribute("aria-expanded", open); b.querySelector(".arrow").textContent = open ? "▾" : "▸";
+  }));
+
+  const pm = $("#payModal"), eb = $("#payErrBox"), ab = $("#payAvBox"), amt = $("#payAmount"), pa = $("#paAmount"), msg = $("#payMsg");
+  let cur = null, plan = null, changed = false;
+  const tile = (k, v, cls = "", hint = "") => `<div class="tile ${cls}"><div class="k">${k}</div><div class="v num">${v < 0 ? "−" : ""}${pul(Math.abs(v))}<small>so'm</small></div>${hint ? `<div class="hint" style="color:var(--muted)">${hint}</div>` : ""}</div>`;
+  const post = (url, data) => fetch(url, { method: "POST", body: new URLSearchParams(data), credentials: "same-origin" });
+
+  async function load() {
+    msg.hidden = true; $("#payCalc").innerHTML = ""; $("#payHist").innerHTML = ""; $("#payPeriod").textContent = "Hisoblanmoqda…";
+    const r = await fetch(`/maosh/${encodeURIComponent(cur)}/hisob`, { credentials: "same-origin" });
+    if (!r.ok) { $("#payPeriod").textContent = "Hisoblab bo'lmadi. Sahifani yangilab ko'ring."; return; }
+    plan = await r.json();
+    $("#pay-title").textContent = "Maosh berish — " + plan.name;
+    $("#payPeriod").innerHTML = plan.paid_up ? `Maosh ${dmy(plan.from)} dan oldingi kunlar uchun berib bo'lingan.`
+      : `Oxirgi maoshdan bugungacha: <b class="num">${dmy(plan.from)} – ${dmy(plan.to)}</b>${plan.opening ? ` · boshlang'ich qoldiq ${pul(plan.opening)} qo'shilgan` : ""}`;
+    $("#payCalc").innerHTML = `<div class="tile ${plan.net < 0 ? "bad" : ""}" style="grid-column:span 2"><div class="k">Ishlagan puli</div>
+        <div class="v num">${plan.net < 0 ? "−" : ""}${pul(Math.abs(plan.net))}<small>so'm</small></div>
+        <div class="hint num" style="color:var(--muted)">ishladi ${pul(plan.earned)} − avans ${pul(plan.avans_left)}</div></div>`
+      + tile("Berish mumkin", plan.can, plan.can ? "good" : "");
+    amt.value = plan.can || "";
+    const h = plan.history, sm = h.filter(x => x.kind !== "avans").reduce((a, x) => a + x.amount, 0), sa = h.filter(x => x.kind === "avans").reduce((a, x) => a + x.amount, 0);
+    $("#payHist").innerHTML = `<div class="bar"><h2 style="font-size:16px">Berilgan maoshlar</h2><span class="muted num" style="font-size:13px">maosh ${pul(sm)} so'm · avans ${pul(sa)} so'm</span></div>
+      <div class="scroll"><table style="min-width:520px"><thead><tr><th>Qachon berildi</th><th>Qaysi davr uchun</th><th class="r">Maosh</th><th class="r">Avans</th><th></th></tr></thead>
+      <tbody>${h.map(x => `<tr><td class="num">${dmy(x.paid_on)}</td>
+        <td>${x.kind === "avans" ? '<span class="muted">—</span>' : `<span class="num">${dmy(x.from)} – ${dmy(x.to)}</span>${x.avans_used ? `<br><span class="muted">oldingi avansdan ushlandi ${pul(x.avans_used)}</span>` : ""}`}</td>
+        <td class="r">${x.kind === "avans" ? '<span class="muted">—</span>' : pul(x.amount)}</td>
+        <td class="r">${x.kind === "avans" ? `<b style="color:var(--warn)">${pul(x.amount)}</b>` : '<span class="muted">—</span>'}</td>
+        <td class="r"><button type="button" class="btn icon del" data-del="${x.id}" aria-label="O'chirish" title="Xato yozilgan bo'lsa o'chirish">×</button></td></tr>`).join("")
+        || '<tr><td colspan="5" class="muted">Bu shifokorga hali maosh berilmagan.</td></tr>'}</tbody></table></div>`;
+  }
+  const open = id => { cur = id; eb.hidden = true; ab.hidden = true; pm.hidden = false; load(); amt.focus(); };
+  document.querySelectorAll("[data-pay]").forEach(b => b.addEventListener("click", () => open(b.dataset.pay)));
+  const close = () => { pm.hidden = true; if (changed) location.reload(); };
+  pm.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", close));
+  pm.addEventListener("click", e => { if (e.target === pm) close(); });
+  pm.addEventListener("keydown", e => { if (e.key === "Escape") { if (!ab.hidden) ab.hidden = true; else if (!eb.hidden) eb.hidden = true; else close(); } });
+  const fail = async r => { let t = "Saqlab bo'lmadi."; try { t = (await r.json()).error || t; } catch {} msg.textContent = t; msg.hidden = false; };
+
+  $("#payForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const a = Number(amt.value);
+    if (!plan || !(a > 0)) { amt.focus(); return; }
+    if (a > plan.can) {
+      $("#peText").innerHTML = `${esc(plan.name)} shu davrda <b class="num">${pul(plan.can)} so'm</b> ishlagan, siz <b class="num">${pul(a)} so'm</b> kiritdingiz. Ishlaganidan ko'p berish uchun «Avans» tugmasini bosing.`;
+      eb.hidden = false; $("#peAvans").focus(); return;
+    }
+    const r = await post(`/maosh/${encodeURIComponent(cur)}/berish`, { summa: a });
+    if (r.ok) { changed = true; load(); } else await fail(r);
+  });
+  $("#peClose").addEventListener("click", () => { eb.hidden = true; amt.focus(); });
+  // Avans oynasi: maosh — ishlagan puli, avans maydoni bo'sh, summani o'zingiz yozasiz
+  const total = () => { $("#paTotal").textContent = pul(plan.can + (Number(pa.value) || 0)) + " so'm"; };
+  $("#peAvans").addEventListener("click", () => {
+    eb.hidden = true; ab.hidden = false; $("#paErr").hidden = true;
+    $("#pa-title").textContent = plan.name;
+    $("#paPeriod").textContent = plan.paid_up ? "Maosh bugungacha berib bo'lingan — faqat avans beriladi." : `Maosh davri: ${dmy(plan.from)} – ${dmy(plan.to)}`;
+    $("#paEarned").textContent = pul(plan.can) + " so'm";
+    pa.value = ""; total(); pa.focus();
+  });
+  pa.addEventListener("input", total);
+  $("#paCancel").addEventListener("click", () => { ab.hidden = true; amt.focus(); });
+  $("#avForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const v = Number(pa.value);
+    if (!(v > 0)) { $("#paErr").hidden = false; pa.focus(); return; }
+    const r = await post(`/maosh/${encodeURIComponent(cur)}/avans`, { avans: v });
+    ab.hidden = true;
+    if (r.ok) { changed = true; load(); } else await fail(r);
+  });
+  $("#payHist").addEventListener("click", async e => {
+    const b = e.target.closest("[data-del]"); if (!b) return;
+    if (!confirm("Bu yozuv o'chirilsinmi?")) return;
+    const r = await post(`/maosh/ochirish/${b.dataset.del}`, {});
+    if (r.ok) { changed = true; load(); } else await fail(r);
+  });
+})();
+</script>
 {% endblock %}

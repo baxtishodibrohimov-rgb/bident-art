@@ -4,7 +4,7 @@ Qoidalar (o'zgarmas):
 - Klinika ulushi — kassaga tushgan pulning 20%.
 - Har bir shifokorning ulushi — unga shu davrda tushgan pulning 25%.
 
-Xarajatlar = klinika ulushi + shifokorlar maoshi + xodimlar maoshi + material rasxod.
+Xarajatlar = klinika ulushi + shifokorlar maoshi + hamshiralar maoshi + material rasxod.
 Sof foyda = shu davrda bajarilgan ishlar − xarajatlar.
 
 Cliniccards xarajatlari ikkiga bo'linadi:
@@ -102,6 +102,6 @@ class Overview:
         return [
             ("/klinika", f"Klinika ulushi (kassaning {CLINIC_PCT:.0f}%)", self.clinic_share),
             ("/shifokorlar", "Shifokorlar maoshi", self.doctors_salary),
-            ("/xodimlar", "Xodimlar maoshi", Decimal(self.staff_salary)),
-            ("/xarajatlar#material", "Material rasxod", self.material_total),
+            ("/xodimlar", "Hamshiralar maoshi", Decimal(self.staff_salary)),
+            ("/xarajatlar", "Material rasxod", self.material_total),
         ]

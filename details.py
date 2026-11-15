@@ -52,9 +52,16 @@ def done_work(items: list[dict], staff: list[dict], patients: dict[str, str]) ->
     return _sorted(groups)
 
 
-def kassa(payments: list[dict], patients: dict[str, str]) -> list[Group]:
-    """Kassaga tushgan to'lovlar: kassa bo'yicha, har bir to'lov bilan."""
+def pay_key(patient_id, when, amount) -> tuple:
+    """To'lovni ish bilan solishtirish kaliti (payment_id bo'lmasa): bemor, vaqt (daqiqagacha), summa."""
+    return (str(patient_id or ""), str(when or "")[:16], str(money(amount).normalize()))
+
+
+def kassa(payments: list[dict], patients: dict[str, str], doctors_by_payment: dict | None = None,
+          doctor_names: dict[str, str] | None = None) -> list[Group]:
+    """Kassaga tushgan to'lovlar: kassa bo'yicha, har bir to'lov bilan (qaysi shifokor ishi uchun ham)."""
     groups: dict[str, Group] = {}
+    doctors_by_payment, doctor_names = doctors_by_payment or {}, doctor_names or {}
     for p in payments:
         desk = p.get("cash_desk") or {}
         key = str(p.get("cash_desk_id") or desk.get("id") or "?")
@@ -66,6 +73,11 @@ def kassa(payments: list[dict], patients: dict[str, str]) -> list[Group]:
             "type": p.get("type") or "", "who": p.get("created_by") or "", "note": p.get("note") or "",
             "amount": money(p.get("amount")),
         })
+        doc = (doctors_by_payment.get(str(p.get("payment_id"))) if p.get("payment_id") not in (None, "") else None) \
+            or doctors_by_payment.get(pay_key(pid, p.get("date"), p.get("amount")))
+        row = groups[key].rows[-1]
+        row["doctor_id"] = doc or ""
+        row["doctor"] = ("belgilanmagan" if doc == NO_DOCTOR else doctor_names.get(doc, f"#{doc}")) if doc else ""
     for g in groups.values():
         g.rows.sort(key=lambda r: r["date"])
     return _sorted(groups)

@@ -1,8 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Bajarilgan ishlar — {{ p.label }}{% endblock %}
 {% block content %}
-<h1>Bajarilgan ishlar</h1>
-{% set action = "/ishlar" %}{% include "_period.html" %}
+<div class="titlerow"><h1>Bajarilgan ishlar</h1>{% set action = "/ishlar" %}{% include "_period.html" %}</div>
 <div class="tiles">
   <div class="tile"><div class="k">Jami ish summasi</div><div class="v num">{{ total|pul }}<small>so'm</small></div></div>
   <div class="tile good"><div class="k">Shundan to'langan</div><div class="v num">{{ groups|sum(attribute="paid_total")|pul }}<small>so'm</small></div></div>

@@ -1,19 +1,69 @@
 {% extends "base.html" %}
 {% block title %}Kassa — {{ p.label }}{% endblock %}
 {% block content %}
-<h1>Kassaga tushgan pul</h1>
-{% set action = "/kassa" %}{% include "_period.html" %}
+<div class="titlerow"><h1>Kassaga tushgan pul</h1>{% set action = "/kassa" %}{% include "_period.html" %}</div>
+{% set docs = [] %}{% for g in groups %}{% for r in g.rows %}{% if r.doctor_id and r.doctor_id != "0" and (r.doctor_id, r.doctor) not in docs %}{% set _ = docs.append((r.doctor_id, r.doctor)) %}{% endif %}{% endfor %}{% endfor %}
+{% if groups %}
+<form class="controls" id="kFilter" onsubmit="return false">
+  <input class="btn" id="kq" placeholder="Bemor ism-familiyasi" aria-label="Bemor bo'yicha qidirish" style="flex:1;min-width:180px">
+  <select class="btn" id="kdoc" aria-label="Shifokor bo'yicha"><option value="">Barcha shifokorlar</option>
+    {% for id, name in docs|sort(attribute=1) %}<option value="{{ id }}">{{ name }}</option>{% endfor %}
+    <option value="0">Shifokor belgilanmagan</option><option value="-">Ishga bog'lanmagan</option></select>
+  <input class="btn num" id="kmin" type="number" min="0" step="1000" placeholder="Summa dan" aria-label="Summa dan" style="width:130px">
+  <input class="btn num" id="kmax" type="number" min="0" step="1000" placeholder="Summa gacha" aria-label="Summa gacha" style="width:130px">
+  <button type="button" class="btn" id="kclear" hidden>Tozalash</button><span class="muted" id="kcount" hidden></span>
+</form>
+{% endif %}
 <section class="panel">
 {% for g in groups %}
-  <div class="debt-doc">
-    <div class="panel-h"><h2>{{ g.name }}{% if g.extra %} <span class="muted">({{ g.extra }})</span>{% endif %}</h2><span class="pill good num">{{ g.rows|length }} ta · {{ g.total|pul }}</span></div>
+  <div class="debt-doc kgroup">
+    <div class="panel-h"><h2>{{ g.name }}{% if g.extra %} <span class="muted">({{ g.extra }})</span>{% endif %}</h2><span class="pill good num"><span class="gcount">{{ g.rows|length }}</span> ta · <span class="gsum">{{ g.total|pul }}</span></span></div>
     <div class="scroll"><table>
-      <thead><tr><th>Sana</th><th>Bemor</th><th>Turi</th><th>Kim qabul qildi</th><th class="r">Summa</th></tr></thead>
-      <tbody>{% for r in g.rows %}<tr><td class="num">{{ r.date }}</td><td>{{ r.patient }}</td><td class="muted">{{ r.type }}</td><td>{{ r.who }}</td><td class="r">{{ r.amount|pul }}</td></tr>{% endfor %}</tbody>
-      <tfoot><tr><td colspan="4">Jami</td><td class="r">{{ g.total|pul }}</td></tr></tfoot>
+      <thead><tr><th><button type="button" class="sorth" data-sort="date">Sana</button></th><th><button type="button" class="sorth" data-sort="patient">Bemor</button></th>
+        <th><button type="button" class="sorth" data-sort="doctor">Shifokor</button></th><th>Kim qabul qildi</th><th class="r"><button type="button" class="sorth" data-sort="amount">Summa</button></th></tr></thead>
+      <tbody>{% for r in g.rows %}<tr data-date="{{ r.date }}" data-patient="{{ r.patient|lower }}" data-doc="{{ r.doctor_id or '-' }}" data-doctor="{{ r.doctor|lower }}" data-amount="{{ r.amount }}">
+        <td class="num">{{ r.date }}</td><td>{{ r.patient }}</td>
+        <td>{% if r.doctor_id == "0" %}<span style="color:var(--warn)">belgilanmagan</span>{% elif r.doctor_id %}<a class="rowlink" href="/shifokorlar?{{ q }}&ochiq={{ r.doctor_id }}#d-{{ r.doctor_id }}">{{ r.doctor }}</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td>{{ r.who }}</td><td class="r">{{ r.amount|pul }}</td></tr>{% endfor %}</tbody>
+      <tfoot><tr><td colspan="4">Jami</td><td class="r gsum">{{ g.total|pul }}</td></tr></tfoot>
     </table></div>
   </div>
 {% else %}<div class="panel-h"><span class="muted">Bu davrda to'lov yo'q.</span></div>{% endfor %}
 </section>
 {% if groups %}<p class="muted num" style="margin:0;text-align:right">Jami: <b>{{ total|pul }} so'm</b>{% if currencies > 1 %} · <span class="warn">kassalar turli valyutada, oddiy qo'shib hisoblangan</span>{% endif %}</p>{% endif %}
+<script>
+(() => {
+  const f = document.getElementById("kFilter"); if (!f) return;
+  const $ = id => document.getElementById(id);
+  const pul = n => Math.round(n).toLocaleString("ru-RU").replace(/\s/g, " ");
+  let sort = "date", dir = 1;
+  function apply() {
+    const q = $("kq").value.trim().toLowerCase(), doc = $("kdoc").value;
+    const min = $("kmin").value === "" ? -Infinity : Number($("kmin").value), max = $("kmax").value === "" ? Infinity : Number($("kmax").value);
+    let shown = 0, all = 0;
+    document.querySelectorAll(".kgroup").forEach(g => {
+      const body = g.querySelector("tbody"), rows = [...body.rows];
+      rows.sort((a, b) => { const A = a.dataset[sort], B = b.dataset[sort];
+        return (sort === "amount" ? Number(A) - Number(B) : A.localeCompare(B)) * dir; }).forEach(r => body.appendChild(r));
+      let n = 0, s = 0;
+      rows.forEach(r => {
+        const ok = (!q || r.dataset.patient.includes(q)) && (!doc || r.dataset.doc === doc)
+          && Number(r.dataset.amount) >= min && Number(r.dataset.amount) <= max;
+        r.hidden = !ok; all++; if (ok) { n++; s += Number(r.dataset.amount); }
+      });
+      shown += n; g.hidden = n === 0;
+      g.querySelector(".gcount").textContent = n; g.querySelectorAll(".gsum").forEach(x => x.textContent = pul(s));
+    });
+    const active = q || doc || $("kmin").value !== "" || $("kmax").value !== "";
+    $("kclear").hidden = !active; $("kcount").hidden = !active; $("kcount").textContent = `${shown} / ${all} ta to'lov`;
+    document.querySelectorAll("[data-sort]").forEach(b => { b.textContent = b.textContent.replace(/ [▲▼]$/, "") + (b.dataset.sort === sort ? (dir > 0 ? " ▲" : " ▼") : ""); });
+  }
+  ["kq", "kmin", "kmax"].forEach(id => $(id).addEventListener("input", apply));
+  $("kdoc").addEventListener("change", apply);
+  $("kclear").addEventListener("click", () => { $("kq").value = $("kmin").value = $("kmax").value = ""; $("kdoc").value = ""; apply(); });
+  document.querySelectorAll("[data-sort]").forEach(b => b.addEventListener("click", () => {
+    const k = b.dataset.sort; dir = sort === k ? -dir : (k === "amount" ? -1 : 1); sort = k; apply();
+  }));
+})();
+</script>
 {% endblock %}

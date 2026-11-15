@@ -9,7 +9,7 @@
   <a class="kpi main" href="/kassa?{{ q }}"><span class="k">Kassaga tushgan</span>
     <span class="v num">{{ o.kassa_total|pul }}<small>so'm</small></span><span class="hint">{{ o.kassa_count }} ta to'lov · tafsilot →</span></a>
   <a class="kpi" href="/xarajatlar?{{ q }}"><span class="k">Xarajatlar</span>
-    <span class="v num">{{ o.expenses_total|pul }}<small>so'm</small></span><span class="hint">klinika, shifokorlar, xodimlar, material · tafsilot →</span></a>
+    <span class="v num">{{ o.expenses_total|pul }}<small>so'm</small></span><span class="hint">klinika, shifokorlar, hamshiralar, material · tafsilot →</span></a>
   <a class="kpi {{ 'neg' if o.profit < 0 else 'pos' }}" href="/foyda?{{ q }}"><span class="k">Klinika sof foydasi</span>
     <span class="v num">{{ o.profit|pul }}<small>so'm</small></span><span class="hint">bajarilgan ishlar − xarajatlar · tafsilot →</span></a>
 </div>

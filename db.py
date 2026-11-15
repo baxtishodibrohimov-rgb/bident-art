@@ -118,6 +118,22 @@ CREATE TABLE IF NOT EXISTS worker_tasks (
     worker_id INTEGER NOT NULL REFERENCES workers(id),
     text TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS doctor_payouts (  -- dastur orqali shifokorga berilgan maosh va avanslar
+    id INTEGER PRIMARY KEY,
+    doctor_id TEXT NOT NULL,
+    doctor_name TEXT NOT NULL DEFAULT '',
+    kind TEXT NOT NULL,                     -- maosh | avans
+    period_from TEXT,                       -- maosh qaysi davr uchun (avansda bo'sh)
+    period_to TEXT,
+    amount INTEGER NOT NULL,                -- qo'lga berilgan summa, so'm
+    avans_used INTEGER NOT NULL DEFAULT 0,  -- shu maoshdan ushlangan oldingi avans
+    paid_on TEXT NOT NULL,                  -- berilgan sana
+    created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS doctor_opening (  -- hisob boshlanishigacha berilmay qolgan summa
+    doctor_id TEXT PRIMARY KEY,
+    amount INTEGER NOT NULL DEFAULT 0
+);
 CREATE TABLE IF NOT EXISTS bot_state (chat_id INTEGER PRIMARY KEY, data TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
 """

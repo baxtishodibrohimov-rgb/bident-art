@@ -1,4 +1,4 @@
-"""Veb-sahifa: bosh ekran, shifokorlar, qarzdorlar, sklad, xodimlar, Telegram bot.
+"""Veb-sahifa: bosh ekran, shifokorlar, sklad, hamshiralar, Telegram bot.
 
 Ishga tushirish:  uvicorn app:app --host 0.0.0.0 --port 8090
 """
@@ -220,41 +220,13 @@ def clinic(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
 @app.get("/xarajatlar")
 def expenses(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
     o = service().overview(p, staff_salary(p))
-    groups = service().material_detail(p)
-    return templates.TemplateResponse(request, "detail_expenses.html", {
-        "o": o, "groups": groups, **nav("bosh"), **period_context(p)})
+    return templates.TemplateResponse(request, "detail_expenses.html", {"o": o, **nav("bosh"), **period_context(p)})
 
 
 @app.get("/foyda")
 def profit(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
     o = service().overview(p, staff_salary(p))
     return templates.TemplateResponse(request, "profit.html", {"o": o, **nav("bosh"), **period_context(p)})
-
-
-@app.get("/shifokorlar")
-def doctors(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
-    rep = service().month_report(p)
-    paid = service().doctor_payouts(p)
-    docs = [d for d in rep.doctors if d.doctor_id != "0"]
-    given = sum((paid.get(d.doctor_id, Decimal(0)) for d in docs), Decimal(0))
-    return templates.TemplateResponse(request, "doctors.html", {
-        "rep": rep, "paid": paid, "given": given, "not_given": max(Decimal(0), rep.salary - given),
-        **nav("shifokorlar"), **period_context(p)})
-
-
-@app.get("/shifokor/{doctor_id}")
-def doctor(request: Request, doctor_id: str, p: Period = Depends(get_period), _=Depends(auth)):
-    rep = service().month_report(p, with_kassa=False)
-    d = rep.doctor(doctor_id)
-    name = None
-    if d is None:
-        staff = {str(s.get("doctor_id")): s for s in service().staff()}
-        if doctor_id not in staff:
-            raise HTTPException(404, "Shifokor topilmadi")
-        from report import staff_name
-        name = staff_name(staff[doctor_id])
-    return templates.TemplateResponse(request, "doctor.html", {
-        "d": d, "name": name, "doctor_id": doctor_id, **nav("shifokorlar"), **period_context(p)})
 
 
 @app.get("/excel")
@@ -290,6 +262,10 @@ sklad_routes.setup(app, templates, auth, service)
 import staff_routes  # noqa: E402
 
 staff_routes.setup(app, templates, auth, get_period, period_context)
+
+import salary_routes  # noqa: E402
+
+salary_routes.setup(app, templates, auth, service, get_period, period_context)
 
 
 @app.post("/yangilash")

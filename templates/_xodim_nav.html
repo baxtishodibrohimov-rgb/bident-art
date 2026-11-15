@@ -1,8 +1,9 @@
 <div class="bar">
   <nav class="subnav">
-    {% for href, name in [("/xodimlar", "Xodimlar va maosh"), ("/grafik", "Grafik"), ("/vazifalar", "Xodim vazifalari")] %}
+    {% for href, name in [("/xodimlar", "Hamshiralar va maosh"), ("/grafik", "Grafik"), ("/vazifalar", "Hamshira vazifalari")] %}
       <a href="{{ href }}{% if q is defined and href != '/vazifalar' %}?{{ q }}{% endif %}" class="{{ 'on' if request.url.path == href }}">{{ name }}</a>
     {% endfor %}
   </nav>
+  {% if action is defined %}{% include "_period.html" %}{% endif %}
   {{ gear|default('')|safe }}
 </div>

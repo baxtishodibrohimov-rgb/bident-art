@@ -1,8 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Klinika ulushi — {{ p.label }}{% endblock %}
 {% block content %}
-<h1>Klinikaga beriladigan summa</h1>
-{% set action = "/klinika" %}{% include "_period.html" %}
+<div class="titlerow"><h1>Klinikaga beriladigan summa</h1>{% set action = "/klinika" %}{% include "_period.html" %}</div>
 <section class="panel" style="padding:16px;display:grid;gap:12px">
   <p class="formula num">Kassaga tushgan <b>{{ o.kassa_total|pul }}</b> × <b>{{ pct|pul }}%</b> = <b>{{ o.clinic_share|pul }} so'm</b></p>
   <div class="scroll"><table style="min-width:420px">

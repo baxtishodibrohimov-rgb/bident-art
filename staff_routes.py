@@ -66,7 +66,7 @@ def setup(app, templates, auth, get_period, period_context):
             if not name and not str(daily).strip():
                 continue
             if not name:
-                raise HTTPException(400, "Har bir xodimning ism-familiyasini kiriting")
+                raise HTTPException(400, "Har bir hamshiraning ism-familiyasini kiriting")
             d, e = _int(daily, "Kunlik summa"), _int(extra, "Qo'shimcha summa")
             if d <= 0:
                 raise HTTPException(400, f"{name}: kunlik summa 0 dan katta bo'lishi kerak")
@@ -74,7 +74,7 @@ def setup(app, templates, auth, get_period, period_context):
                 raise HTTPException(400, f"{name}: Telegram — @username (kamida 5 belgi) yoki raqamli ID bo'lishi kerak")
             rows.append((wid, name, pos.strip(), d, e, tg))
         if not rows:
-            raise HTTPException(400, "Kamida bitta xodim bo'lishi kerak")
+            raise HTTPException(400, "Kamida bitta hamshira bo'lishi kerak")
         with db.tx():
             for wid, name, pos, d, e, tg in rows:
                 if wid and db.one("SELECT 1 FROM workers WHERE id=?", (int(wid),)):

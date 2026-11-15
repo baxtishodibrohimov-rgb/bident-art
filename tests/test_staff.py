@@ -142,7 +142,8 @@ def test_staff_pages(env, tmp_path, monkeypatch):
 
     # xarajatlarda xodimlar maoshi: klinika 410 000 + shifokorlar 450 000 + xodimlar 550 000 + material 900 000
     x = c.get("/xarajatlar?oy=2026-11").text
-    assert "550 000" in x and "2 310 000" in x
+    assert "550 000" in x and "Hamshiralar maoshi" in x
+    assert "2 310 000" in c.get("/?oy=2026-11").text
 
     # xodim vazifalari: ish vazifalari va botdagi vazifa
     c.post(f"/vazifalar/{wid}/qosh", data={"text": "Asboblarni sterilizatsiya qilish"})
