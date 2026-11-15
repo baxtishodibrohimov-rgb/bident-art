@@ -645,7 +645,7 @@ button.tile.link { font: inherit; text-align: left; cursor: pointer; color: var(
         <div class="scroll"><table style="min-width:420px">
           <tbody>
             <tr class="strong"><td><a class="rowlink" href="#kassa">Kassaga tushgan</a></td><td class="r">${pul(c.rep.kassa)}</td></tr>
-            ${costRows(c).map(([h, n, v]) => `<tr><td class="indent"><a class="rowlink" href="#${h === "material" ? "xarajatlar" : h}">− ${n}</a></td><td class="r">${pul(v)}</td></tr>`).join("")}
+            ${costRows(c).map(([h, n, v]) => `<tr><td class="indent"><a class="rowlink" href="#${h}">− ${n}</a></td><td class="r">${pul(v)}</td></tr>`).join("")}
           </tbody>
           <tfoot><tr><td>Sof foyda</td><td class="r" style="color:var(${profit < 0 ? "--bad" : "--good"})">${pul(profit)}</td></tr></tfoot>
         </table></div>
@@ -1061,6 +1061,21 @@ button.tile.link { font: inherit; text-align: left; cursor: pointer; color: var(
       <div class="tiles">${costRows(c).map(([h, n, v]) => `<a class="tile link" href="#${h === "material" ? "material" : h}"><div class="k">${n}</div><div class="v num">${pul(v)}<small>so'm</small></div></a>`).join("")}</div>`;
   }
 
+  // Material rasxod: Cliniccards xarajatlari (maoshlardan tashqari) — har bir xarajat alohida qatorda
+  function viewMaterial() {
+    const rows = expenses(range), total = sum(rows);
+    return back + `<div class="titlerow"><h1>Material rasxod</h1>${monthSelect()}</div>
+      <div class="bar"><a class="btn" href="#xarajatlar">← Xarajatlar</a><span class="muted num">${rows.length} ta xarajat · jami <b>${pul(total)} so'm</b></span></div>
+      <section class="panel"><div class="scroll"><table>
+        <thead><tr><th>Sana</th><th>Toifa</th><th>Nima uchun</th><th>Kimga to'landi</th><th>Izoh</th><th class="r">Summa</th></tr></thead>
+        <tbody>${rows.map(x => `<tr><td class="num">${dmy(x.date)}</td><td>${esc(x.cat)}</td><td>${esc(x.sub)}</td><td>${esc(x.supplier)}</td>
+          <td class="muted">${esc(x.note)}</td><td class="r" ${x.amount < 0 ? 'style="color:var(--good)" title="qaytarilgan"' : ""}>${pul(x.amount)}</td></tr>`).join("") ||
+          '<tr><td colspan="6" class="muted">Bu davrda material rasxod yo\'q.</td></tr>'}</tbody>
+        ${rows.length ? `<tfoot><tr><td colspan="5">Jami</td><td class="r">${pul(total)}</td></tr></tfoot>` : ""}
+      </table></div></section>
+      <p class="note" style="font-size:13px">Ma'lumot Cliniccards'dagi «Финансы → Расходы» bo'limidan olinadi. Shifokor va xodimlarga berilgan maoshlar bu yerga kirmaydi. Minus summa — qaytarilgan pul.</p>`;
+  }
+
   function viewSummary() {
     const r = buildReport(range);
     const max = Math.max(1, ...r.list.map(d => d.total));
@@ -1337,7 +1352,7 @@ GET /stock-*        sklad qoldig'i (faqat o'qish)  buyurtma va bot eslatmalari</
     else if (h === "kassa") { html = viewKassa(); nav = "bosh"; }
     else if (h === "klinika") { html = viewClinic(); nav = "bosh"; }
     else if (h === "xarajatlar") { html = viewExpenses(); nav = "bosh"; }
-    else if (h === "material") { html = viewExpenses(); nav = "bosh"; setTimeout(() => { const el = document.getElementById("material-list"); if (el) el.scrollIntoView(); }, 0); }
+    else if (h === "material") { html = viewMaterial(); nav = "bosh"; }
     else if (h === "foyda") { html = viewProfit(); nav = "bosh"; }
     else if (h === "foizlar") { html = viewHome(); nav = "bosh"; }
     else if (h === "qanday-ishlaydi") html = viewHow();

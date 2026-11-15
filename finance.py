@@ -103,5 +103,5 @@ class Overview:
             ("/klinika", f"Klinika ulushi (kassaning {CLINIC_PCT:.0f}%)", self.clinic_share),
             ("/shifokorlar", "Shifokorlar maoshi", self.doctors_salary),
             ("/xodimlar", "Hamshiralar maoshi", Decimal(self.staff_salary)),
-            ("/xarajatlar", "Material rasxod", self.material_total),
+            ("/material", "Material rasxod", self.material_total),
         ]

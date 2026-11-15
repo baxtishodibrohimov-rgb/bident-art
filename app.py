@@ -223,6 +223,14 @@ def expenses(request: Request, p: Period = Depends(get_period), _=Depends(auth))
     return templates.TemplateResponse(request, "detail_expenses.html", {"o": o, **nav("bosh"), **period_context(p)})
 
 
+@app.get("/material")
+def material(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
+    """Material rasxod qaysi xarajatlardan yig'ilgani: har bir xarajat alohida qatorda."""
+    rows = sorted(({**r, "cat": g.name} for g in service().material_detail(p) for r in g.rows), key=lambda r: r["date"])
+    return templates.TemplateResponse(request, "detail_material.html", {
+        "rows": rows, "total": sum((r["amount"] for r in rows), Decimal(0)), **nav("bosh"), **period_context(p)})
+
+
 @app.get("/foyda")
 def profit(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
     o = service().overview(p, staff_salary(p))

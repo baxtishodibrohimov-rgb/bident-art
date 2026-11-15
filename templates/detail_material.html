@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Material rasxod — {{ p.label }}{% endblock %}
+{% block content %}
+<div class="titlerow"><h1>Material rasxod</h1>{% set action = "/material" %}{% include "_period.html" %}</div>
+<div class="bar"><a class="btn" href="/xarajatlar?{{ q }}">← Xarajatlar</a><span class="muted num">{{ rows|length }} ta xarajat · jami <b>{{ total|pul }} so'm</b></span></div>
+<section class="panel"><div class="scroll"><table>
+  <thead><tr><th>Sana</th><th>Toifa</th><th>Nima uchun</th><th>Kimga to'landi</th><th>Izoh</th><th class="r">Summa</th></tr></thead>
+  <tbody>{% for r in rows %}<tr><td class="num">{{ r.date[8:10] }}.{{ r.date[5:7] }}.{{ r.date[:4] }}</td><td>{{ r.cat }}</td><td>{{ r.sub }}</td><td>{{ r.supplier }}</td>
+    <td class="muted">{{ r.note }}</td><td class="r"{% if r.amount < 0 %} style="color:var(--good)" title="qaytarilgan"{% endif %}>{{ r.amount|pul }}</td></tr>
+  {% else %}<tr><td colspan="6" class="muted">Bu davrda material rasxod yo'q.</td></tr>{% endfor %}</tbody>
+  {% if rows %}<tfoot><tr><td colspan="5">Jami</td><td class="r">{{ total|pul }}</td></tr></tfoot>{% endif %}
+</table></div></section>
+<p class="note" style="font-size:13px">Ma'lumot Cliniccards'dagi «Финансы → Расходы» bo'limidan olinadi. Shifokor va xodimlarga berilgan maoshlar bu yerga kirmaydi. Minus summa — qaytarilgan pul.</p>
+{% endblock %}

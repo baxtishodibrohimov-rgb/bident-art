@@ -325,6 +325,10 @@ def test_dashboard_pages(svc, monkeypatch):
     for text in ("Klinika ulushi", "Shifokorlar maoshi", "Hamshiralar maoshi", "Material rasxod", "900 000"):
         assert text in x, text
     assert "Ijara" not in x   # xarajatlar ro'yxati olib tashlangan, faqat 4 ta summa
+    assert "/material?oy=2026-11" in x
+    m = c.get("/material?oy=2026-11").text   # material rasxod qaysi xarajatlardan yig'ilgani
+    for text in ("Ijara", "Bino ijarasi", "Dental Market", "02.11.2026", "-100 000", "900 000"):
+        assert text in m, text
     f = c.get("/foyda?oy=2026-11").text
     assert "Klinika sof foydasi" in f and "290 000" in f and "Kassaga tushgan" in f
     d = c.get("/shifokorlar?oy=2026-11").text
