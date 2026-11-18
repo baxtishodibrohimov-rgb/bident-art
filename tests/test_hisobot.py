@@ -329,6 +329,7 @@ def test_dashboard_pages(svc, monkeypatch):
     m = c.get("/material?oy=2026-11").text   # material rasxod qaysi xarajatlardan yig'ilgani
     for text in ("Ijara", "Bino ijarasi", "Dental Market", "02.11.2026", "-100 000", "900 000"):
         assert text in m, text
+    assert 'id="mcat"' in m and "<option>Materiallar</option>" in m   # filtr: toifa, nima uchun, kimga, summa
     f = c.get("/foyda?oy=2026-11").text
     assert "Klinika sof foydasi" in f and "290 000" in f and "Kassaga tushgan" in f
     d = c.get("/shifokorlar?oy=2026-11").text

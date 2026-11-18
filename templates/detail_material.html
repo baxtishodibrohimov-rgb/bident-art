@@ -2,13 +2,58 @@
 {% block title %}Material rasxod — {{ p.label }}{% endblock %}
 {% block content %}
 <div class="titlerow"><h1>Material rasxod</h1>{% set action = "/material" %}{% include "_period.html" %}</div>
-<div class="bar"><a class="btn" href="/xarajatlar?{{ q }}">← Xarajatlar</a><span class="muted num">{{ rows|length }} ta xarajat · jami <b>{{ total|pul }} so'm</b></span></div>
+<div class="bar"><a class="btn" href="/xarajatlar?{{ q }}">← Xarajatlar</a><span class="muted num"><span id="mCount">{{ rows|length }}</span> ta xarajat · jami <b><span id="mSum">{{ total|pul }}</span> so'm</b></span></div>
+{% if rows %}
+<form class="controls" id="mFilter" onsubmit="return false">
+  <input class="btn" id="mq" placeholder="Qidirish: kimga, nima uchun, izoh" aria-label="Qidirish" style="flex:1;min-width:200px">
+  <select class="btn" id="mcat" aria-label="Toifa bo'yicha"><option value="">Barcha toifalar</option>{% for v in rows|map(attribute='cat')|unique|sort %}<option>{{ v }}</option>{% endfor %}</select>
+  <select class="btn" id="msub" aria-label="Nima uchun"><option value="">Nima uchun — hammasi</option>{% for v in rows|map(attribute='sub')|reject('equalto', '')|unique|sort %}<option>{{ v }}</option>{% endfor %}</select>
+  <select class="btn" id="msup" aria-label="Kimga to'landi"><option value="">Kimga — hammasi</option>{% for v in rows|map(attribute='supplier')|reject('equalto', '')|unique|sort %}<option>{{ v }}</option>{% endfor %}</select>
+  <input class="btn num" id="mmin" type="number" step="1000" placeholder="Summa dan" aria-label="Summa dan" style="width:130px">
+  <input class="btn num" id="mmax" type="number" step="1000" placeholder="Summa gacha" aria-label="Summa gacha" style="width:130px">
+  <button type="button" class="btn" id="mclear" hidden>Tozalash</button>
+</form>
+{% endif %}
 <section class="panel"><div class="scroll"><table>
-  <thead><tr><th>Sana</th><th>Toifa</th><th>Nima uchun</th><th>Kimga to'landi</th><th>Izoh</th><th class="r">Summa</th></tr></thead>
-  <tbody>{% for r in rows %}<tr><td class="num">{{ r.date[8:10] }}.{{ r.date[5:7] }}.{{ r.date[:4] }}</td><td>{{ r.cat }}</td><td>{{ r.sub }}</td><td>{{ r.supplier }}</td>
+  <thead><tr><th><button type="button" class="sorth" data-sort="date">Sana</button></th><th><button type="button" class="sorth" data-sort="cat">Toifa</button></th>
+    <th><button type="button" class="sorth" data-sort="sub">Nima uchun</button></th><th><button type="button" class="sorth" data-sort="sup">Kimga to'landi</button></th>
+    <th>Izoh</th><th class="r"><button type="button" class="sorth" data-sort="amount">Summa</button></th></tr></thead>
+  <tbody id="mBody">{% for r in rows %}<tr data-date="{{ r.date }}" data-cat="{{ r.cat }}" data-sub="{{ r.sub }}" data-sup="{{ r.supplier }}" data-amount="{{ r.amount }}"
+      data-text="{{ (r.cat ~ ' ' ~ r.sub ~ ' ' ~ r.supplier ~ ' ' ~ r.note)|lower }}">
+    <td class="num">{{ r.date[8:10] }}.{{ r.date[5:7] }}.{{ r.date[:4] }}</td><td>{{ r.cat }}</td><td>{{ r.sub }}</td><td>{{ r.supplier }}</td>
     <td class="muted">{{ r.note }}</td><td class="r"{% if r.amount < 0 %} style="color:var(--good)" title="qaytarilgan"{% endif %}>{{ r.amount|pul }}</td></tr>
   {% else %}<tr><td colspan="6" class="muted">Bu davrda material rasxod yo'q.</td></tr>{% endfor %}</tbody>
-  {% if rows %}<tfoot><tr><td colspan="5">Jami</td><td class="r">{{ total|pul }}</td></tr></tfoot>{% endif %}
+  {% if rows %}<tfoot><tr><td colspan="5">Jami</td><td class="r" id="mFoot">{{ total|pul }}</td></tr></tfoot>{% endif %}
 </table></div></section>
+<p class="muted" id="mNone" hidden style="margin:0">Filtrga mos xarajat topilmadi.</p>
 <p class="note" style="font-size:13px">Ma'lumot Cliniccards'dagi «Финансы → Расходы» bo'limidan olinadi. Shifokor va xodimlarga berilgan maoshlar bu yerga kirmaydi. Minus summa — qaytarilgan pul.</p>
+<script>
+(() => {
+  const f = document.getElementById("mFilter"); if (!f) return;
+  const $ = id => document.getElementById(id), body = $("mBody"), rows = [...body.rows];
+  const pul = n => { const s = Math.round(Math.abs(n)).toLocaleString("ru-RU").replace(/\s/g, " "); return (n < 0 ? "-" : "") + s; };
+  let sort = "date", dir = 1;
+  function apply() {
+    const q = $("mq").value.trim().toLowerCase(), cat = $("mcat").value, sub = $("msub").value, sup = $("msup").value;
+    const min = $("mmin").value === "" ? -Infinity : Number($("mmin").value), max = $("mmax").value === "" ? Infinity : Number($("mmax").value);
+    rows.sort((a, b) => { const A = a.dataset[sort], B = b.dataset[sort];
+      return (sort === "amount" ? Number(A) - Number(B) : A.localeCompare(B)) * dir; }).forEach(r => body.appendChild(r));
+    let n = 0, s = 0;
+    rows.forEach(r => {
+      const d = r.dataset, a = Number(d.amount);
+      const ok = (!q || d.text.includes(q)) && (!cat || d.cat === cat) && (!sub || d.sub === sub) && (!sup || d.sup === sup) && a >= min && a <= max;
+      r.hidden = !ok; if (ok) { n++; s += a; }
+    });
+    $("mCount").textContent = n; $("mSum").textContent = $("mFoot").textContent = pul(s); $("mNone").hidden = n > 0;
+    $("mclear").hidden = !(q || cat || sub || sup || $("mmin").value !== "" || $("mmax").value !== "");
+    document.querySelectorAll("[data-sort]").forEach(b => { b.textContent = b.textContent.replace(/ [▲▼]$/, "") + (b.dataset.sort === sort ? (dir > 0 ? " ▲" : " ▼") : ""); });
+  }
+  ["mq", "mmin", "mmax"].forEach(id => $(id).addEventListener("input", apply));
+  ["mcat", "msub", "msup"].forEach(id => $(id).addEventListener("change", apply));
+  $("mclear").addEventListener("click", () => { f.reset(); apply(); });
+  document.querySelectorAll("[data-sort]").forEach(b => b.addEventListener("click", () => {
+    const k = b.dataset.sort; dir = sort === k ? -dir : (k === "amount" ? -1 : 1); sort = k; apply();
+  }));
+})();
+</script>
 {% endblock %}

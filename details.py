@@ -1,6 +1,7 @@
 """Bosh ekrandagi har bir summa nimadan tashkil topganini ko'rsatadigan ro'yxatlar."""
 from __future__ import annotations
 
+import html
 from dataclasses import dataclass, field
 from decimal import Decimal
 
@@ -25,6 +26,11 @@ class Group:
     @property
     def left_total(self) -> Decimal:
         return sum((r.get("left", Decimal(0)) for r in self.rows), Decimal(0))
+
+
+def text(v) -> str:
+    """Cliniccards ba'zi matnlarni HTML-kodlangan holda yuboradi («Xo&#39;jalik»): oddiy matnga qaytaramiz."""
+    return html.unescape(str(v or "")).strip()
 
 
 def _sorted(groups: dict[str, Group]) -> list[Group]:
@@ -90,15 +96,15 @@ def expenses(spendings: list[dict]) -> list[Group]:
         cat = s.get("spendings_category") or {}
         key = str(cat.get("id") or "0")
         if key not in groups:
-            groups[key] = Group(key, cat.get("name") or "Toifasiz")
-        sub = (s.get("spendings_subcategory") or {}).get("name") or ""
+            groups[key] = Group(key, text(cat.get("name")) or "Toifasiz")
+        sub = text((s.get("spendings_subcategory") or {}).get("name"))
         member = s.get("member")
         if isinstance(member, dict):
             member = " ".join(x for x in (member.get("lastname"), member.get("firstname"), member.get("name")) if x)
         groups[key].rows.append({
             "date": str(s.get("date_issued") or "")[:10], "sub": sub,
-            "supplier": (s.get("supplier") or {}).get("name") or (member or ""),
-            "note": s.get("note") or "", "status": s.get("payment_status") or "",
+            "supplier": text((s.get("supplier") or {}).get("name") or member),
+            "note": text(s.get("note")), "status": s.get("payment_status") or "",
             "amount": money(s.get("amount")), "paid": money(s.get("paid")),
         })
     for g in groups.values():
