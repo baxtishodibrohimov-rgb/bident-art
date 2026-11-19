@@ -1,58 +1,144 @@
 {% extends "base.html" %}
 {% block title %}Material rasxod — {{ p.label }}{% endblock %}
+{% macro balance_figure(value, id='') -%}
+  <span{% if id %} id="{{ id }}"{% endif %} data-balance-figure class="{{ 'neg' if value < 0 else 'material-balance-ok' }}">{{ '+' if value > 0 }}{{ value|pul }}</span>
+{%- endmacro %}
 {% block content %}
 <div class="titlerow"><h1>Material rasxod</h1>{% set action = "/material" %}{% include "_period.html" %}</div>
-<div class="bar"><a class="btn" href="/xarajatlar?{{ q }}">← Xarajatlar</a><span class="muted num"><span id="mCount">{{ rows|length }}</span> ta xarajat · jami <b><span id="mSum">{{ total|pul }}</span> so'm</b></span></div>
+<div class="bar"><a class="btn" href="/xarajatlar?{{ q }}">← Xarajatlar</a><span class="muted num"><span id="mCount">{{ rows|length }}</span> ta schyot</span></div>
+<div class="tiles three">
+  <div class="tile"><div class="k">Schyotlar jami</div><div class="v num"><span id="mSum">{{ total|pul }}</span><small>so'm</small></div></div>
+  <div class="tile"><div class="k">To'langan</div><div class="v num"><span id="mPaid">{{ paid|pul }}</span><small>so'm</small></div></div>
+  <div class="tile"><div class="k">Balans</div><div class="v num">{{ balance_figure(balance, 'mBalance') }}<small>so'm</small></div></div>
+</div>
+<p class="note">Balans = to'langan − schyot summasi. Minus — qarz, yashil 0 — qarz yo'q, plus — klinika foydasiga qoldiq.</p>
 {% if rows %}
 <form class="controls" id="mFilter" onsubmit="return false">
   <input class="btn" id="mq" placeholder="Qidirish: kimga, nima uchun, izoh" aria-label="Qidirish" style="flex:1;min-width:200px">
   <select class="btn" id="mcat" aria-label="Toifa bo'yicha"><option value="">Barcha toifalar</option>{% for v in rows|map(attribute='cat')|unique|sort %}<option>{{ v }}</option>{% endfor %}</select>
   <select class="btn" id="msub" aria-label="Nima uchun"><option value="">Nima uchun — hammasi</option>{% for v in rows|map(attribute='sub')|reject('equalto', '')|unique|sort %}<option>{{ v }}</option>{% endfor %}</select>
-  <select class="btn" id="msup" aria-label="Kimga to'landi"><option value="">Kimga — hammasi</option>{% for v in rows|map(attribute='supplier')|reject('equalto', '')|unique|sort %}<option>{{ v }}</option>{% endfor %}</select>
-  <input class="btn num" id="mmin" type="number" step="1000" placeholder="Summa dan" aria-label="Summa dan" style="width:130px">
-  <input class="btn num" id="mmax" type="number" step="1000" placeholder="Summa gacha" aria-label="Summa gacha" style="width:130px">
+  <select class="btn" id="msup" aria-label="Kimga"><option value="">Kimga — hammasi</option>{% for g in groups %}<option value="{{ loop.index }}">{{ g.name }}</option>{% endfor %}</select>
+  <input class="btn num" id="mmin" type="number" step="0.01" placeholder="Schyot summasi dan" aria-label="Schyot summasi dan" style="width:155px">
+  <input class="btn num" id="mmax" type="number" step="0.01" placeholder="Schyot summasi gacha" aria-label="Schyot summasi gacha" style="width:155px">
   <button type="button" class="btn" id="mclear" hidden>Tozalash</button>
 </form>
 {% endif %}
-<section class="panel"><div class="scroll"><table>
-  <thead><tr><th><button type="button" class="sorth" data-sort="date">Sana</button></th><th><button type="button" class="sorth" data-sort="cat">Toifa</button></th>
-    <th><button type="button" class="sorth" data-sort="sub">Nima uchun</button></th><th><button type="button" class="sorth" data-sort="sup">Kimga to'landi</button></th>
-    <th>Izoh</th><th class="r"><button type="button" class="sorth" data-sort="amount">Summa</button></th></tr></thead>
-  <tbody id="mBody">{% for r in rows %}<tr data-date="{{ r.date }}" data-cat="{{ r.cat }}" data-sub="{{ r.sub }}" data-sup="{{ r.supplier }}" data-amount="{{ r.amount }}"
-      data-text="{{ (r.cat ~ ' ' ~ r.sub ~ ' ' ~ r.supplier ~ ' ' ~ r.note)|lower }}">
-    <td class="num">{{ r.date[8:10] }}.{{ r.date[5:7] }}.{{ r.date[:4] }}</td><td>{{ r.cat }}</td><td>{{ r.sub }}</td><td>{{ r.supplier }}</td>
-    <td class="muted">{{ r.note }}</td><td class="r"{% if r.amount < 0 %} style="color:var(--good)" title="qaytarilgan"{% endif %}>{{ r.amount|pul }}</td></tr>
-  {% else %}<tr><td colspan="6" class="muted">Bu davrda material rasxod yo'q.</td></tr>{% endfor %}</tbody>
-  {% if rows %}<tfoot><tr><td colspan="5">Jami</td><td class="r" id="mFoot">{{ total|pul }}</td></tr></tfoot>{% endif %}
-</table></div></section>
-<p class="muted" id="mNone" hidden style="margin:0">Filtrga mos xarajat topilmadi.</p>
-<p class="note" style="font-size:13px">Ma'lumot Cliniccards xarajatlaridan olinadi. Klinikaga berilgan pul va oylik yozuvlari <a class="rowlink" href="/audit?{{ q }}">Auditda</a> ko'rinadi. Minus summa — qaytarilgan pul.</p>
+{% for g in groups %}
+<details class="panel" data-material-group="{{ loop.index }}"{% if groups|length == 1 %} open{% endif %}>
+  <summary class="expense-summary">
+    <strong>{{ g.name }}</strong>
+    <span class="expense-summary-meta num">
+      <span class="muted"><span data-group-count>{{ g.rows|length }}</span> ta</span>
+      <span>Schyot <b data-group-sum>{{ g.total|pul }}</b></span>
+      <span>To'langan <b data-group-paid>{{ g.paid_total|pul }}</b></span>
+      <span>Balans <b>{{ balance_figure(g.balance) }}</b></span>
+    </span>
+  </summary>
+  <div class="scroll"><table>
+    <thead><tr><th><button type="button" class="sorth" data-sort="date">Schyot sanasi</button></th>
+      <th><button type="button" class="sorth" data-sort="cat">Toifa</button></th>
+      <th><button type="button" class="sorth" data-sort="sub">Nima uchun</button></th><th>Izoh</th>
+      <th class="r"><button type="button" class="sorth" data-sort="amount">Schyot summasi</button></th>
+      <th class="r"><button type="button" class="sorth" data-sort="paid">To'langan</button></th>
+      <th class="r"><button type="button" class="sorth" data-sort="balance">Balans</button></th></tr></thead>
+    <tbody>{% for r in g.rows %}<tr data-date="{{ r.date }}" data-cat="{{ r.cat }}" data-sub="{{ r.sub }}"
+        data-amount="{{ r.amount }}" data-paid="{{ r.paid }}" data-balance="{{ r.balance }}"
+        data-text="{{ (r.cat ~ ' ' ~ r.sub ~ ' ' ~ g.name ~ ' ' ~ r.supplier ~ ' ' ~ r.note)|lower }}">
+      <td class="num">{% if r.date %}{{ r.date[8:10] }}.{{ r.date[5:7] }}.{{ r.date[:4] }}{% else %}—{% endif %}</td>
+      <td>{{ r.cat }}</td><td>{{ r.sub }}</td><td class="muted">{{ r.note }}</td>
+      <td class="r"{% if r.amount < 0 %} style="color:var(--good)" title="Qaytarilgan"{% endif %}>{{ r.amount|pul }}</td>
+      <td class="r">{% if r.payments %}<details class="material-payments"><summary title="To'lov tafsilotlari">{{ r.paid|pul }}</summary>
+        <ul>{% for payment in r.payments %}<li>{{ payment.cash_desk or 'Kassa' }} <b>{{ payment.amount|pul }}</b></li>{% endfor %}</ul>
+      </details>{% else %}{{ r.paid|pul }}{% endif %}</td>
+      <td class="r">{{ balance_figure(r.balance) }}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+</details>
+{% else %}<p class="muted">Bu davrda material rasxod yo'q.</p>{% endfor %}
+<p class="muted" id="mNone" hidden>Filtrga mos schyot topilmadi.</p>
+<p class="note">Davr schyot sanasi bo'yicha tanlanadi. To'langan summa shu schyotga bog'langan jami to'lovni ko'rsatadi.
+  Klinika ulushi va oylik to'lovlari <a class="rowlink" href="/audit?{{ q }}">Auditda</a> ko'rinadi.</p>
 <script>
 (() => {
-  const f = document.getElementById("mFilter"); if (!f) return;
-  const $ = id => document.getElementById(id), body = $("mBody"), rows = [...body.rows];
-  const pul = n => { const s = Math.round(Math.abs(n)).toLocaleString("ru-RU").replace(/\s/g, " "); return (n < 0 ? "-" : "") + s; };
-  let sort = "date", dir = 1;
-  function apply() {
-    const q = $("mq").value.trim().toLowerCase(), cat = $("mcat").value, sub = $("msub").value, sup = $("msup").value;
-    const min = $("mmin").value === "" ? -Infinity : Number($("mmin").value), max = $("mmax").value === "" ? Infinity : Number($("mmax").value);
-    rows.sort((a, b) => { const A = a.dataset[sort], B = b.dataset[sort];
-      return (sort === "amount" ? Number(A) - Number(B) : A.localeCompare(B)) * dir; }).forEach(r => body.appendChild(r));
-    let n = 0, s = 0;
-    rows.forEach(r => {
-      const d = r.dataset, a = Number(d.amount);
-      const ok = (!q || d.text.includes(q)) && (!cat || d.cat === cat) && (!sub || d.sub === sub) && (!sup || d.sup === sup) && a >= min && a <= max;
-      r.hidden = !ok; if (ok) { n++; s += a; }
-    });
-    $("mCount").textContent = n; $("mSum").textContent = $("mFoot").textContent = pul(s); $("mNone").hidden = n > 0;
-    $("mclear").hidden = !(q || cat || sub || sup || $("mmin").value !== "" || $("mmax").value !== "");
-    document.querySelectorAll("[data-sort]").forEach(b => { b.textContent = b.textContent.replace(/ [▲▼]$/, "") + (b.dataset.sort === sort ? (dir > 0 ? " ▲" : " ▼") : ""); });
+  const $ = id => document.getElementById(id), form = $("mFilter");
+  if (!form) return;
+  const groups = [...document.querySelectorAll('[data-material-group]')].map(box => {
+    const body = box.querySelector('tbody');
+    return {box, body, rows: [...body.rows]};
+  });
+  const sortButtons = document.querySelectorAll('[data-sort]');
+  const numericFields = new Set(['amount', 'paid', 'balance']);
+  const integers = new Intl.NumberFormat('en-US');
+  const fractions = new Intl.NumberFormat('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  const cents = value => Math.round(Number(value) * 100);
+  const pul = value => (value % 100 ? fractions : integers).format(value / 100).replaceAll(',', ' ');
+  let sort = 'date', dir = -1;
+
+  function showBalance(element, balance) {
+    element.classList.toggle('neg', balance < 0);
+    element.classList.toggle('material-balance-ok', balance >= 0);
+    element.textContent = (balance > 0 ? '+' : '') + pul(balance);
   }
-  ["mq", "mmin", "mmax"].forEach(id => $(id).addEventListener("input", apply));
-  ["mcat", "msub", "msup"].forEach(id => $(id).addEventListener("change", apply));
-  $("mclear").addEventListener("click", () => { f.reset(); apply(); });
-  document.querySelectorAll("[data-sort]").forEach(b => b.addEventListener("click", () => {
-    const k = b.dataset.sort; dir = sort === k ? -dir : (k === "amount" ? -1 : 1); sort = k; apply();
+
+  function apply() {
+    const query = $('mq').value.trim().toLowerCase();
+    const category = $('mcat').value, purpose = $('msub').value, recipient = $('msup').value;
+    const min = $('mmin').value === '' ? -Infinity : cents($('mmin').value);
+    const max = $('mmax').value === '' ? Infinity : cents($('mmax').value);
+    let count = 0, sum = 0, paid = 0;
+    for (const {box, rows} of groups) {
+      const matchesRecipient = !recipient || box.dataset.materialGroup === recipient;
+      let groupCount = 0, groupSum = 0, groupPaid = 0;
+      for (const row of rows) {
+        const d = row.dataset, amount = cents(d.amount);
+        const matches = matchesRecipient && (!query || d.text.includes(query)) && (!category || d.cat === category)
+          && (!purpose || d.sub === purpose) && amount >= min && amount <= max;
+        row.hidden = !matches;
+        if (matches) {
+          groupCount++;
+          groupSum += amount;
+          groupPaid += cents(d.paid);
+        }
+      }
+      box.hidden = groupCount === 0;
+      box.querySelector('[data-group-count]').textContent = groupCount;
+      box.querySelector('[data-group-sum]').textContent = pul(groupSum);
+      box.querySelector('[data-group-paid]').textContent = pul(groupPaid);
+      showBalance(box.querySelector('[data-balance-figure]'), groupPaid - groupSum);
+      count += groupCount;
+      sum += groupSum;
+      paid += groupPaid;
+    }
+    $('mCount').textContent = count;
+    $('mSum').textContent = pul(sum);
+    $('mPaid').textContent = pul(paid);
+    showBalance($('mBalance'), paid - sum);
+    $('mNone').hidden = count > 0;
+    $('mclear').hidden = !(query || category || purpose || recipient || $('mmin').value !== '' || $('mmax').value !== '');
+  }
+
+  ['mq', 'mmin', 'mmax'].forEach(id => $(id).addEventListener('input', apply));
+  ['mcat', 'msub'].forEach(id => $(id).addEventListener('change', apply));
+  $('msup').addEventListener('change', () => {
+    apply();
+    const group = groups.find(({box}) => box.dataset.materialGroup === $('msup').value);
+    if (group) group.box.open = true;
+  });
+  $('mclear').addEventListener('click', () => { form.reset(); apply(); });
+  sortButtons.forEach(button => button.addEventListener('click', () => {
+    const field = button.dataset.sort;
+    dir = sort === field ? -dir : (numericFields.has(field) ? -1 : 1);
+    sort = field;
+    for (const {body, rows} of groups) {
+      rows.sort((a, b) => {
+        const x = a.dataset[sort], y = b.dataset[sort];
+        return (numericFields.has(sort) ? Number(x) - Number(y) : x.localeCompare(y)) * dir;
+      });
+      rows.forEach(row => body.appendChild(row));
+    }
+    sortButtons.forEach(b => {
+      b.textContent = b.textContent.replace(/ [▲▼]$/, '') + (b.dataset.sort === sort ? (dir > 0 ? ' ▲' : ' ▼') : '');
+    });
   }));
 })();
 </script>

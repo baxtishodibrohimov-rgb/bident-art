@@ -22,6 +22,7 @@ Masalan, martda qo'yilgan breket uchun noyabrda tushgan 1 000 000 noyabr maoshig
 | **Klinika ulushi** (`/klinika`) | Kassa × klinika foizi, kassa bo'yicha |
 | **Shifokorlar** (`/shifokorlar`) | Kim qancha pul olib keldi, maoshi, berilgan (maosh + avans), avans, berilmagan. Ism bosilsa — o'sha qator ostida berilgan maoshlar va Excel |
 | **Xarajatlar** (`/xarajatlar`) | Klinikaga berilgan pul, hisoblangan shifokor va hamshira maoshlari, material rasxod |
+| **Material rasxod** (`/material`) | Oluvchi bo'yicha guruhlangan schyotlar, to'langan summa va balans |
 | **Audit** (`/audit`) | Cliniccards xarajatlari toifa va pul oluvchi bo'yicha. Standart davr — oxirgi bir yil |
 | **Excel** | Barcha shifokorlar; har bir berilgan maosh (Sana · F.I.SH. · Summa · Shifokor); shifokorning davrdagi barcha to'lovlari |
 
@@ -36,6 +37,10 @@ Cliniccards API kaliti egasiga xarajat va maoshlarni ko'rish huquqi kerak.
 Audit kassaning 20% ulushi bilan klinikaga berilgan pul orasidagi farqni ham ko'rsatadi.
 Tanlangan davrdagi boshqa xarajat toifalari va ichki toifalar API javobidan o'z nomlari bilan chiqadi. Oluvchini bossangiz,
 uning shu toifa va davrdagi yozuvlari ochiladi.
+
+Material rasxod `date_issued` bo'yicha tanlangan schyotlarning `amount` yig'indisidir. Balans `paid − amount` qilib
+hisoblanadi. Manfiy balans qarzni, musbat balans ortiqcha to'lovni ko'rsatadi. API to'lov tafsilotlarini yuborsa, schyotdagi
+«To'langan» summasini bosib ularni ko'rish mumkin.
 
 ## Shifokorga maosh berish
 

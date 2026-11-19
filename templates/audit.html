@@ -11,9 +11,9 @@
 <p class="note">Davr Cliniccards'dagi xarajat sanasi bo'yicha tanlanadi. «To'langan» shu yozuvga bog'langan jami to'lovni ko'rsatadi.</p>
 {% for section in sections %}
 <details class="panel audit-section"{% if section.key %} id="{{ section.key }}"{% endif %}>
-  <summary class="audit-summary">
+  <summary class="expense-summary">
     <strong>{{ section.name }}</strong>
-    <span class="audit-meta"><span class="muted">{{ section.count }} ta yozuv</span>
+    <span class="expense-summary-meta"><span class="muted">{{ section.count }} ta yozuv</span>
       <b class="num">{{ section.paid_total|pul }} so'm</b></span>
   </summary>
   {% if section.key == 'clinic' %}
@@ -28,9 +28,9 @@
   {% if section.recipients %}<div class="audit-recipients-label muted">Kimga</div>{% endif %}
   {% for group in section.recipients %}
   <details class="audit-recipient"{% if section.recipients|length == 1 %} open{% endif %}>
-    <summary class="audit-summary">
+    <summary class="expense-summary">
       <strong>{{ group.name }}</strong>
-      <span class="audit-meta"><span class="muted">{{ group.rows|length }} ta yozuv</span>
+      <span class="expense-summary-meta"><span class="muted">{{ group.rows|length }} ta yozuv</span>
         <b class="num">{{ group.paid_total|pul }} so'm</b></span>
     </summary>
     <div class="scroll"><table>

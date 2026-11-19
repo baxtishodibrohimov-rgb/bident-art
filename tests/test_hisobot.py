@@ -338,6 +338,41 @@ def test_dashboard_pages(svc, monkeypatch):
     assert c.get("/qanday-ishlaydi").status_code == 200
 
 
+def test_material_groups_invoices_and_shows_signed_balances(svc, monkeypatch):
+    def spending(recipient, amount, paid, purpose, payments=()):
+        return {"supplier": {"name": recipient}, "amount": amount, "paid": paid,
+                "spendings_category": {"name": "Material"}, "spendings_subcategory": {"name": purpose},
+                "date_issued": "2026-11-05", "payments": payments}
+
+    spendings = [
+        spending("Dental Market", "100000", "0", "Yopilmagan"),
+        spending(" dental  market ", "50000.50", "30000.25", "Qisman to'langan", [
+            {"cash_desk_name": "Naqd", "amount": "-10000"},
+            {"cash_desk_name": "Terminal", "amount": "-20000.25"},
+        ]),
+        spending("Dental Market", "-20000", "-20000", "Qaytarilgan", [{"cash_desk_name": "Naqd", "amount": "20000"}]),
+        spending("Ortho Supply", "25000", "25000", "Yopilgan"),
+        spending("Laboratoriya", "40000", "50000", "Ortiqcha to'lov"),
+    ]
+    monkeypatch.setattr(svc.client, "spendings", lambda start, end: spendings)
+    c = _client(svc, monkeypatch)
+    c.post("/login", data={"login": "admin", "parol": "maxfiy"})
+    response = c.get("/material?oy=2026-11")
+    assert response.status_code == 200
+    groups = {group.name: group for group in response.context["groups"]}
+    dental = groups["Dental Market"]
+    assert len(dental.rows) == 3 and dental.balance == Decimal("-120000.25")
+    assert [row["balance"] for row in dental.rows] == [-100000, Decimal("-20000.25"), 0]
+    assert dental.rows[1]["payments"][1]["amount"] == Decimal("20000.25")
+    assert dental.rows[2]["payments"][0]["amount"] == -20000
+    assert groups["Ortho Supply"].balance == 0 and groups["Laboratoriya"].balance == 10000
+    assert response.context["total"] == Decimal("195000.50")
+    assert response.context["paid"] == Decimal("85000.25")
+    for value in ("Schyot summasi", "-110 000.25", "-100 000", "-20 000.25", "+10 000", "Terminal <b>20 000.25"):
+        assert value in response.text
+    assert "Schyotlar jami" in c.get("/xarajatlar?oy=2026-11").text
+
+
 def test_audit_counts_paid_clinic_expense_once(svc, monkeypatch):
     def expense(category, subcategory, amount, paid, recipient):
         return {"spendings_category": {"id": category, "name": category},

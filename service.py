@@ -234,8 +234,8 @@ class Service:
             clinic_paid=sum((money(s.get("paid")) for s in groups["clinic"]), money(0)),
         )
 
-    def material_detail(self, period):
-        return details.expenses(finance.split_spendings(self.spendings(period))["material"])
+    def material_detail(self, period) -> list[details.Group]:
+        return details.expenses_by_recipient(finance.split_spendings(self.spendings(period))["material"])
 
     def audit_detail(self, period) -> tuple[dict[str, details.AuditSection], list[details.AuditSection]]:
         return details.audit_sections(finance.split_spendings(self.spendings(period)))

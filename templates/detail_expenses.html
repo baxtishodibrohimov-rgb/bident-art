@@ -3,6 +3,6 @@
 {% block content %}
 <div class="titlerow"><h1>Xarajatlar</h1>{% set action = "/xarajatlar" %}{% include "_period.html" %}</div>
 <div class="tiles">{% for href, name, v in o.parts() %}
-  <a class="tile link" href="{{ href }}{% if '#' not in href %}?{{ q }}{% endif %}"><div class="k">{{ name }}</div><div class="v num">{{ v|pul }}<small>so'm</small></div></a>{% endfor %}
+  <a class="tile link" href="{{ href }}{% if '#' not in href %}?{{ q }}{% endif %}"><div class="k">{{ name }}</div><div class="v num">{{ v|pul }}<small>so'm</small></div>{% if href == '/material' %}<div class="muted">Schyotlar jami</div>{% endif %}</a>{% endfor %}
 </div>
 {% endblock %}

@@ -234,10 +234,13 @@ def expenses(request: Request, p: Period = Depends(get_period), _=Depends(auth))
 
 @app.get("/material")
 def material(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
-    """Material rasxod qaysi xarajatlardan yig'ilgani: har bir xarajat alohida qatorda."""
-    rows = sorted(({**r, "cat": g.name} for g in service().material_detail(p) for r in g.rows), key=lambda r: r["date"])
+    groups = service().material_detail(p)
+    rows = [row for group in groups for row in group.rows]
+    total = sum((row["amount"] for row in rows), Decimal(0))
+    paid = sum((row["paid"] for row in rows), Decimal(0))
     return templates.TemplateResponse(request, "detail_material.html", {
-        "rows": rows, "total": sum((r["amount"] for r in rows), Decimal(0)), **nav("bosh"), **period_context(p)})
+        "groups": groups, "rows": rows, "total": total, "paid": paid, "balance": paid - total,
+        **nav("bosh"), **period_context(p)})
 
 
 @app.get("/audit")

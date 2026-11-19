@@ -27,6 +27,10 @@ class Group:
         return sum((r.get("paid", Decimal(0)) for r in self.rows), Decimal(0))
 
     @property
+    def balance(self) -> Decimal:
+        return self.paid_total - self.total
+
+    @property
     def left_total(self) -> Decimal:
         return sum((r.get("left", Decimal(0)) for r in self.rows), Decimal(0))
 
@@ -94,12 +98,17 @@ def kassa(payments: list[dict], patients: dict[str, str], doctors_by_payment: di
 
 def expense_row(sp: dict) -> dict:
     _, member = member_info(sp)
+    amount, paid = money(sp.get("amount")), money(sp.get("paid"))
+    # Cliniccards kassadan chiqqan to'lovni minusda qaytaradi.
+    payments = [{"cash_desk": text(payment.get("cash_desk_name")), "amount": -money(payment.get("amount"))}
+                for payment in sp.get("payments") or [] if isinstance(payment, dict)]
     return {
         "date": str(sp.get("date_issued") or "")[:10],
+        "cat": text((sp.get("spendings_category") or {}).get("name")) or "Toifasiz",
         "sub": text((sp.get("spendings_subcategory") or {}).get("name")),
         "supplier": text((sp.get("supplier") or {}).get("name") or member),
         "note": text(sp.get("note")), "status": sp.get("payment_status") or "",
-        "amount": money(sp.get("amount")), "paid": money(sp.get("paid")),
+        "amount": amount, "paid": paid, "balance": paid - amount, "payments": payments,
     }
 
 
@@ -122,7 +131,7 @@ def _name_key(value: str) -> str:
     return " ".join(value.translate(APOSTROPHES).casefold().split())
 
 
-def _audit_recipients(spendings: list[dict]) -> list[Group]:
+def expenses_by_recipient(spendings: list[dict]) -> list[Group]:
     recipients: dict[str, Group] = {}
     for sp in spendings:
         row = expense_row(sp)
@@ -137,7 +146,7 @@ def _audit_recipients(spendings: list[dict]) -> list[Group]:
 
 
 def audit_sections(groups: dict[str, list[dict]]) -> tuple[dict[str, AuditSection], list[AuditSection]]:
-    main = {kind: AuditSection(label, _audit_recipients(groups[kind]), kind) for kind, label in AUDIT_LABELS.items()}
+    main = {kind: AuditSection(label, expenses_by_recipient(groups[kind]), kind) for kind, label in AUDIT_LABELS.items()}
     by_category: dict[tuple[str, str], tuple[str, list[dict]]] = {}
     for sp in groups["material"] + groups["salary"]:
         category = sp.get("spendings_category") or {}
@@ -147,7 +156,7 @@ def audit_sections(groups: dict[str, list[dict]]) -> tuple[dict[str, AuditSectio
         key = (str(category.get("id") or _name_key(title)), str(subcategory.get("id") or _name_key(subtitle)))
         name = f"{title} → {subtitle}" if subtitle else title
         by_category.setdefault(key, (name, []))[1].append(sp)
-    other = [AuditSection(name, _audit_recipients(spendings))
+    other = [AuditSection(name, expenses_by_recipient(spendings))
              for name, spendings in sorted(by_category.values(), key=lambda entry: _name_key(entry[0]))]
     return main, other
 
