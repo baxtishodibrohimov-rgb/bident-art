@@ -274,7 +274,8 @@ def test_overview_numbers(svc):
     assert o.kassa_total == Decimal("2050000") and o.clinic_share == Decimal("410000")
     assert o.doctors_salary == Decimal("450000")   # 125 000 + 250 000 + 75 000 (har bir shifokor 25%)
     assert o.material_total == Decimal("900000") and o.material_count == 3
-    assert o.expenses_total == Decimal("410000") + Decimal("450000") + Decimal("200000") + Decimal("900000")
+    assert o.clinic_paid == 0
+    assert o.expenses_total == Decimal("450000") + Decimal("200000") + Decimal("900000")
     assert o.profit == Decimal("2050000") - o.expenses_total   # sof foyda kassadan hisoblanadi
 
 
@@ -301,9 +302,9 @@ def test_salary_spendings_split_and_payouts():
         {"amount": "30000", "spendings_category": {"name": "Зарплата"}},
         {"amount": "400000", "spendings_category": {"name": "Materiallar"}},
     ]
-    salary, material = finance.split_spendings(spend)
-    assert len(salary) == 3 and [m["amount"] for m in material] == ["400000"]
-    assert finance.payouts_by_doctor(salary, staff) == {"501": Decimal("100000"), "502": Decimal("50000")}
+    groups = finance.split_spendings(spend)
+    assert len(groups["salary"]) == 3 and [m["amount"] for m in groups["material"]] == ["400000"]
+    assert finance.payouts_by_doctor(groups["salary"], staff) == {"501": Decimal("100000"), "502": Decimal("50000")}
 
 
 
@@ -313,7 +314,7 @@ def test_dashboard_pages(svc, monkeypatch):
     r = c.get("/?oy=2026-11")
     assert r.status_code == 200
     for text in ("Bajarilgan ishlar", "Kassaga tushgan", "Xarajatlar", "Klinika sof foydasi",
-                 "150 000", "2 050 000", "1 760 000", "290 000", "/foyda?oy=2026-11"):
+                 "150 000", "2 050 000", "1 350 000", "700 000", "/foyda?oy=2026-11"):
         assert text in r.text, text
     assert "Konsultatsiya" in c.get("/ishlar?oy=2026-11").text
     k = c.get("/kassa?oy=2026-11").text
@@ -322,7 +323,7 @@ def test_dashboard_pages(svc, monkeypatch):
     assert 'id="kdoc"' in k
     assert "410 000" in c.get("/klinika?oy=2026-11").text
     x = c.get("/xarajatlar?oy=2026-11").text
-    for text in ("Klinika ulushi", "Shifokorlar maoshi", "Hamshiralar maoshi", "Material rasxod", "900 000"):
+    for text in ("Klinikaga berilgan", "Shifokorlar maoshi", "Hamshiralar maoshi", "Material rasxod", "900 000"):
         assert text in x, text
     assert "Ijara" not in x   # xarajatlar ro'yxati olib tashlangan, faqat 4 ta summa
     assert "/material?oy=2026-11" in x
@@ -331,7 +332,45 @@ def test_dashboard_pages(svc, monkeypatch):
         assert text in m, text
     assert 'id="mcat"' in m and "<option>Materiallar</option>" in m   # filtr: toifa, nima uchun, kimga, summa
     f = c.get("/foyda?oy=2026-11").text
-    assert "Klinika sof foydasi" in f and "290 000" in f and "Kassaga tushgan" in f
+    assert "Klinika sof foydasi" in f and "700 000" in f and "Kassaga tushgan" in f
     d = c.get("/shifokorlar?oy=2026-11").text
     assert "Karimova madina" in d and "Berilgan summa" in d and "Berilmagan summa" in d
     assert c.get("/qanday-ishlaydi").status_code == 200
+
+
+def test_audit_counts_paid_clinic_expense_once(svc, monkeypatch):
+    def expense(category, subcategory, amount, paid, recipient):
+        return {"spendings_category": {"id": category, "name": category},
+                "spendings_subcategory": {"name": subcategory}, "supplier": {"name": recipient},
+                "amount": str(amount), "paid": str(paid), "date_issued": "2026-11-05"}
+
+    spendings = [
+        expense(" Ishxona ", "ISHXONAGA", 300000, 250000, "Klinika"),
+        expense("Ishxona", "Ishxonaga", 70000, 0, "To'lov kutilmoqda"),
+        expense("Ishxona", "Ishxonaga", -10000, -10000, "Qaytarildi"),
+        expense("Ishxona", "Oshxonaga", 70000, 70000, "Oshxona"),
+        expense("Oyliklar", "Asistentlar oyligi", 90000, 90000, "Assistent"),
+        expense("Oyliklar", "Shifokor oyligi", 120000, 120000, "Shifokor"),
+        expense("Заработная плата", "Заработная плата ассистентов", 15000, 15000, "Eski yozuv"),
+    ]
+    spendings[3]["member"] = "Xarajat uchun mas'ul xodim"
+    monkeypatch.setattr(svc.client, "spendings", lambda start, end: spendings)
+    overview = svc.overview("2026-11")
+    assert overview.clinic_share == 410000 and overview.clinic_paid == 240000
+    assert overview.material_total == 70000
+    assert overview.expenses_total == 240000 + 450000 + 70000
+    assert overview.profit == 1290000
+
+    c = _client(svc, monkeypatch)
+    assert c.get("/audit", follow_redirects=False).status_code == 303
+    c.post("/login", data={"login": "admin", "parol": "maxfiy"})
+    audit = c.get("/audit?oy=2026-11")
+    assert audit.status_code == 200
+    for value in ("240 000", "105 000", "120 000", "410 000", "170 000", "300 000", "250 000", "05.11.2026"):
+        assert value in audit.text
+    assert ">Oshxonaga<" not in audit.text
+    material = c.get("/material?oy=2026-11").text
+    assert ">Oshxonaga<" in material and ">Ishxonaga<" not in material and "70 000" in material
+    costs = c.get("/xarajatlar?oy=2026-11").text
+    assert "/audit?oy=2026-11" in costs and "240 000" in costs
+    assert "1 290 000" in c.get("/foyda?oy=2026-11").text

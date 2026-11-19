@@ -220,7 +220,8 @@ class Service:
         p = as_period(period)
         rep = self.month_report(p)
         done = self.done_items(p)
-        _, material = finance.split_spendings(self.spendings(p))
+        groups = finance.split_spendings(self.spendings(p))
+        material = groups["material"]
         return finance.Overview(
             done_total=sum((money(it.get("price_with_discount")) for it in done), money(0)),
             done_count=len(done),
@@ -230,11 +231,18 @@ class Service:
             staff_salary=money(staff_salary),
             material_total=sum((money(s.get("amount")) for s in material), money(0)),
             material_count=len(material),
+            clinic_paid=sum((money(s.get("paid")) for s in groups["clinic"]), money(0)),
         )
 
     def material_detail(self, period):
-        _, material = finance.split_spendings(self.spendings(period))
-        return details.expenses(material)
+        return details.expenses(finance.split_spendings(self.spendings(period))["material"])
+
+    def audit_detail(self, period):
+        groups = finance.split_spendings(self.spendings(period))
+        return {
+            kind: sorted((details.expense_row(sp) for sp in groups[kind]), key=lambda row: row["date"], reverse=True)
+            for kind in finance.AUDIT_LABELS
+        }
 
     # --- sotuvchilar bilan hisob-kitob (butun davr) -------------------------
     def stock_invoices(self) -> list[dict]:

@@ -5,6 +5,7 @@ import html
 from dataclasses import dataclass, field
 from decimal import Decimal
 
+from finance import member_info
 from report import NO_DOCTOR, dedupe_items, money, staff_name
 
 
@@ -89,6 +90,17 @@ def kassa(payments: list[dict], patients: dict[str, str], doctors_by_payment: di
     return _sorted(groups)
 
 
+def expense_row(sp: dict) -> dict:
+    _, member = member_info(sp)
+    return {
+        "date": str(sp.get("date_issued") or "")[:10],
+        "sub": text((sp.get("spendings_subcategory") or {}).get("name")),
+        "supplier": text((sp.get("supplier") or {}).get("name") or member),
+        "note": text(sp.get("note")), "status": sp.get("payment_status") or "",
+        "amount": money(sp.get("amount")), "paid": money(sp.get("paid")),
+    }
+
+
 def expenses(spendings: list[dict]) -> list[Group]:
     """Xarajatlar: toifa bo'yicha, har bir xarajat bilan (manfiy summa — qaytarilgan)."""
     groups: dict[str, Group] = {}
@@ -97,16 +109,7 @@ def expenses(spendings: list[dict]) -> list[Group]:
         key = str(cat.get("id") or "0")
         if key not in groups:
             groups[key] = Group(key, text(cat.get("name")) or "Toifasiz")
-        sub = text((s.get("spendings_subcategory") or {}).get("name"))
-        member = s.get("member")
-        if isinstance(member, dict):
-            member = " ".join(x for x in (member.get("lastname"), member.get("firstname"), member.get("name")) if x)
-        groups[key].rows.append({
-            "date": str(s.get("date_issued") or "")[:10], "sub": sub,
-            "supplier": text((s.get("supplier") or {}).get("name") or member),
-            "note": text(s.get("note")), "status": s.get("payment_status") or "",
-            "amount": money(s.get("amount")), "paid": money(s.get("paid")),
-        })
+        groups[key].rows.append(expense_row(s))
     for g in groups.values():
         g.rows.sort(key=lambda r: r["date"])
     return _sorted(groups)

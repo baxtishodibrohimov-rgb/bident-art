@@ -4,18 +4,17 @@ Qoidalar (o'zgarmas):
 - Klinika ulushi — kassaga tushgan pulning 20%.
 - Har bir shifokorning ulushi — unga shu davrda tushgan pulning 25%.
 
-Xarajatlar = klinika ulushi + shifokorlar maoshi + hamshiralar maoshi + material rasxod.
+Xarajatlar = klinikaga berilgan pul + shifokorlar maoshi + hamshiralar maoshi + material rasxod.
 Sof foyda = shu davrda kassaga tushgan pul − xarajatlar.
 
-Cliniccards xarajatlari ikkiga bo'linadi:
-- maosh xarajatlari (xodimga bog'langan yoki «зарплата/maosh» toifasidagi) — shifokorlarga
-  «berilgan» summa shulardan olinadi va material rasxodga qo'shilmaydi (ikki marta hisoblanmasin);
-- qolganlari — «material rasxod» (material, ijara, kommunal va boshqa sarflar).
+Cliniccards'dagi «Ishxona → Ishxonaga» hamda oylik yozuvlari auditda ko'rsatiladi.
+Qolgan xarajatlar material rasxodga kiradi.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
+from html import unescape
 
 from report import money
 
@@ -23,10 +22,21 @@ CLINIC_PCT = Decimal(20)
 DOCTOR_PCT = Decimal(25)
 
 SALARY_WORDS = ("зарплат", "заработ", "maosh", "oylik", "salary", "payroll")
+AUDIT_LABELS = {"clinic": "Klinikaga berilgan", "assistants": "Assistentlar oyligi",
+                "doctors": "Shifokorlar oyligi"}
+SPENDING_CATEGORIES = {
+    ("ishxona", "ishxonaga"): "clinic",
+    ("ishxona", "oshxonaga"): "material",
+    ("oyliklar", "asistentlar oyligi"): "assistants",
+    ("oyliklar", "assistentlar oyligi"): "assistants",
+    ("oyliklar", "shifokor oyligi"): "doctors",
+    ("заработная плата", "заработная плата ассистентов"): "assistants",
+    ("заработная плата", "заработная плата врачей"): "doctors",
+}
 
 
-def _q(v: Decimal) -> Decimal:
-    return v.quantize(Decimal("0.01"), ROUND_HALF_UP)
+def clinic_share(kassa_total: Decimal) -> Decimal:
+    return (kassa_total * CLINIC_PCT / 100).quantize(Decimal("0.01"), ROUND_HALF_UP)
 
 
 def member_info(sp: dict) -> tuple[str, str]:
@@ -50,11 +60,18 @@ def is_salary(sp: dict) -> bool:
     return any(w in text for w in SALARY_WORDS)
 
 
-def split_spendings(spendings: list[dict]) -> tuple[list[dict], list[dict]]:
-    salary, material = [], []
+def split_spendings(spendings: list[dict]) -> dict[str, list[dict]]:
+    groups = {kind: [] for kind in (*AUDIT_LABELS, "salary", "material")}
     for sp in spendings:
-        (salary if is_salary(sp) else material).append(sp)
-    return salary, material
+        category, subcategory = (
+            " ".join(unescape(str((sp.get(key) or {}).get("name") or "")).casefold().split())
+            for key in ("spendings_category", "spendings_subcategory")
+        )
+        kind = SPENDING_CATEGORIES.get((category, subcategory))
+        if kind is None:
+            kind = "salary" if is_salary(sp) else "material"
+        groups[kind].append(sp)
+    return groups
 
 
 def _norm(name: str) -> str:
@@ -84,14 +101,15 @@ class Overview:
     staff_salary: Decimal
     material_total: Decimal
     material_count: int
+    clinic_paid: Decimal
 
     @property
     def clinic_share(self) -> Decimal:
-        return _q(self.kassa_total * CLINIC_PCT / 100)
+        return clinic_share(self.kassa_total)
 
     @property
     def expenses_total(self) -> Decimal:
-        return self.clinic_share + self.doctors_salary + self.staff_salary + self.material_total
+        return self.clinic_paid + self.doctors_salary + self.staff_salary + self.material_total
 
     @property
     def profit(self) -> Decimal:
@@ -100,7 +118,7 @@ class Overview:
     def parts(self) -> list[tuple[str, str, Decimal]]:
         """Xarajat qismlari: (havola, nomi, summa)."""
         return [
-            ("/klinika", f"Klinika ulushi (kassaning {CLINIC_PCT:.0f}%)", self.clinic_share),
+            ("/audit", AUDIT_LABELS["clinic"], self.clinic_paid),
             ("/shifokorlar", "Shifokorlar maoshi", self.doctors_salary),
             ("/xodimlar", "Hamshiralar maoshi", Decimal(self.staff_salary)),
             ("/material", "Material rasxod", self.material_total),

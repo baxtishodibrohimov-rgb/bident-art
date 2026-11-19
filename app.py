@@ -7,6 +7,7 @@ from __future__ import annotations
 import os
 import re
 import threading
+from calendar import monthrange
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -75,6 +76,14 @@ def period_context(p: Period) -> dict:
         ("O'tgan oy", Period.month(prev.strftime("%Y-%m"))),
         ("Shu yil", Period(date(today.year, 1, 1), today)),
     ]}
+
+
+def audit_period(oy: str | None = None, dan: str | None = None, gacha: str | None = None) -> Period:
+    if oy or dan or gacha:
+        return get_period(oy, dan, gacha)
+    end = date.today()
+    start = date(end.year - 1, end.month, min(end.day, monthrange(end.year - 1, end.month)[1]))
+    return Period(start, end)
 
 
 def make_service() -> Service:
@@ -229,6 +238,17 @@ def material(request: Request, p: Period = Depends(get_period), _=Depends(auth))
     rows = sorted(({**r, "cat": g.name} for g in service().material_detail(p) for r in g.rows), key=lambda r: r["date"])
     return templates.TemplateResponse(request, "detail_material.html", {
         "rows": rows, "total": sum((r["amount"] for r in rows), Decimal(0)), **nav("bosh"), **period_context(p)})
+
+
+@app.get("/audit")
+def audit(request: Request, p: Period = Depends(audit_period), _=Depends(auth)):
+    svc = service()
+    rows = svc.audit_detail(p)
+    totals = {kind: sum((r["paid"] for r in group), Decimal(0)) for kind, group in rows.items()}
+    share = finance.clinic_share(svc.kassa_total(p))
+    return templates.TemplateResponse(request, "audit.html", {
+        "rows": rows, "totals": totals, "labels": finance.AUDIT_LABELS, "pct": finance.CLINIC_PCT,
+        "share": share, "balance": share - totals["clinic"], **nav("audit"), **period_context(p)})
 
 
 @app.get("/foyda")

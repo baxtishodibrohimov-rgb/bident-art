@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Audit — {{ p.label }}{% endblock %}
+{% block content %}
+<div class="titlerow"><h1>Audit</h1>{% set action = "/audit" %}{% include "_period.html" %}</div>
+<div class="tiles three">
+  {% for kind, label in labels.items() %}
+  <a class="tile link" href="#{{ kind }}"><div class="k">{{ label }}</div>
+    <div class="v num">{{ totals[kind]|pul }}<small>so'm</small></div></a>
+  {% endfor %}
+</div>
+<p class="note">Davr Cliniccards'dagi xarajat sanasi bo'yicha tanlanadi. «To'langan» shu yozuvga bog'langan jami to'lovni ko'rsatadi.</p>
+{% for kind, label in labels.items() %}
+<section class="panel" id="{{ kind }}" style="scroll-margin-top:90px">
+  <div class="panel-h"><h2>{{ label }}</h2><span class="muted">{{ rows[kind]|length }} ta yozuv</span></div>
+  {% if kind == 'clinic' %}
+  <div class="controls" style="padding:8px 16px">
+    <a class="rowlink num" href="/klinika?{{ q }}">Hisoblangan ulush ({{ pct|pul }}%) <b>{{ share|pul }} so'm</b></a>
+    <span class="num {{ 'neg' if balance < 0 else '' }}">Farq <b>{{ balance|pul }} so'm</b></span>
+  </div>
+  {% endif %}
+  <div class="scroll"><table>
+    <thead><tr><th>Xarajat sanasi</th><th>Kimga</th><th>Toifa</th><th>Izoh</th>
+      <th class="r">Xarajat summasi</th><th class="r">To'langan</th></tr></thead>
+    <tbody>
+      {% for r in rows[kind] %}
+      <tr><td class="num">{% if r.date %}{{ r.date[8:10] }}.{{ r.date[5:7] }}.{{ r.date[:4] }}{% else %}—{% endif %}</td>
+        <td>{{ r.supplier or '—' }}</td><td>{{ r.sub }}</td><td>{{ r.note }}</td>
+        <td class="r">{{ r.amount|pul }}</td><td class="r">{{ r.paid|pul }}</td></tr>
+      {% else %}<tr><td colspan="6" class="muted">Bu davrda yozuv topilmadi.</td></tr>{% endfor %}
+    </tbody>
+    {% if rows[kind] %}<tfoot><tr><td colspan="5">Jami to'langan</td><td class="r">{{ totals[kind]|pul }}</td></tr></tfoot>{% endif %}
+  </table></div>
+</section>
+{% endfor %}
+<p class="note">Oylik yozuvlarini ko'rish uchun Cliniccards API kaliti egasiga xarajatlar va maosh bo'yicha ruxsat kerak.</p>
+{% endblock %}

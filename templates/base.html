@@ -19,7 +19,8 @@
       Maosh hisoboti</a>
     <nav class="nav" aria-label="Bo'limlar">
       {% for key, href, name in [("bosh", "/", "Bosh ekran"), ("shifokorlar", "/shifokorlar", "Shifokorlar"),
-                                 ("sklad", "/sklad", "Sklad"), ("xodimlar", "/xodimlar", "Hamshiralar"), ("bot", "/bot", "Telegram bot"), ("qanday", "/qanday-ishlaydi", "Qanday ishlaydi")] %}
+                                 ("sklad", "/sklad", "Sklad"), ("xodimlar", "/xodimlar", "Hamshiralar"), ("audit", "/audit", "Audit"),
+                                 ("bot", "/bot", "Telegram bot"), ("qanday", "/qanday-ishlaydi", "Qanday ishlaydi")] %}
         <a href="{{ href }}{% if q is defined and key in ('bosh', 'shifokorlar', 'xodimlar') %}?{{ q }}{% endif %}" {% if sec == key %}aria-current="page"{% endif %}>{{ name }}</a>
       {% endfor %}
     </nav>

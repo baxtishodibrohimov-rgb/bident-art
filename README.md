@@ -1,11 +1,11 @@
 # Cliniccards maosh hisoboti
 
 **Ulushlar o'zgarmas:** klinika — kassaga tushgan pulning 20%, har bir shifokor — o'ziga tushgan pulning 25%.
-**Bosh ekran:** bajarilgan ishlar, kassaga tushgan, xarajatlar (klinika ulushi + shifokorlar + hamshiralar + material rasxod)
+**Bosh ekran:** bajarilgan ishlar, kassaga tushgan, xarajatlar (klinikaga berilgan pul + hisoblangan shifokor va hamshira maoshlari + material rasxod)
 va klinika sof foydasi (kassaga tushgan − xarajatlar). Har bir summa bosilganda tafsiloti ochiladi.
 
 Bo'limlar: Bosh ekran · Shifokorlar (maosh va avans berish) · Sklad (qoldiq — ro'yxat/kartochka va rasmlar, kunlik hisobotlar,
-buyurtmalar, sotuvchilar va ular bilan hisob-kitob) · Hamshiralar (maosh, ⚙ sozlama, grafik, hamshira vazifalari) ·
+buyurtmalar, sotuvchilar va ular bilan hisob-kitob) · Hamshiralar (maosh, ⚙ sozlama, grafik, hamshira vazifalari) · Audit ·
 Telegram bot (suhbatlar, bot xodimlari) · Qanday ishlaydi.
 
 Cliniccards API orqali **shu oyda kassaga tushgan pul** bo'yicha shifokorlar maoshini hisoblaydigan kichik dastur.
@@ -16,13 +16,24 @@ Masalan, martda qo'yilgan breket uchun noyabrda tushgan 1 000 000 noyabr maoshig
 
 | Sahifa | Nima ko'rsatadi |
 | --- | --- |
-| **Bosh ekran** (`/`) | Tanlangan oy yoki sana oralig'i bo'yicha 5 ta summa: bajarilgan ishlar, kassaga tushgan, klinikaga (kassaning 20%), shifokorlarga, xarajatlar. Har birini bosganda tafsiloti ochiladi |
+| **Bosh ekran** (`/`) | Tanlangan davrda bajarilgan ishlar, kassaga tushgan pul, xarajatlar va sof foyda |
 | **Bajarilgan ishlar** (`/ishlar`) | Shu davrda bajarilgan ishlar, shifokor bo'yicha: narx, to'langan, qoldiq |
 | **Kassa** (`/kassa`) | Barcha to'lovlar (`GET /payments`), kassa bo'yicha; har bir to'lov qaysi shifokor ishi uchunligi. Bemor, shifokor va summa bo'yicha filtr, ustunlar bo'yicha saralash |
 | **Klinika ulushi** (`/klinika`) | Kassa × klinika foizi, kassa bo'yicha |
 | **Shifokorlar** (`/shifokorlar`) | Kim qancha pul olib keldi, maoshi, berilgan (maosh + avans), avans, berilmagan. Ism bosilsa — o'sha qator ostida berilgan maoshlar va Excel |
-| **Xarajatlar** (`/xarajatlar`) | 4 ta summa: klinika ulushi, shifokorlar maoshi, hamshiralar maoshi, material rasxod |
+| **Xarajatlar** (`/xarajatlar`) | Klinikaga berilgan pul, hisoblangan shifokor va hamshira maoshlari, material rasxod |
+| **Audit** (`/audit`) | Cliniccards'da qayd etilgan klinika, assistent va shifokor to'lovlari. Standart davr — oxirgi bir yil |
 | **Excel** | Barcha shifokorlar; har bir berilgan maosh (Sana · F.I.SH. · Summa · Shifokor); shifokorning davrdagi barcha to'lovlari |
+
+## Cliniccards xarajatlari auditi
+
+Audit `GET /spendings?from=YYYY-MM-DD&to=YYYY-MM-DD` orqali xarajatlarni oladi. `spendings_category` va
+`spendings_subcategory` orqali «Ishxona → Ishxonaga», «Oyliklar → Asistentlar oyligi», «Oyliklar → Shifokor oyligi»
+va ruscha maosh toifalari topiladi. `amount` xarajat summasi, `paid` to'langan summa. `date_issued` xarajat yozuvining sanasi.
+Cliniccards API kaliti egasiga xarajat va maoshlarni ko'rish huquqi kerak.
+
+«Ishxonaga» yozuvlaridagi to'langan summa umumiy xarajatlarga bir marta kiradi. «Oshxonaga» material rasxodda hisoblanadi.
+Audit kassaning 20% ulushi bilan klinikaga berilgan pul orasidagi farqni ham ko'rsatadi.
 
 ## Shifokorga maosh berish
 
