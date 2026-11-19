@@ -237,12 +237,8 @@ class Service:
     def material_detail(self, period):
         return details.expenses(finance.split_spendings(self.spendings(period))["material"])
 
-    def audit_detail(self, period):
-        groups = finance.split_spendings(self.spendings(period))
-        return {
-            kind: sorted((details.expense_row(sp) for sp in groups[kind]), key=lambda row: row["date"], reverse=True)
-            for kind in finance.AUDIT_LABELS
-        }
+    def audit_detail(self, period) -> tuple[dict[str, details.AuditSection], list[details.AuditSection]]:
+        return details.audit_sections(finance.split_spendings(self.spendings(period)))
 
     # --- sotuvchilar bilan hisob-kitob (butun davr) -------------------------
     def stock_invoices(self) -> list[dict]:

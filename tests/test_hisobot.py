@@ -368,9 +368,42 @@ def test_audit_counts_paid_clinic_expense_once(svc, monkeypatch):
     assert audit.status_code == 200
     for value in ("240 000", "105 000", "120 000", "410 000", "170 000", "300 000", "250 000", "05.11.2026"):
         assert value in audit.text
-    assert ">Oshxonaga<" not in audit.text
+    assert "Ishxona → Oshxonaga" in audit.text
+    assert all(row["sub"].casefold() != "oshxonaga"
+               for group in audit.context["main"]["clinic"].recipients for row in group.rows)
     material = c.get("/material?oy=2026-11").text
     assert ">Oshxonaga<" in material and ">Ishxonaga<" not in material and "70 000" in material
     costs = c.get("/xarajatlar?oy=2026-11").text
     assert "/audit?oy=2026-11" in costs and "240 000" in costs
     assert "1 290 000" in c.get("/foyda?oy=2026-11").text
+
+
+def test_audit_groups_payees_and_discovers_new_categories(svc, monkeypatch):
+    def expense(day, category_id, category, subcategory_id, subcategory, payee, paid):
+        return {"spendings_category": {"id": category_id, "name": category},
+                "spendings_subcategory": {"id": subcategory_id, "name": subcategory},
+                "supplier": {"name": payee}, "amount": str(paid), "paid": str(paid), "date_issued": day}
+
+    spendings = [
+        expense("2026-11-04", 81, "Transport", 91, "Yoqilg‘i", "O&#39;ktam  Aliyev", 300000),
+        expense("2026-11-05", "81", "Transport", "91", "Yoqilg‘i", "o‘ktam aliyev", -50000),
+        expense("2026-11-06", 81, "Transport", 91, "Yoqilg‘i", "Boshqa oluvchi", 75000),
+        expense("2026-11-07", 81, "Transport", 92, "Ta'mirlash", "O'ktam Aliyev", 140000),
+        expense("2026-11-08", 82, "Sug'urta", None, "", "", 180000),
+    ]
+    monkeypatch.setattr(svc.client, "spendings", lambda start, end: spendings)
+    c = _client(svc, monkeypatch)
+    c.post("/login", data={"login": "admin", "parol": "maxfiy"})
+    res = c.get("/audit?oy=2026-11")
+    assert res.status_code == 200
+    sections = {section.name: section for section in res.context["sections"]}
+    fuel = sections["Transport → Yoqilg‘i"]
+    assert fuel.count == 3 and fuel.paid_total == 325000
+    assert len(fuel.recipients) == 2
+    payee = next(group for group in fuel.recipients if len(group.rows) == 2)
+    assert payee.name == "O'ktam Aliyev" and payee.paid_total == 250000
+    assert [row["date"] for row in payee.rows] == ["2026-11-05", "2026-11-04"]
+    assert "<details class=\"audit-recipient\">" in res.text
+    assert "250 000 so'm" in res.text
+    assert sections["Transport → Ta'mirlash"].paid_total == 140000
+    assert sections["Sug'urta"].recipients[0].name == "Oluvchi ko'rsatilmagan"

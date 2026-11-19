@@ -5,8 +5,10 @@ import html
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from finance import member_info
+from finance import AUDIT_LABELS, member_info
 from report import NO_DOCTOR, dedupe_items, money, staff_name
+
+APOSTROPHES = str.maketrans("‘’ʻʼ", "''''")
 
 
 @dataclass
@@ -99,6 +101,55 @@ def expense_row(sp: dict) -> dict:
         "note": text(sp.get("note")), "status": sp.get("payment_status") or "",
         "amount": money(sp.get("amount")), "paid": money(sp.get("paid")),
     }
+
+
+@dataclass
+class AuditSection:
+    name: str
+    recipients: list[Group]
+    key: str = ""
+
+    @property
+    def count(self) -> int:
+        return sum(len(group.rows) for group in self.recipients)
+
+    @property
+    def paid_total(self) -> Decimal:
+        return sum((group.paid_total for group in self.recipients), Decimal(0))
+
+
+def _name_key(value: str) -> str:
+    return " ".join(value.translate(APOSTROPHES).casefold().split())
+
+
+def _audit_recipients(spendings: list[dict]) -> list[Group]:
+    recipients: dict[str, Group] = {}
+    for sp in spendings:
+        row = expense_row(sp)
+        name = " ".join(row["supplier"].split())
+        key = _name_key(name)
+        if key not in recipients:
+            recipients[key] = Group(key, name or "Oluvchi ko'rsatilmagan")
+        recipients[key].rows.append(row)
+    for group in recipients.values():
+        group.rows.sort(key=lambda row: row["date"], reverse=True)
+    return sorted(recipients.values(), key=lambda group: (not group.key, group.key))
+
+
+def audit_sections(groups: dict[str, list[dict]]) -> tuple[dict[str, AuditSection], list[AuditSection]]:
+    main = {kind: AuditSection(label, _audit_recipients(groups[kind]), kind) for kind, label in AUDIT_LABELS.items()}
+    by_category: dict[tuple[str, str], tuple[str, list[dict]]] = {}
+    for sp in groups["material"] + groups["salary"]:
+        category = sp.get("spendings_category") or {}
+        subcategory = sp.get("spendings_subcategory") or {}
+        title = text(category.get("name")) or "Toifasiz"
+        subtitle = text(subcategory.get("name"))
+        key = (str(category.get("id") or _name_key(title)), str(subcategory.get("id") or _name_key(subtitle)))
+        name = f"{title} → {subtitle}" if subtitle else title
+        by_category.setdefault(key, (name, []))[1].append(sp)
+    other = [AuditSection(name, _audit_recipients(spendings))
+             for name, spendings in sorted(by_category.values(), key=lambda entry: _name_key(entry[0]))]
+    return main, other
 
 
 def expenses(spendings: list[dict]) -> list[Group]:

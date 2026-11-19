@@ -22,7 +22,7 @@ Masalan, martda qo'yilgan breket uchun noyabrda tushgan 1 000 000 noyabr maoshig
 | **Klinika ulushi** (`/klinika`) | Kassa × klinika foizi, kassa bo'yicha |
 | **Shifokorlar** (`/shifokorlar`) | Kim qancha pul olib keldi, maoshi, berilgan (maosh + avans), avans, berilmagan. Ism bosilsa — o'sha qator ostida berilgan maoshlar va Excel |
 | **Xarajatlar** (`/xarajatlar`) | Klinikaga berilgan pul, hisoblangan shifokor va hamshira maoshlari, material rasxod |
-| **Audit** (`/audit`) | Cliniccards'da qayd etilgan klinika, assistent va shifokor to'lovlari. Standart davr — oxirgi bir yil |
+| **Audit** (`/audit`) | Cliniccards xarajatlari toifa va pul oluvchi bo'yicha. Standart davr — oxirgi bir yil |
 | **Excel** | Barcha shifokorlar; har bir berilgan maosh (Sana · F.I.SH. · Summa · Shifokor); shifokorning davrdagi barcha to'lovlari |
 
 ## Cliniccards xarajatlari auditi
@@ -34,6 +34,8 @@ Cliniccards API kaliti egasiga xarajat va maoshlarni ko'rish huquqi kerak.
 
 «Ishxonaga» yozuvlaridagi to'langan summa umumiy xarajatlarga bir marta kiradi. «Oshxonaga» material rasxodda hisoblanadi.
 Audit kassaning 20% ulushi bilan klinikaga berilgan pul orasidagi farqni ham ko'rsatadi.
+Tanlangan davrdagi boshqa xarajat toifalari va ichki toifalar API javobidan o'z nomlari bilan chiqadi. Oluvchini bossangiz,
+uning shu toifa va davrdagi yozuvlari ochiladi.
 
 ## Shifokorga maosh berish
 

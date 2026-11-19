@@ -243,12 +243,11 @@ def material(request: Request, p: Period = Depends(get_period), _=Depends(auth))
 @app.get("/audit")
 def audit(request: Request, p: Period = Depends(audit_period), _=Depends(auth)):
     svc = service()
-    rows = svc.audit_detail(p)
-    totals = {kind: sum((r["paid"] for r in group), Decimal(0)) for kind, group in rows.items()}
+    main, other = svc.audit_detail(p)
     share = finance.clinic_share(svc.kassa_total(p))
     return templates.TemplateResponse(request, "audit.html", {
-        "rows": rows, "totals": totals, "labels": finance.AUDIT_LABELS, "pct": finance.CLINIC_PCT,
-        "share": share, "balance": share - totals["clinic"], **nav("audit"), **period_context(p)})
+        "main": main, "sections": [*main.values(), *other], "pct": finance.CLINIC_PCT,
+        "share": share, "balance": share - main["clinic"].paid_total, **nav("audit"), **period_context(p)})
 
 
 @app.get("/foyda")

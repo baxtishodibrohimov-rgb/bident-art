@@ -2,35 +2,63 @@
 {% block title %}Audit — {{ p.label }}{% endblock %}
 {% block content %}
 <div class="titlerow"><h1>Audit</h1>{% set action = "/audit" %}{% include "_period.html" %}</div>
-<div class="tiles three">
-  {% for kind, label in labels.items() %}
-  <a class="tile link" href="#{{ kind }}"><div class="k">{{ label }}</div>
-    <div class="v num">{{ totals[kind]|pul }}<small>so'm</small></div></a>
+<div class="tiles three audit-totals">
+  {% for kind, section in main.items() %}
+  <a class="tile link" href="#{{ kind }}"><div class="k">{{ section.name }}</div>
+    <div class="v num">{{ section.paid_total|pul }}<small>so'm</small></div></a>
   {% endfor %}
 </div>
 <p class="note">Davr Cliniccards'dagi xarajat sanasi bo'yicha tanlanadi. «To'langan» shu yozuvga bog'langan jami to'lovni ko'rsatadi.</p>
-{% for kind, label in labels.items() %}
-<section class="panel" id="{{ kind }}" style="scroll-margin-top:90px">
-  <div class="panel-h"><h2>{{ label }}</h2><span class="muted">{{ rows[kind]|length }} ta yozuv</span></div>
-  {% if kind == 'clinic' %}
+{% for section in sections %}
+<details class="panel audit-section"{% if section.key %} id="{{ section.key }}"{% endif %}>
+  <summary class="audit-summary">
+    <strong>{{ section.name }}</strong>
+    <span class="audit-meta"><span class="muted">{{ section.count }} ta yozuv</span>
+      <b class="num">{{ section.paid_total|pul }} so'm</b></span>
+  </summary>
+  {% if section.key == 'clinic' %}
   <div class="controls" style="padding:8px 16px">
     <a class="rowlink num" href="/klinika?{{ q }}">Hisoblangan ulush ({{ pct|pul }}%) <b>{{ share|pul }} so'm</b></a>
     <span class="num {{ 'neg' if balance < 0 else '' }}">Farq <b>{{ balance|pul }} so'm</b></span>
   </div>
   {% endif %}
-  <div class="scroll"><table>
-    <thead><tr><th>Xarajat sanasi</th><th>Kimga</th><th>Toifa</th><th>Izoh</th>
-      <th class="r">Xarajat summasi</th><th class="r">To'langan</th></tr></thead>
-    <tbody>
-      {% for r in rows[kind] %}
-      <tr><td class="num">{% if r.date %}{{ r.date[8:10] }}.{{ r.date[5:7] }}.{{ r.date[:4] }}{% else %}—{% endif %}</td>
-        <td>{{ r.supplier or '—' }}</td><td>{{ r.sub }}</td><td>{{ r.note }}</td>
-        <td class="r">{{ r.amount|pul }}</td><td class="r">{{ r.paid|pul }}</td></tr>
-      {% else %}<tr><td colspan="6" class="muted">Bu davrda yozuv topilmadi.</td></tr>{% endfor %}
-    </tbody>
-    {% if rows[kind] %}<tfoot><tr><td colspan="5">Jami to'langan</td><td class="r">{{ totals[kind]|pul }}</td></tr></tfoot>{% endif %}
-  </table></div>
-</section>
+  {% if section.recipients %}<div class="audit-recipients-label muted">Kimga</div>{% endif %}
+  {% for group in section.recipients %}
+  <details class="audit-recipient"{% if section.recipients|length == 1 %} open{% endif %}>
+    <summary class="audit-summary">
+      <strong>{{ group.name }}</strong>
+      <span class="audit-meta"><span class="muted">{{ group.rows|length }} ta yozuv</span>
+        <b class="num">{{ group.paid_total|pul }} so'm</b></span>
+    </summary>
+    <div class="scroll"><table>
+      <thead><tr><th>Xarajat sanasi</th><th>Ichki toifa</th><th>Izoh</th>
+        <th class="r">Xarajat summasi</th><th class="r">To'langan</th></tr></thead>
+      <tbody>{% for r in group.rows %}
+        <tr><td class="num">{% if r.date %}{{ r.date[8:10] }}.{{ r.date[5:7] }}.{{ r.date[:4] }}{% else %}—{% endif %}</td>
+          <td>{{ r.sub or '—' }}</td><td>{{ r.note }}</td>
+          <td class="r">{{ r.amount|pul }}</td><td class="r">{{ r.paid|pul }}</td></tr>
+      {% endfor %}</tbody>
+      <tfoot><tr><td colspan="3">Jami</td><td class="r">{{ group.total|pul }}</td>
+        <td class="r">{{ group.paid_total|pul }}</td></tr></tfoot>
+    </table></div>
+  </details>
+  {% else %}
+  <p class="audit-recipients-label muted">Bu davrda yozuv topilmadi.</p>
+  {% endfor %}
+</details>
 {% endfor %}
 <p class="note">Oylik yozuvlarini ko'rish uchun Cliniccards API kaliti egasiga xarajatlar va maosh bo'yicha ruxsat kerak.</p>
+<script>
+(() => {
+  const reveal = hash => {
+    const section = document.getElementById(hash.slice(1));
+    if (section?.matches('details.audit-section')) section.open = true;
+  };
+  document.querySelectorAll('.audit-totals a').forEach(link => {
+    link.addEventListener('click', () => reveal(link.hash));
+  });
+  window.addEventListener('hashchange', () => reveal(window.location.hash));
+  reveal(window.location.hash);
+})();
+</script>
 {% endblock %}
