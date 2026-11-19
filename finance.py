@@ -4,8 +4,8 @@ Qoidalar (o'zgarmas):
 - Klinika ulushi — kassaga tushgan pulning 20%.
 - Har bir shifokorning ulushi — unga shu davrda tushgan pulning 25%.
 
-Xarajatlar = klinikaga berilgan pul + shifokorlar maoshi + hamshiralar maoshi + material rasxod.
-Sof foyda = shu davrda kassaga tushgan pul − xarajatlar.
+Xarajatlar = klinika ulushi + shifokorlar maoshi + hamshiralar maoshi + material schyotlari.
+Sof foyda = kassa × 55% − hamshiralar maoshi − amalda to'langan material puli.
 
 Cliniccards'dagi «Ishxona → Ishxonaga» hamda oylik yozuvlari auditda ko'rsatiladi.
 Qolgan xarajatlar material rasxodga kiradi.
@@ -20,6 +20,7 @@ from report import money
 
 CLINIC_PCT = Decimal(20)
 DOCTOR_PCT = Decimal(25)
+EXPENSE_BUDGET_PCT = Decimal(100) - CLINIC_PCT - DOCTOR_PCT
 
 SALARY_WORDS = ("зарплат", "заработ", "maosh", "oylik", "salary", "payroll")
 AUDIT_LABELS = {"clinic": "Klinikaga berilgan", "assistants": "Assistentlar oyligi",
@@ -52,25 +53,33 @@ def member_info(sp: dict) -> tuple[str, str]:
     return mid, ""
 
 
+def spending_name(value) -> str:
+    if isinstance(value, dict):
+        value = value.get("name")
+    return " ".join(unescape(str(value or "")).split())
+
+
 def is_salary(sp: dict) -> bool:
     mid, name = member_info(sp)
     if mid or name:
         return True
-    text = " ".join(str((sp.get(k) or {}).get("name") or "") for k in ("spendings_category", "spendings_subcategory")).lower()
+    text = " ".join(spending_name(sp.get(k)) for k in ("spendings_category", "spendings_subcategory")).casefold()
     return any(w in text for w in SALARY_WORDS)
+
+
+def spending_kind(spending: dict) -> str:
+    category = spending_name(spending.get("spendings_category")).casefold()
+    subcategory = spending_name(spending.get("spendings_subcategory")).casefold()
+    kind = SPENDING_CATEGORIES.get((category, subcategory))
+    if kind is not None:
+        return kind
+    return "salary" if is_salary(spending) else "material"
 
 
 def split_spendings(spendings: list[dict]) -> dict[str, list[dict]]:
     groups = {kind: [] for kind in (*AUDIT_LABELS, "salary", "material")}
     for sp in spendings:
-        category, subcategory = (
-            " ".join(unescape(str((sp.get(key) or {}).get("name") or "")).casefold().split())
-            for key in ("spendings_category", "spendings_subcategory")
-        )
-        kind = SPENDING_CATEGORIES.get((category, subcategory))
-        if kind is None:
-            kind = "salary" if is_salary(sp) else "material"
-        groups[kind].append(sp)
+        groups[spending_kind(sp)].append(sp)
     return groups
 
 
@@ -102,6 +111,7 @@ class Overview:
     material_total: Decimal
     material_count: int
     clinic_paid: Decimal
+    material_paid: Decimal | None = None
 
     @property
     def clinic_share(self) -> Decimal:
@@ -109,16 +119,22 @@ class Overview:
 
     @property
     def expenses_total(self) -> Decimal:
-        return self.clinic_paid + self.doctors_salary + self.staff_salary + self.material_total
+        return self.clinic_share + self.doctors_salary + self.staff_salary + self.material_total
 
     @property
-    def profit(self) -> Decimal:
-        return self.kassa_total - self.expenses_total
+    def expense_budget(self) -> Decimal:
+        return (self.kassa_total * EXPENSE_BUDGET_PCT / 100).quantize(Decimal("0.01"), ROUND_HALF_UP)
+
+    @property
+    def profit(self) -> Decimal | None:
+        if self.material_paid is None:
+            return None
+        return self.expense_budget - self.staff_salary - self.material_paid
 
     def parts(self) -> list[tuple[str, str, Decimal]]:
         """Xarajat qismlari: (havola, nomi, summa)."""
         return [
-            ("/audit", AUDIT_LABELS["clinic"], self.clinic_paid),
+            ("/klinika", "Klinika ulushi (20%)", self.clinic_share),
             ("/shifokorlar", "Shifokorlar maoshi", self.doctors_salary),
             ("/xodimlar", "Hamshiralar maoshi", Decimal(self.staff_salary)),
             ("/material", "Material rasxod", self.material_total),

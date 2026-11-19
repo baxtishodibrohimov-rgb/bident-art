@@ -3,14 +3,18 @@
 {% block content %}
 <h1 class="sr-only">{{ p.label }}</h1>
 {% set action = "/" %}{% include "_period.html" %}
-<div class="kpis four">
+<div class="kpis">
   <a class="kpi" href="/ishlar?{{ q }}"><span class="k">Bajarilgan ishlar</span>
     <span class="v num">{{ o.done_total|pul }}<small>so'm</small></span><span class="hint">{{ o.done_count }} ta ish · tafsilot →</span></a>
   <a class="kpi main" href="/kassa?{{ q }}"><span class="k">Kassaga tushgan</span>
     <span class="v num">{{ o.kassa_total|pul }}<small>so'm</small></span><span class="hint">{{ o.kassa_count }} ta to'lov · tafsilot →</span></a>
   <a class="kpi" href="/xarajatlar?{{ q }}"><span class="k">Xarajatlar</span>
     <span class="v num">{{ o.expenses_total|pul }}<small>so'm</small></span><span class="hint">klinika, shifokorlar, hamshiralar, material · tafsilot →</span></a>
-  <a class="kpi {{ 'neg' if o.profit < 0 else 'pos' }}" href="/foyda?{{ q }}"><span class="k">Klinika sof foydasi</span>
-    <span class="v num">{{ o.profit|pul }}<small>so'm</small></span><span class="hint">kassaga tushgan − xarajatlar · tafsilot →</span></a>
+  <a class="kpi" href="/tolovlar?{{ q }}"><span class="k">To'lovlar</span>
+    <span class="v num">{{ o.material_paid|pul }}{% if o.material_paid is not none %}<small>so'm</small>{% endif %}</span>
+    <span class="hint">Material to'lovlari · tafsilot →</span></a>
+  <a class="kpi{% if o.profit is not none %} {{ 'neg' if o.profit < 0 else 'pos' }}{% endif %}" href="/foyda?{{ q }}"><span class="k">Klinika sof foydasi</span>
+    <span class="v num">{{ o.profit|pul }}{% if o.profit is not none %}<small>so'm</small>{% endif %}</span>
+    <span class="hint">To'lovlardan keyin qolgan pul · tafsilot →</span></a>
 </div>
 {% endblock %}

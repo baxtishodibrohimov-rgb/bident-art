@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}To'lovlar — {{ p.label }}{% endblock %}
+{% block content %}
+<div class="titlerow"><h1>To'lovlar</h1>{% set action = "/tolovlar" %}{% include "_period.html" %}</div>
+<form method="post" action="/yangilash" class="inline"><button class="btn" type="submit">Cliniccards'dan yangilash</button></form>
+<div class="tiles three">
+  <div class="tile"><div class="k">{% if payments.review %}Aniqlangan material to'lovlari{% else %}Material to'lovlari{% endif %}</div>
+    <div class="v num">{% if payments.error %}—{% else %}{{ payments.total|pul }}<small>so'm</small>{% endif %}</div></div>
+  <div class="tile"><div class="k">Eski schyotlarga aniqlangan to'lovlar</div>
+    <div class="v num">{% if payments.error %}—{% else %}{{ old_debt_paid|pul }}<small>so'm</small>{% endif %}</div></div>
+  <a class="tile link" href="/tolovlar/qarz?{{ q }}"><div class="k">Barcha davrlar</div><div class="v">Qarz →</div></a>
+</div>
+{% if payments.error %}
+<p class="warnbox" role="status">{{ payments.error }}</p>
+{% else %}
+{% for recipient, rows in payments.rows|groupby('recipient') %}
+<details class="panel"{% if loop.length == 1 %} open{% endif %}>
+  <summary class="expense-summary"><strong>{{ recipient }}</strong>
+    <span class="expense-summary-meta num"><span class="muted">{{ rows|length }} ta</span><b>{{ rows|sum(attribute='amount')|pul }} so'm</b></span>
+  </summary>
+  <div class="scroll"><table>
+    <thead><tr><th>To'lov sanasi</th><th>Schyot</th><th>Kassa</th><th>Izoh</th><th class="r">To'langan</th></tr></thead>
+    <tbody>{% for row in rows %}<tr>
+      <td class="num">{{ row.date.split('-')|reverse|join('.') }}</td>
+      <td>{% if row.invoice_id or row.invoice_date %}
+        {% if row.invoice_id %}#{{ row.invoice_id }}{% endif %}
+        {% if row.invoice_date %}{{ row.invoice_date.split('-')|reverse|join('.') }}
+          {% if row.invoice_date < p.start.isoformat() %}<span class="pill off">Eski qarz</span>{% endif %}
+        {% endif %}
+      {% else %}<span class="muted">Schyot aniqlanmadi</span>{% endif %}</td>
+      <td>{{ row.cash_desk or '—' }}</td><td>{{ row.note }}</td><td class="r">{{ row.amount|pul }}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+</details>
+{% else %}<p class="muted">Bu davrda material to'lovi topilmadi.</p>{% endfor %}
+{% if payments.review %}
+<details class="panel" open>
+  <summary class="expense-summary"><strong>Tekshirish kerak</strong><span class="expense-summary-meta">{{ payments.review|length }} ta yozuv</span></summary>
+  <div class="scroll"><table>
+    <thead><tr><th>To'lov sanasi</th><th>Kimga</th><th>Sabab</th><th class="r">Summa</th></tr></thead>
+    <tbody>{% for row in payments.review %}<tr><td>{{ row.date.split('-')|reverse|join('.') if row.date else '—' }}</td>
+      <td>{{ row.recipient }}</td><td>{{ row.reason }}</td><td class="r">{{ row.amount|pul }} {{ row.currency }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</details>
+{% endif %}
+{% endif %}
+<p class="note">Davr Cliniccards kassa operatsiyalaridagi to'lov sanasi bo'yicha tanlanadi. Qaytarilgan pul minusda ko'rinadi.</p>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Material qarzlari{% endblock %}
+{% block content %}
+<div class="titlerow"><h1>Material qarzlari</h1><div class="controls">
+  <a class="btn" href="/tolovlar?{{ q }}">← To'lovlar</a>
+  <form method="post" action="/yangilash" class="inline"><button class="btn" type="submit">Cliniccards'dan yangilash</button></form>
+</div></div>
+<div class="tile"><div class="k">Jami ochiq qarz · barcha davrlar</div>
+  <div class="v num {{ 'neg' if total > 0 else 'material-balance-ok' }}">{{ total|pul }}<small>so'm</small></div></div>
+{% for group in groups %}
+<details class="panel"{% if groups|length == 1 %} open{% endif %}>
+  <summary class="expense-summary"><strong>{{ group.name }}</strong>
+    <span class="expense-summary-meta num"><span class="muted">{{ group.rows|length }} ta ochiq schyot</span><b>{{ (-group.balance)|pul }} so'm</b></span>
+  </summary>
+  <div class="scroll"><table>
+    <thead><tr><th>Schyot sanasi</th><th>Schyot</th><th>Izoh</th><th class="r">Summa</th><th class="r">To'langan</th><th class="r">Qolgan qarz</th></tr></thead>
+    <tbody>{% for row in group.rows %}<tr><td class="num">{{ row.date.split('-')|reverse|join('.') if row.date else '—' }}</td>
+      <td>{% if row.id %}#{{ row.id }} {% endif %}{{ row.sub or row.cat }}</td><td>{{ row.note }}</td>
+      <td class="r">{{ row.amount|pul }}</td><td class="r">{{ row.paid|pul }}</td>
+      <td class="r neg">{{ (-row.balance)|pul }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+</details>
+{% else %}<p class="muted">Ochiq material qarzi yo'q.</p>{% endfor %}
+<p class="note">Qoldiq Cliniccards'dagi schyot summasi va hozirgacha qilingan to'lovlardan olinadi.</p>
+{% endblock %}

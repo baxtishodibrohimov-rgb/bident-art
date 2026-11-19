@@ -103,6 +103,7 @@ def expense_row(sp: dict) -> dict:
     payments = [{"cash_desk": text(payment.get("cash_desk_name")), "amount": -money(payment.get("amount"))}
                 for payment in sp.get("payments") or [] if isinstance(payment, dict)]
     return {
+        "id": str(sp.get("id") or ""),
         "date": str(sp.get("date_issued") or "")[:10],
         "cat": text((sp.get("spendings_category") or {}).get("name")) or "Toifasiz",
         "sub": text((sp.get("spendings_subcategory") or {}).get("name")),

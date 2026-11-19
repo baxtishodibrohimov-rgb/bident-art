@@ -10,7 +10,8 @@ from pathlib import Path
 
 import details
 import finance
-from client import CliniccardsClient
+import material_payments
+from client import CliniccardsClient, CliniccardsError
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 
@@ -216,7 +217,7 @@ class Service:
             rep.kassa_total = self.kassa_total(period)
         return rep
 
-    def overview(self, period, staff_salary=0) -> "finance.Overview":
+    def overview(self, period, staff_salary=0, *, with_payments: bool = True) -> "finance.Overview":
         p = as_period(period)
         rep = self.month_report(p)
         done = self.done_items(p)
@@ -232,10 +233,41 @@ class Service:
             material_total=sum((money(s.get("amount")) for s in material), money(0)),
             material_count=len(material),
             clinic_paid=sum((money(s.get("paid")) for s in groups["clinic"]), money(0)),
+            material_paid=self.material_payment_report(p).verified_total if with_payments else None,
         )
 
     def material_detail(self, period) -> list[details.Group]:
         return details.expenses_by_recipient(finance.split_spendings(self.spendings(period))["material"])
+
+    def material_payment_report(self, period, *, with_invoices: bool = False) -> material_payments.PaymentReport:
+        p = as_period(period)
+        try:
+            operations = self._cached(f"cash-flow:{p.start}:{p.end}", lambda: [
+                row for a, b in month_ranges(p.start, p.end, 12) for row in self.client.cash_flow_operations(a, b)])
+        except CliniccardsError:
+            return material_payments.PaymentReport(error="Cliniccards kassa operatsiyalarini yuklab bo'lmadi.")
+        report = material_payments.report(operations, p)
+        needs_categories = any(row.reason == material_payments.MISSING_CATEGORY for row in report.review)
+        if needs_categories or (with_invoices and report.rows):
+            try:
+                invoices = self.all_spendings()
+            except CliniccardsError:
+                return report
+            return material_payments.report(operations, p, invoices)
+        return report
+
+    def material_debts(self) -> list[details.Group]:
+        open_invoices = []
+        seen = set()
+        for bill in finance.split_spendings(self.all_spendings())["material"]:
+            invoice_id = str(bill.get("id") or "")
+            if invoice_id and invoice_id in seen:
+                continue
+            seen.add(invoice_id)
+            amount = money(bill.get("amount"))
+            if amount > 0 and amount > money(bill.get("paid")):
+                open_invoices.append(bill)
+        return details.expenses_by_recipient(open_invoices)
 
     def audit_detail(self, period) -> tuple[dict[str, details.AuditSection], list[details.AuditSection]]:
         return details.audit_sections(finance.split_spendings(self.spendings(period)))
@@ -247,8 +279,10 @@ class Service:
                             lambda: _stock.fetch_invoices(self.client, self.start_date, date.today()))
 
     def all_spendings(self) -> list[dict]:
-        return self._cached(f"spendings_all:{self.start_date}",
-                            lambda: [s for a, b in month_ranges(self.start_date, date.today(), 12)
+        from db import today as clinic_today
+        end = date.fromisoformat(clinic_today())
+        return self._cached(f"spendings_all:{self.start_date}:{end}",
+                            lambda: [s for a, b in month_ranges(self.start_date, end, 12)
                                      for s in self.client.spendings(a, b)])
 
     def supplier_ledger(self, suppliers: list, products: dict) -> dict:

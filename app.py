@@ -221,14 +221,14 @@ def kassa(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
 
 @app.get("/klinika")
 def clinic(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
-    o = service().overview(p, staff_salary(p))
+    o = service().overview(p, staff_salary(p), with_payments=False)
     return templates.TemplateResponse(request, "detail_clinic.html", {
         "o": o, "pct": finance.CLINIC_PCT, "groups": service().kassa_detail(p), **nav("bosh"), **period_context(p)})
 
 
 @app.get("/xarajatlar")
 def expenses(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
-    o = service().overview(p, staff_salary(p))
+    o = service().overview(p, staff_salary(p), with_payments=False)
     return templates.TemplateResponse(request, "detail_expenses.html", {"o": o, **nav("bosh"), **period_context(p)})
 
 
@@ -240,6 +240,23 @@ def material(request: Request, p: Period = Depends(get_period), _=Depends(auth))
     paid = sum((row["paid"] for row in rows), Decimal(0))
     return templates.TemplateResponse(request, "detail_material.html", {
         "groups": groups, "rows": rows, "total": total, "paid": paid, "balance": paid - total,
+        **nav("bosh"), **period_context(p)})
+
+
+@app.get("/tolovlar")
+def material_payments(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
+    payments = service().material_payment_report(p, with_invoices=True)
+    old_debt_paid = sum((row.amount for row in payments.rows
+                         if row.invoice_date and row.invoice_date < p.start.isoformat()), Decimal(0))
+    return templates.TemplateResponse(request, "material_payments.html", {
+        "payments": payments, "old_debt_paid": old_debt_paid, **nav("bosh"), **period_context(p)})
+
+
+@app.get("/tolovlar/qarz")
+def material_debts(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
+    groups = service().material_debts()
+    return templates.TemplateResponse(request, "material_debts.html", {
+        "groups": groups, "total": -sum((group.balance for group in groups), Decimal(0)),
         **nav("bosh"), **period_context(p)})
 
 
@@ -258,7 +275,8 @@ def audit(request: Request, p: Period = Depends(audit_period), _=Depends(auth)):
 @app.get("/foyda")
 def profit(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
     o = service().overview(p, staff_salary(p))
-    return templates.TemplateResponse(request, "profit.html", {"o": o, **nav("bosh"), **period_context(p)})
+    return templates.TemplateResponse(request, "profit.html", {
+        "o": o, "budget_pct": finance.EXPENSE_BUDGET_PCT, **nav("bosh"), **period_context(p)})
 
 
 @app.get("/excel")

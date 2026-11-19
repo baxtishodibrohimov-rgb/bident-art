@@ -16,11 +16,12 @@
 </div>
 <section class="panel" style="padding:16px;display:grid;gap:10px">
   <h2>Sof foyda</h2>
-  <p class="note">Xarajatlar = klinikaga berilgan pul + hisoblangan shifokor va hamshira maoshlari + material rasxod. Sof foyda = shu davrda kassaga tushgan pul − xarajatlar.</p>
+  <p class="note">Xarajatlar = klinikaning 20% ulushi + hisoblangan shifokor va hamshira maoshlari + material schyotlari. Sof foyda = kassaning 55%i − hamshiralar oyligi − shu davrdagi amaldagi material to'lovlari.</p>
   <div class="code">Cliniccards API  →  Dastur (Railway)            →  Hisobot
 GET /planItems      davr to'lovlari, 25% ulush     shifokorlar maoshi
 GET /payments       kassa va klinika ulushi        bosh ekran
 GET /spendings      xarajatlar va to'langan summa  audit, xarajatlar
+GET /cash-flow-operations  kassa chiqimlari        material to'lovlari
 GET /stock-*        sklad qoldig'i (faqat o'qish)  buyurtma va bot eslatmalari</div>
 </section>
 {% endblock %}

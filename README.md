@@ -1,8 +1,8 @@
 # Cliniccards maosh hisoboti
 
 **Ulushlar o'zgarmas:** klinika — kassaga tushgan pulning 20%, har bir shifokor — o'ziga tushgan pulning 25%.
-**Bosh ekran:** bajarilgan ishlar, kassaga tushgan, xarajatlar (klinikaga berilgan pul + hisoblangan shifokor va hamshira maoshlari + material rasxod)
-va klinika sof foydasi (kassaga tushgan − xarajatlar). Har bir summa bosilganda tafsiloti ochiladi.
+**Bosh ekran:** bajarilgan ishlar, kassaga tushgan pul, xarajatlar, material to'lovlari va sof foyda.
+Har bir summa bosilganda tafsiloti ochiladi.
 
 Bo'limlar: Bosh ekran · Shifokorlar (maosh va avans berish) · Sklad (qoldiq — ro'yxat/kartochka va rasmlar, kunlik hisobotlar,
 buyurtmalar, sotuvchilar va ular bilan hisob-kitob) · Hamshiralar (maosh, ⚙ sozlama, grafik, hamshira vazifalari) · Audit ·
@@ -16,13 +16,16 @@ Masalan, martda qo'yilgan breket uchun noyabrda tushgan 1 000 000 noyabr maoshig
 
 | Sahifa | Nima ko'rsatadi |
 | --- | --- |
-| **Bosh ekran** (`/`) | Tanlangan davrda bajarilgan ishlar, kassaga tushgan pul, xarajatlar va sof foyda |
+| **Bosh ekran** (`/`) | Tanlangan davrda bajarilgan ishlar, kassaga tushgan pul, xarajatlar, material to'lovlari va sof foyda |
 | **Bajarilgan ishlar** (`/ishlar`) | Shu davrda bajarilgan ishlar, shifokor bo'yicha: narx, to'langan, qoldiq |
 | **Kassa** (`/kassa`) | Barcha to'lovlar (`GET /payments`), kassa bo'yicha; har bir to'lov qaysi shifokor ishi uchunligi. Bemor, shifokor va summa bo'yicha filtr, ustunlar bo'yicha saralash |
 | **Klinika ulushi** (`/klinika`) | Kassa × klinika foizi, kassa bo'yicha |
 | **Shifokorlar** (`/shifokorlar`) | Kim qancha pul olib keldi, maoshi, berilgan (maosh + avans), avans, berilmagan. Ism bosilsa — o'sha qator ostida berilgan maoshlar va Excel |
-| **Xarajatlar** (`/xarajatlar`) | Klinikaga berilgan pul, hisoblangan shifokor va hamshira maoshlari, material rasxod |
+| **Xarajatlar** (`/xarajatlar`) | Hisoblangan klinika ulushi, shifokor va hamshira maoshlari, ochilgan material schyotlari |
 | **Material rasxod** (`/material`) | Oluvchi bo'yicha guruhlangan schyotlar, to'langan summa va balans |
+| **To'lovlar** (`/tolovlar`) | Material uchun amaldagi chiqimlar to'lov sanasi bo'yicha, jumladan eski schyotlarga qilingan to'lovlar |
+| **Qarz** (`/tolovlar/qarz`) | Barcha davrlardan qolgan ochiq material schyotlari va bugungi qoldiq |
+| **Sof foyda** (`/foyda`) | Kassadan qolgan 55% dan hamshira maoshi va amaldagi material to'lovlari ayrilgani |
 | **Audit** (`/audit`) | Cliniccards xarajatlari toifa va pul oluvchi bo'yicha. Standart davr — oxirgi bir yil |
 | **Excel** | Barcha shifokorlar; har bir berilgan maosh (Sana · F.I.SH. · Summa · Shifokor); shifokorning davrdagi barcha to'lovlari |
 
@@ -33,14 +36,19 @@ Audit `GET /spendings?from=YYYY-MM-DD&to=YYYY-MM-DD` orqali xarajatlarni oladi. 
 va ruscha maosh toifalari topiladi. `amount` xarajat summasi, `paid` to'langan summa. `date_issued` xarajat yozuvining sanasi.
 Cliniccards API kaliti egasiga xarajat va maoshlarni ko'rish huquqi kerak.
 
-«Ishxonaga» yozuvlaridagi to'langan summa umumiy xarajatlarga bir marta kiradi. «Oshxonaga» material rasxodda hisoblanadi.
-Audit kassaning 20% ulushi bilan klinikaga berilgan pul orasidagi farqni ham ko'rsatadi.
+«Ishxonaga» orqali berilgan summa Auditda ko'rsatiladi, xarajatlar hisobiga kassaning 20% ulushi yoziladi.
+«Oshxonaga» material rasxodda hisoblanadi. Audit kassaning 20% ulushi bilan klinikaga berilgan pul orasidagi farqni ko'rsatadi.
 Tanlangan davrdagi boshqa xarajat toifalari va ichki toifalar API javobidan o'z nomlari bilan chiqadi. Oluvchini bossangiz,
 uning shu toifa va davrdagi yozuvlari ochiladi.
 
 Material rasxod `date_issued` bo'yicha tanlangan schyotlarning `amount` yig'indisidir. Balans `paid − amount` qilib
 hisoblanadi. Manfiy balans qarzni, musbat balans ortiqcha to'lovni ko'rsatadi. API to'lov tafsilotlarini yuborsa, schyotdagi
 «To'langan» summasini bosib ularni ko'rish mumkin.
+
+Material to'lovlarining sanasi va summasi `GET /cash-flow-operations` orqali olinadi. Agar to'lov oldingi oy schyotiga
+bog'lansa, uning summasi to'lov qilingan davrning sof foydasida hisobga olinadi. Toifasi yoki valyutasi aniqlashtirilishi
+kerak bo'lgan operatsiyalar «Tekshirish kerak» ro'yxatida chiqadi. Ochiq qarzlar uchun `GET /spendings` dagi schyotning
+`amount − paid` qoldig'i olinadi.
 
 ## Shifokorga maosh berish
 
@@ -59,8 +67,8 @@ Bunday ishni Cliniccards'da tuzatish kerak.
 
 ## Hamshiralar va davomat
 
-Kassa taqsimoti: klinika 20%, shifokorlar 25%, qolgan 55% xarajatlar. Xodimlar maoshi 55% ichidan hisoblanadi;
-bosh ekranda «Kassaning taqsimoti» jadvali 55% dan qancha ishlatilgani va qolganini ko'rsatadi.
+Kassa taqsimoti: klinika 20%, shifokorlar 25%, qolgan 55% xarajatlar. «Sof foyda» sahifasida 55% dan hamshira
+maoshi va material to'lovlari ayrilgach qancha qolgani ko'rsatiladi.
 
 - **Xodimlar** (`/maosh-xodimlar`): shablon — ism-familiya, lavozim, kunlik summa, noqulay kun qo'shimchasi.
 - **Grafik** (`/grafik`): har kuni kim kelgani; davr tanlanadi; katakni bosib qo'lda o'zgartirish mumkin.
