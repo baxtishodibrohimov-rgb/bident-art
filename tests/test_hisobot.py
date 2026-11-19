@@ -366,6 +366,7 @@ def test_audit_counts_paid_clinic_expense_once(svc, monkeypatch):
     c.post("/login", data={"login": "admin", "parol": "maxfiy"})
     audit = c.get("/audit?oy=2026-11")
     assert audit.status_code == 200
+    assert 'href="/kassa?oy=2026-11">Kassaga tushgan <b>2 050 000 so\'m</b>' in audit.text
     for value in ("240 000", "105 000", "120 000", "410 000", "170 000", "300 000", "250 000", "05.11.2026"):
         assert value in audit.text
     assert "Ishxona → Oshxonaga" in audit.text

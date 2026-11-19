@@ -18,7 +18,10 @@
   </summary>
   {% if section.key == 'clinic' %}
   <div class="controls" style="padding:8px 16px">
-    <a class="rowlink num" href="/klinika?{{ q }}">Hisoblangan ulush ({{ pct|pul }}%) <b>{{ share|pul }} so'm</b></a>
+    <span class="num">
+      <a class="rowlink" href="/kassa?{{ q }}">Kassaga tushgan <b>{{ kassa_total|pul }} so'm</b></a>
+      × {{ pct|pul }}% = <a class="rowlink" href="/klinika?{{ q }}"><b>{{ share|pul }} so'm</b></a>
+    </span>
     <span class="num {{ 'neg' if balance < 0 else '' }}">Farq <b>{{ balance|pul }} so'm</b></span>
   </div>
   {% endif %}
