@@ -1,11 +1,19 @@
 {% extends "base.html" %}
-{% block title %}Material rasxod — {{ p.label }}{% endblock %}
+{% set is_finance = section == 'moliya' %}
+{% set heading = 'Moliya' if is_finance else 'Material rasxod' %}
+{% block title %}{{ heading }} — {{ p.label }}{% endblock %}
 {% macro balance_figure(value, id='') -%}
   <span{% if id %} id="{{ id }}"{% endif %} data-balance-figure class="{{ 'neg' if value < 0 else 'material-balance-ok' }}">{{ '+' if value > 0 }}{{ value|pul }}</span>
 {%- endmacro %}
 {% block content %}
-<div class="titlerow"><h1>Material rasxod</h1>{% set action = "/material" %}{% include "_period.html" %}</div>
-<div class="bar"><a class="btn" href="/xarajatlar?{{ q }}">← Xarajatlar</a><span class="muted num"><span id="mCount">{{ rows|length }}</span> ta schyot</span></div>
+<div class="titlerow"><h1>{{ heading }}</h1>{% set action = '/moliya' if is_finance else '/material' %}{% include "_period.html" %}</div>
+<div class="bar">
+  {% if is_finance %}<div class="controls">
+    <form class="inline" method="post" action="/yangilash"><button class="btn" type="submit">Cliniccards'dan yangilash</button></form>
+    {% if filtered %}<a class="btn" href="/moliya">Barcha davrlar</a>{% endif %}
+  </div>{% else %}<a class="btn" href="/xarajatlar?{{ q }}">← Xarajatlar</a>{% endif %}
+  <span class="muted num"><span id="mCount">{{ rows|length }}</span> ta schyot</span>
+</div>
 <div class="tiles three">
   <div class="tile"><div class="k">Schyotlar jami</div><div class="v num"><span id="mSum">{{ total|pul }}</span><small>so'm</small></div></div>
   <div class="tile"><div class="k">To'langan</div><div class="v num"><span id="mPaid">{{ paid|pul }}</span><small>so'm</small></div></div>
@@ -14,7 +22,7 @@
 <p class="note">Balans = to'langan − schyot summasi. Minus — qarz, yashil 0 — qarz yo'q, plus — klinika foydasiga qoldiq.</p>
 {% if rows %}
 <form class="controls" id="mFilter" onsubmit="return false">
-  <input class="btn" id="mq" placeholder="Qidirish: kimga, nima uchun, izoh" aria-label="Qidirish" style="flex:1;min-width:200px">
+  <input class="btn" id="mq" placeholder="{{ 'Oluvchi, schyot raqami, izoh' if is_finance else 'Qidirish: kimga, nima uchun, izoh' }}" aria-label="Qidirish" style="flex:1;min-width:200px">
   <select class="btn" id="mcat" aria-label="Toifa bo'yicha"><option value="">Barcha toifalar</option>{% for v in rows|map(attribute='cat')|unique|sort %}<option>{{ v }}</option>{% endfor %}</select>
   <select class="btn" id="msub" aria-label="Nima uchun"><option value="">Nima uchun — hammasi</option>{% for v in rows|map(attribute='sub')|reject('equalto', '')|unique|sort %}<option>{{ v }}</option>{% endfor %}</select>
   <select class="btn" id="msup" aria-label="Kimga"><option value="">Kimga — hammasi</option>{% for g in groups %}<option value="{{ loop.index }}">{{ g.name }}</option>{% endfor %}</select>
@@ -43,8 +51,9 @@
       <th class="r"><button type="button" class="sorth" data-sort="balance">Balans</button></th></tr></thead>
     <tbody>{% for r in g.rows %}<tr data-date="{{ r.date }}" data-cat="{{ r.cat }}" data-sub="{{ r.sub }}"
         data-amount="{{ r.amount }}" data-paid="{{ r.paid }}" data-balance="{{ r.balance }}"
-        data-text="{{ (r.cat ~ ' ' ~ r.sub ~ ' ' ~ g.name ~ ' ' ~ r.supplier ~ ' ' ~ r.note)|lower }}">
-      <td class="num">{% if r.date %}{{ r.date[8:10] }}.{{ r.date[5:7] }}.{{ r.date[:4] }}{% else %}—{% endif %}</td>
+        data-text="{{ (r.cat ~ ' ' ~ r.sub ~ ' ' ~ g.name ~ ' ' ~ r.supplier ~ ' ' ~ r.note ~ ' ' ~ r.id)|lower }}">
+      <td class="num">{% if r.date %}{{ r.date[8:10] }}.{{ r.date[5:7] }}.{{ r.date[:4] }}{% else %}—{% endif %}
+        {% if is_finance and r.id %}<br><span class="muted">#{{ r.id }}</span>{% endif %}</td>
       <td>{{ r.cat }}</td><td>{{ r.sub }}</td><td class="muted">{{ r.note }}</td>
       <td class="r"{% if r.amount < 0 %} style="color:var(--good)" title="Qaytarilgan"{% endif %}>{{ r.amount|pul }}</td>
       <td class="r">{% if r.payments %}<details class="material-payments"><summary title="To'lov tafsilotlari">{{ r.paid|pul }}</summary>
@@ -54,10 +63,10 @@
     </tr>{% endfor %}</tbody>
   </table></div>
 </details>
-{% else %}<p class="muted">Bu davrda material rasxod yo'q.</p>{% endfor %}
+{% else %}<p class="muted">{% if is_finance %}Bu davrda schyot topilmadi.{% else %}Bu davrda material rasxod yo'q.{% endif %}</p>{% endfor %}
 <p class="muted" id="mNone" hidden>Filtrga mos schyot topilmadi.</p>
 <p class="note">Davr schyot sanasi bo'yicha tanlanadi. To'langan summa shu schyotga bog'langan jami to'lovni ko'rsatadi.
-  Klinika ulushi va oylik to'lovlari <a class="rowlink" href="/audit?{{ q }}">Auditda</a> ko'rinadi.</p>
+  {% if not is_finance %}Klinika ulushi va oylik to'lovlari <a class="rowlink" href="/audit?{{ q }}">Auditda</a> ko'rinadi.{% endif %}</p>
 <script>
 (() => {
   const $ = id => document.getElementById(id), form = $("mFilter");

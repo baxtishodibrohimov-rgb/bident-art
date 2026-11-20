@@ -232,15 +232,27 @@ def expenses(request: Request, p: Period = Depends(get_period), _=Depends(auth))
     return templates.TemplateResponse(request, "detail_expenses.html", {"o": o, **nav("bosh"), **period_context(p)})
 
 
-@app.get("/material")
-def material(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
-    groups = service().material_detail(p)
+def invoice_report(request: Request, p: Period, groups: list, section: str, *, filtered: bool = False):
     rows = [row for group in groups for row in group.rows]
     total = sum((row["amount"] for row in rows), Decimal(0))
     paid = sum((row["paid"] for row in rows), Decimal(0))
     return templates.TemplateResponse(request, "detail_material.html", {
         "groups": groups, "rows": rows, "total": total, "paid": paid, "balance": paid - total,
-        **nav("bosh"), **period_context(p)})
+        "filtered": filtered, **nav(section), **period_context(p)})
+
+
+@app.get("/material")
+def material(request: Request, p: Period = Depends(get_period), _=Depends(auth)):
+    return invoice_report(request, p, service().material_detail(p), "bosh")
+
+
+@app.get("/moliya")
+def finance_invoices(request: Request, oy: str | None = None, dan: str | None = None, gacha: str | None = None,
+                     _=Depends(auth)):
+    svc = service()
+    filtered = bool(oy or dan or gacha)
+    p = get_period(oy, dan, gacha) if filtered else svc.spending_history_period()
+    return invoice_report(request, p, svc.invoice_detail(p), "moliya", filtered=filtered)
 
 
 @app.get("/tolovlar")

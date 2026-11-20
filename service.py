@@ -239,6 +239,9 @@ class Service:
     def material_detail(self, period) -> list[details.Group]:
         return details.expenses_by_recipient(finance.split_spendings(self.spendings(period))["material"])
 
+    def invoice_detail(self, period: Period) -> list[details.Group]:
+        return details.expenses_by_recipient(self._spendings_history(period))
+
     def material_payment_report(self, period, *, with_invoices: bool = False) -> material_payments.PaymentReport:
         p = as_period(period)
         try:
@@ -258,12 +261,7 @@ class Service:
 
     def material_debts(self) -> list[details.Group]:
         open_invoices = []
-        seen = set()
         for bill in finance.split_spendings(self.all_spendings())["material"]:
-            invoice_id = str(bill.get("id") or "")
-            if invoice_id and invoice_id in seen:
-                continue
-            seen.add(invoice_id)
             amount = money(bill.get("amount"))
             if amount > 0 and amount > money(bill.get("paid")):
                 open_invoices.append(bill)
@@ -278,12 +276,27 @@ class Service:
         return self._cached(f"stock_invoices:{self.start_date}",
                             lambda: _stock.fetch_invoices(self.client, self.start_date, date.today()))
 
-    def all_spendings(self) -> list[dict]:
+    def spending_history_period(self) -> Period:
         from db import today as clinic_today
-        end = date.fromisoformat(clinic_today())
-        return self._cached(f"spendings_all:{self.start_date}:{end}",
-                            lambda: [s for a, b in month_ranges(self.start_date, end, 12)
-                                     for s in self.client.spendings(a, b)])
+        return Period(self.start_date, date.fromisoformat(clinic_today()))
+
+    def _spendings_history(self, period: Period) -> list[dict]:
+        def fetch():
+            records = []
+            seen = set()
+            for start, end in month_ranges(period.start, period.end, 12):
+                for row in self.spendings(Period(start, end)):
+                    invoice_id = str(row.get("id") or "")
+                    if invoice_id and invoice_id in seen:
+                        continue
+                    seen.add(invoice_id)
+                    records.append(row)
+            return records
+
+        return self._cached(f"spendings_all:{period.start}:{period.end}", fetch)
+
+    def all_spendings(self) -> list[dict]:
+        return self._spendings_history(self.spending_history_period())
 
     def supplier_ledger(self, suppliers: list, products: dict) -> dict:
         """{supplier_id: {"bought": [...], "paid": [...], "b": Decimal, "pd": Decimal, "debt": Decimal}}"""

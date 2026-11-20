@@ -383,6 +383,40 @@ def test_material_groups_invoices_and_shows_signed_balances(svc, monkeypatch):
     assert "Schyotlar jami" in c.get("/xarajatlar?oy=2026-11").text
 
 
+def test_finance_shows_all_cliniccards_invoices_with_date_filter(svc, monkeypatch):
+    svc.start_date = date(2025, 1, 1)
+    monkeypatch.setattr("db.today", lambda: "2026-11-20")
+    old = {"id": 70, "date_issued": "2025-11-07", "supplier": {"name": "Yetkazib beruvchi A"},
+           "spendings_category": {"name": "Material"}, "amount": "600000", "paid": "600000"}
+    new = {"id": 71, "date_issued": "2026-11-09", "supplier": "Yetkazib beruvchi B",
+           "spendings_category": {"name": "Material"}, "amount": "500000", "paid": "200000"}
+    salary = {"id": 72, "date_issued": "2026-11-10", "member": {"name": "Xodim A"},
+              "spendings_category": {"name": "Oyliklar"}, "amount": "100000", "paid": "100000"}
+    unassigned = {"id": 73, "date_issued": "2026-11-12", "amount": "50000", "paid": "0"}
+
+    def spendings(start, end):
+        rows = [bill for bill in (old, new, salary, unassigned) if start.isoformat() <= bill["date_issued"] <= end.isoformat()]
+        if end.year == 2025:
+            rows.append({**old, "id": "70"})
+        return rows
+
+    monkeypatch.setattr(svc.client, "spendings", spendings)
+    c = _client(svc, monkeypatch)
+    assert c.get("/moliya", follow_redirects=False).status_code == 303
+    c.post("/login", data={"login": "admin", "parol": "maxfiy"})
+    res = c.get("/moliya")
+    assert res.status_code == 200 and '<a href="/moliya" aria-current="page">Moliya</a>' in res.text
+    assert len(res.context["rows"]) == 4
+    assert res.context["total"] == 1250000 and res.context["paid"] == 900000
+    assert res.context["balance"] == -350000
+    assert all(value in res.text for value in ("#70", "#71", "#72", "#73", "Xodim A", "Oluvchi ko&#39;rsatilmagan"))
+
+    month = c.get("/moliya?oy=2026-11")
+    assert month.status_code == 200 and month.context["total"] == 650000
+    assert "#70" not in month.text and "Barcha davrlar" in month.text
+    assert "Xodim A" not in c.get("/material?oy=2026-11").text
+
+
 def test_material_payments_follow_payment_date_and_debt_follows_invoice(svc, monkeypatch):
     def invoice(id, day, amount, paid, category="Material", payments=()):
         return {"id": id, "date_issued": day, "amount": amount, "paid": paid,

@@ -5,7 +5,7 @@ import html
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from finance import AUDIT_LABELS, member_info
+from finance import AUDIT_LABELS, member_info, spending_name
 from report import NO_DOCTOR, dedupe_items, money, staff_name
 
 APOSTROPHES = str.maketrans("‘’ʻʼ", "''''")
@@ -105,9 +105,9 @@ def expense_row(sp: dict) -> dict:
     return {
         "id": str(sp.get("id") or ""),
         "date": str(sp.get("date_issued") or "")[:10],
-        "cat": text((sp.get("spendings_category") or {}).get("name")) or "Toifasiz",
-        "sub": text((sp.get("spendings_subcategory") or {}).get("name")),
-        "supplier": text((sp.get("supplier") or {}).get("name") or member),
+        "cat": spending_name(sp.get("spendings_category")) or "Toifasiz",
+        "sub": spending_name(sp.get("spendings_subcategory")),
+        "supplier": spending_name(sp.get("supplier")) or text(member),
         "note": text(sp.get("note")), "status": sp.get("payment_status") or "",
         "amount": amount, "paid": paid, "balance": paid - amount, "payments": payments,
     }

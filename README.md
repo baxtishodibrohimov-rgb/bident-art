@@ -4,7 +4,7 @@
 **Bosh ekran:** bajarilgan ishlar, kassaga tushgan pul, xarajatlar, material to'lovlari va sof foyda.
 Har bir summa bosilganda tafsiloti ochiladi.
 
-Bo'limlar: Bosh ekran · Shifokorlar (maosh va avans berish) · Sklad (qoldiq — ro'yxat/kartochka va rasmlar, kunlik hisobotlar,
+Bo'limlar: Bosh ekran · Moliya · Shifokorlar (maosh va avans berish) · Sklad (qoldiq — ro'yxat/kartochka va rasmlar, kunlik hisobotlar,
 buyurtmalar, sotuvchilar va ular bilan hisob-kitob) · Hamshiralar (maosh, ⚙ sozlama, grafik, hamshira vazifalari) · Audit ·
 Telegram bot (suhbatlar, bot xodimlari) · Qanday ishlaydi.
 
@@ -23,6 +23,7 @@ Masalan, martda qo'yilgan breket uchun noyabrda tushgan 1 000 000 noyabr maoshig
 | **Shifokorlar** (`/shifokorlar`) | Kim qancha pul olib keldi, maoshi, berilgan (maosh + avans), avans, berilmagan. Ism bosilsa — o'sha qator ostida berilgan maoshlar va Excel |
 | **Xarajatlar** (`/xarajatlar`) | Hisoblangan klinika ulushi, shifokor va hamshira maoshlari, ochilgan material schyotlari |
 | **Material rasxod** (`/material`) | Oluvchi bo'yicha guruhlangan schyotlar, to'langan summa va balans |
+| **Moliya** (`/moliya`) | Cliniccards'dan kelgan barcha ochiq va yopilgan schyotlar, oluvchi bo'yicha. Standart davr — `BOSHLANISH_SANA` dan bugungacha |
 | **To'lovlar** (`/tolovlar`) | Material uchun amaldagi chiqimlar to'lov sanasi bo'yicha, jumladan eski schyotlarga qilingan to'lovlar |
 | **Qarz** (`/tolovlar/qarz`) | Barcha davrlardan qolgan ochiq material schyotlari va bugungi qoldiq |
 | **Sof foyda** (`/foyda`) | Kassadan qolgan 55% dan hamshira maoshi va amaldagi material to'lovlari ayrilgani |
