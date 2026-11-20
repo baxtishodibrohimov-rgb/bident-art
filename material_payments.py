@@ -11,7 +11,8 @@ from finance import member_info, spending_kind, spending_name
 from report import Period, money
 
 MISSING_CATEGORY = "Xarajat toifasi aniqlanmadi"
-UZS_CURRENCIES = ("", "UZS", "СУМ", "SO'M")
+UZS_CURRENCIES = ("", "UZS", "СУМ", "СЎМ", "SO'M")
+INVOICE_FIELDS = ("spending_id", "spendings_id", "expense_id")
 PaymentKey = tuple[str, str, Decimal]
 
 
@@ -27,6 +28,11 @@ class Payment:
     invoice_date: str = ""
     reason: str = ""
     operation_type: str = ""
+    id: str = ""
+    cash_desk_id: str = ""
+    category: str = ""
+    subcategory: str = ""
+    standalone: bool = False
 
 
 @dataclass
@@ -44,7 +50,7 @@ class PaymentReport:
         return None if self.error or self.review else self.total
 
 
-def _day(value) -> str:
+def payment_day(value) -> str:
     raw = str(value or "").strip()[:10]
     for pattern in ("%Y-%m-%d", "%m.%d.%Y", "%d.%m.%Y"):
         try:
@@ -61,7 +67,11 @@ def _key(row: dict, supplier, amount: Decimal) -> PaymentKey | None:
 
 
 def _invoice_id(operation: dict) -> str:
-    return str(operation.get("spending_id") or operation.get("spendings_id") or operation.get("expense_id") or "")
+    return next((str(operation[field]) for field in INVOICE_FIELDS if operation.get(field) not in (None, "", 0, "0")), "")
+
+
+def payment_id(entry: dict) -> str:
+    return str(entry.get("payment_id") or entry.get("cash_flow_operation_id") or entry.get("id") or "")
 
 
 def _payment_amount(operation: dict, kind: str) -> Decimal:
@@ -78,14 +88,17 @@ def _payment(operation: dict, day: str, recipient: str, kind: str, invoice: dict
     return Payment(
         date=day, recipient=recipient, amount=_payment_amount(operation, kind),
         cash_desk=spending_name(operation.get("cash_desk_name")), note=spending_name(operation.get("comment")),
-        currency=str(operation.get("currency") or "").strip().upper(),
-        invoice_id=str(bill.get("id") or _invoice_id(operation)), invoice_date=_day(bill.get("date_issued")),
-        operation_type=kind,
+        currency=str(operation.get("currency") or "").strip().upper().translate(str.maketrans("‘’ʻʼ", "''''")),
+        invoice_id=str(bill.get("id") or _invoice_id(operation)), invoice_date=payment_day(bill.get("date_issued")),
+        operation_type=kind, id=payment_id(operation), cash_desk_id=str(operation.get("cash_desk_id") or ""),
+        category=spending_name(operation.get("spendings_category")),
+        subcategory=spending_name(operation.get("spendings_subcategory")),
+        standalone=not _invoice_id(operation) and any(field in operation for field in INVOICE_FIELDS),
     )
 
 
 def counterparty_payments(operations: list[dict], period: Period, invoices: Iterable[dict] = ()) -> list[Payment]:
-    invoice_names, supplier_names = {}, {}
+    invoice_names, supplier_names, member_names, payment_names = {}, {}, {}, {}
     for invoice in invoices:
         if not invoice["supplier"]:
             continue
@@ -93,21 +106,33 @@ def counterparty_payments(operations: list[dict], period: Period, invoices: Iter
             invoice_names[invoice["id"]] = invoice["supplier"]
         if invoice["supplier_id"]:
             supplier_names[invoice["supplier_id"]] = invoice["supplier"]
+        if invoice["member_id"]:
+            member_names[invoice["member_id"]] = invoice["supplier"]
+        for entry in invoice["payments"]:
+            if entry["id"]:
+                payment_names[entry["id"]] = invoice["supplier"]
     rows = []
+    seen = set()
     for operation in operations:
-        if operation.get("patient") or operation.get("patient_id"):
+        kind = str(operation.get("type") or "").strip().upper()
+        if kind not in ("SPENDING", "MONEYBACK") or operation.get("patient") or operation.get("patient_id"):
             continue
         supplier = operation.get("supplier")
         supplier_id = (supplier.get("id") if isinstance(supplier, dict) else None) or operation.get("supplier_id")
-        recipient = (spending_name(supplier) or spending_name(operation.get("supplier_name"))
-                     or supplier_names.get(str(supplier_id or "")) or invoice_names.get(_invoice_id(operation)))
-        if not recipient:
+        member_id, member_name = member_info(operation)
+        row_id = payment_id(operation)
+        recipient = (invoice_names.get(_invoice_id(operation)) or payment_names.get(row_id)
+                     or supplier_names.get(str(supplier_id or ""))
+                     or spending_name(supplier) or spending_name(operation.get("supplier_name"))
+                     or member_names.get(member_id) or spending_name(member_name))
+        if not recipient or (row_id and row_id in seen):
             continue
-        day = _day(operation.get("date_issued"))
+        day = payment_day(operation.get("date_issued") or operation.get("date"))
         if day and not period.contains(day):
             continue
-        kind = str(operation.get("type") or "").strip().upper()
         rows.append(_payment(operation, day, recipient, kind))
+        if row_id:
+            seen.add(row_id)
     return sorted(rows, key=lambda row: row.date, reverse=True)
 
 
@@ -140,7 +165,7 @@ def report(operations: list[dict], period: Period, invoices: Sequence[dict] = ()
             if isinstance(entry, dict):
                 key = _key(entry, invoice.get("supplier"), -money(entry.get("amount")))
                 if key is not None:
-                    candidates[key].append((invoice, _day(entry.get("date_issued") or entry.get("date"))))
+                    candidates[key].append((invoice, payment_day(entry.get("date_issued") or entry.get("date"))))
 
     expenses = []
     for operation in operations:
@@ -150,7 +175,7 @@ def report(operations: list[dict], period: Period, invoices: Sequence[dict] = ()
         category = _operation_kind(operation)
         if kind == "MONEYBACK" and (operation.get("patient") or operation.get("patient_id")) and not operation.get("supplier"):
             continue
-        day = _day(operation.get("date_issued"))
+        day = payment_day(operation.get("date_issued"))
         if day and not period.contains(day):
             continue
         amount = _payment_amount(operation, kind)
@@ -164,7 +189,7 @@ def report(operations: list[dict], period: Period, invoices: Sequence[dict] = ()
         invoice = by_id.get(invoice_id)
         if invoice is None and not invoice_id and key is not None:
             matches = [(bill, paid_on) for bill, paid_on in candidates[key]
-                       if (not paid_on or paid_on == day) and _day(bill.get("date_issued")) <= day
+                       if (not paid_on or paid_on == day) and payment_day(bill.get("date_issued")) <= day
                        and _matches_category(operation, bill)]
             if len(matches) == 1 and (day_counts[key, day] if matches[0][1] else key_counts[key]) == 1:
                 invoice = matches[0][0]

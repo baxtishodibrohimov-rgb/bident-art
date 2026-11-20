@@ -401,6 +401,7 @@ def test_finance_shows_all_cliniccards_invoices_with_date_filter(svc, monkeypatc
         return rows
 
     monkeypatch.setattr(svc.client, "spendings", spendings)
+    monkeypatch.setattr(svc.client, "cash_flow_operations", lambda start, end: [])
     c = _client(svc, monkeypatch)
     assert c.get("/moliya", follow_redirects=False).status_code == 303
     c.post("/login", data={"login": "admin", "parol": "maxfiy"})
@@ -418,6 +419,8 @@ def test_finance_shows_all_cliniccards_invoices_with_date_filter(svc, monkeypatc
 
 
 def test_finance_shows_counterparty_payments_without_invoice(svc, monkeypatch):
+    svc.start_date = date(2026, 2, 1)
+    monkeypatch.setattr("db.today", lambda: "2026-03-10")
     invoice = {"id": "451", "date_issued": "2026-02-20", "supplier": {"name": "Oluvchi A"},
                "spendings_category": {"name": "Oyliklar"}, "amount": 1243000, "paid": 3000}
     operations = [
@@ -435,45 +438,68 @@ def test_finance_shows_counterparty_payments_without_invoice(svc, monkeypatch):
     c.post("/login", data={"login": "admin", "parol": "maxfiy"})
     invoices = c.get("/moliya?oy=2026-02")
     assert invoices.context["rows"][0]["paid"] == 3000
-    assert '/moliya/tolovlar?oluvchi=Oluvchi%20A&amp;oy=2026-02' in invoices.text
-    assert 'href="/moliya/tolovlar?oy=2026-02"' in invoices.text
+    assert invoices.context["statements"]["oluvchi a"].paid_total == 1240000
+    assert invoices.context["statements"]["oluvchi a"].balance == -3000
+    assert invoices.context["statements"]["oluvchi b"].paid_total == -7000
+    assert "Kontragent to&#39;lovlari" not in invoices.text and "/moliya/tolovlar" not in invoices.text
     assert 'data-payment="1" data-date="2026-02-25"' in invoices.text
     assert "25.02.2026" in invoices.text and "1 240 000" in invoices.text and "Davr balansi" in invoices.text
-
-    result = c.get("/moliya/tolovlar", params={"oluvchi": "Oluvchi A", "oy": "2026-02"})
-    assert result.status_code == 200
-    [row] = result.context["groups"][0]
-    assert row.date == "2026-02-25" and row.amount == 1240000 and not row.invoice_id
-    assert "25.02.2026" in result.text and "1 240 000 UZS" in result.text
-    assert "06.03.2026" not in result.text and "Oluvchi B" not in result.text and "500 000" not in result.text
-
-    single_day = c.get("/moliya/tolovlar?dan=2026-02-25&gacha=2026-02-25")
-    assert "1 240 000 UZS" in single_day.text
-    all_suppliers = c.get("/moliya/tolovlar?oy=2026-02")
-    assert "Oluvchi B" in all_suppliers.text and "-7 000" in all_suppliers.text
+    assert "06.03.2026" not in invoices.text and "500 000" not in invoices.text
+    old_link = c.get("/moliya/tolovlar?oluvchi=Oluvchi+A&oy=2026-02", follow_redirects=False)
+    assert old_link.status_code == 303 and old_link.headers["location"] == "/moliya?oy=2026-02&oluvchi=Oluvchi%20A"
+    assert 'selected>Oluvchi A' in c.get(old_link.headers["location"]).text
+    single_day = c.get("/moliya?dan=2026-02-25&gacha=2026-02-25")
+    assert single_day.context["paid"] == 1240000 and not single_day.context["rows"]
 
 
 def test_finance_combines_dated_payments_without_changing_invoice_balance(svc, monkeypatch):
     svc.start_date = date(2026, 2, 1)
     monkeypatch.setattr("db.today", lambda: "2026-03-10")
     invoice = {"id": "451", "date_issued": "2026-02-20", "supplier": {"id": 51, "name": "Oluvchi A"},
-               "spendings_category": {"name": "Oyliklar"}, "amount": "1243000", "paid": "3000"}
+               "spendings_category": {"name": "Oyliklar"}, "amount": "1243000", "paid": "3000",
+               "payments": [{"amount": "-3000", "cash_desk_id": 2, "cash_desk_name": "Naqd"}]}
     operations = [
-        {"type": "SPENDING", "date_issued": "02.25.2026", "supplier_id": 51, "amount": "1240000", "currency": "UZS"},
-        {"type": "SPENDING", "date_issued": "03.06.2026", "spending_id": 451, "amount": "3000", "currency": "UZS"},
+        {"type": "SPENDING", "date_issued": "02.25.2026", "supplier_id": 51, "amount": "1240000",
+         "currency": "UZS", "spending_id": None},
+        {"type": "SPENDING", "date_issued": "03.06.2026", "supplier": "oluvchi a", "cash_desk_id": 2,
+         "amount": "3000", "currency": "SOʻM", "payment_id": 80},
     ]
     monkeypatch.setattr(svc.client, "spendings", lambda start, end: [invoice])
-    monkeypatch.setattr(svc.client, "cash_flow_operations", lambda start, end: operations)
+    monkeypatch.setattr(svc.client, "cash_flow_operations", lambda start, end: [*operations, operations[1]])
     c = _client(svc, monkeypatch)
     c.post("/login", data={"login": "admin", "parol": "maxfiy"})
     page = c.get("/moliya")
-    assert page.status_code == 200 and "Kontragent balansi" in page.text
+    assert page.status_code == 200
     account = page.context["statements"]["oluvchi a"]
     assert account.invoices.balance == -1240000
-    assert account.payment_total(full_history=True) == account.invoices.total == 1243000
+    assert len(account.payments) == 2 and account.paid_total == account.invoices.total == 1243000
+    assert account.balance == page.context["balance"] == 0 and page.context["paid"] == 1243000
+    assert account.payments[0].invoice_id == "451" and account.payments[1].standalone
     assert page.text.index('data-date="2026-03-06"') < page.text.index('data-date="2026-02-25"') < page.text.index('data-date="2026-02-20"')
-    assert "Kassa to'lovlari <b>1 243 000</b>" in page.text
-    assert "Kontragent balansi <b><span data-balance-figure class=\"material-balance-ok\">0</span>" in page.text
+    assert "To'langan <b data-group-paid>1 243 000</b>" in page.text
+    assert '<span id="mPaid">1 243 000</span>' in page.text
+    assert "Balans <b><span data-balance-figure class=\"material-balance-ok\">0</span>" in page.text
+
+
+def test_finance_keeps_invoice_only_payments_and_separate_equal_amounts(svc, monkeypatch):
+    svc.start_date = date(2026, 2, 1)
+    monkeypatch.setattr("db.today", lambda: "2026-03-10")
+    bill = {"id": "9", "date_issued": "2026-02-20", "member": {"id": 9, "name": "Xodim A"},
+            "amount": "6000", "paid": "3000", "payments": [
+                {"amount": "-1000", "date": "2026-02-20"},
+                {"amount": "-2000"},
+            ]}
+    operation = {"type": "SPENDING", "date_issued": "02.21.2026", "spendings_clinicmember_id": 9,
+                 "amount": "2000", "spending_id": None}
+    monkeypatch.setattr(svc.client, "spendings", lambda start, end: [bill])
+    monkeypatch.setattr(svc.client, "cash_flow_operations", lambda start, end: [operation, dict(operation)])
+    c = _client(svc, monkeypatch)
+    c.post("/login", data={"login": "admin", "parol": "maxfiy"})
+    history = c.get("/moliya")
+    assert history.context["paid"] == 7000 and history.context["balance"] == 1000
+    assert len(history.context["statements"]["xodim a"].payments) == 4
+    february = c.get("/moliya?oy=2026-02")
+    assert february.context["paid"] == 5000 and february.context["balance"] == -1000
 
 
 def test_material_payments_follow_payment_date_and_debt_follows_invoice(svc, monkeypatch):

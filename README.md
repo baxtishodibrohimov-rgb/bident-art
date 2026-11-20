@@ -23,8 +23,7 @@ Masalan, martda qo'yilgan breket uchun noyabrda tushgan 1 000 000 noyabr maoshig
 | **Shifokorlar** (`/shifokorlar`) | Kim qancha pul olib keldi, maoshi, berilgan (maosh + avans), avans, berilmagan. Ism bosilsa — o'sha qator ostida berilgan maoshlar va Excel |
 | **Xarajatlar** (`/xarajatlar`) | Hisoblangan klinika ulushi, shifokor va hamshira maoshlari, ochilgan material schyotlari |
 | **Material rasxod** (`/material`) | Oluvchi bo'yicha guruhlangan schyotlar, to'langan summa va balans |
-| **Moliya** (`/moliya`) | Cliniccards schyotlari va kassa to'lovlari oluvchi bo'yicha bitta jadvalda. Standart davr — `BOSHLANISH_SANA` dan bugungacha |
-| **Kontragent to'lovlari** (`/moliya/tolovlar`) | Cliniccards kassa operatsiyalaridagi oluvchiga yozilgan to'lovlar, shu jumladan schyotga bog'lanmagan operatsiyalar |
+| **Moliya** (`/moliya`) | Har bir oluvchining schyotlari, barcha to'lovlari va balansi bitta joyda. Standart davr — `BOSHLANISH_SANA` dan bugungacha |
 | **To'lovlar** (`/tolovlar`) | Material uchun amaldagi chiqimlar to'lov sanasi bo'yicha, jumladan eski schyotlarga qilingan to'lovlar |
 | **Qarz** (`/tolovlar/qarz`) | Barcha davrlardan qolgan ochiq material schyotlari va bugungi qoldiq |
 | **Sof foyda** (`/foyda`) | Kassadan qolgan 55% dan hamshira maoshi va amaldagi material to'lovlari ayrilgani |
@@ -52,8 +51,9 @@ bog'lansa, uning summasi to'lov qilingan davrning sof foydasida hisobga olinadi.
 kerak bo'lgan operatsiyalar «Tekshirish kerak» ro'yxatida chiqadi. Ochiq qarzlar uchun `GET /spendings` dagi schyotning
 `amount − paid` qoldig'i olinadi.
 
-«Moliya»da schyot qoldig'i unga bog'langan to'lovlardan hisoblanadi. Kontragent balansi esa tanlangan davrdagi
-kassa to'lovlari va ochilgan schyotlarning farqidir. Kassa yozuvida schyot raqami berilmagan to'lov ham o'z sanasida chiqadi.
+«Moliya»da oluvchini bosganda schyotlar va schyotga bog'langan hamda bog'lanmagan to'lovlar chiqadi.
+Ikkala manbada uchragan bir xil to'lov jami to'lovga bir marta qo'shiladi.
+Balans — jami to'lovdan schyotlar summasi ayrilgani. Sanasi berilmagan schyot to'lovlari barcha davrlar hisobotida chiqadi.
 
 ## Shifokorga maosh berish
 

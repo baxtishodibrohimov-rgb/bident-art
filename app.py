@@ -20,8 +20,10 @@ from fastapi.templating import Jinja2Templates
 import auth as sessions
 
 from client import CliniccardsClient, CliniccardsError
-from details import Group, counterparty_statements, name_key
+from details import Group, name_key
 from excel import report_xlsx
+from finance_ledger import Statement, statements_for_period
+from material_payments import UZS_CURRENCIES
 from report import Period
 import finance
 from service import HERE, Percents, Service, load_env, start_date_from_env
@@ -233,13 +235,15 @@ def expenses(request: Request, p: Period = Depends(get_period), _=Depends(auth))
     return templates.TemplateResponse(request, "detail_expenses.html", {"o": o, **nav("bosh"), **period_context(p)})
 
 
-def invoice_report(request: Request, p: Period, groups: list[Group], section: str, **context):
+def invoice_report(request: Request, p: Period, groups: list[Group], section: str,
+                   statements: dict[str, Statement] | None = None, **context):
     rows = [row for group in groups for row in group.rows]
     total = sum((row["amount"] for row in rows), Decimal(0))
-    paid = sum((row["paid"] for row in rows), Decimal(0))
+    paid = (sum((statement.paid_total for statement in statements.values()), Decimal(0)) if statements is not None
+            else sum((row["paid"] for row in rows), Decimal(0)))
     return templates.TemplateResponse(request, "detail_material.html", {
         "groups": groups, "rows": rows, "total": total, "paid": paid, "balance": paid - total,
-        **context, **nav(section), **period_context(p)})
+        "statements": statements, "uzs_currencies": UZS_CURRENCIES, **context, **nav(section), **period_context(p)})
 
 
 @app.get("/material")
@@ -249,37 +253,33 @@ def material(request: Request, p: Period = Depends(get_period), _=Depends(auth))
 
 @app.get("/moliya")
 def finance_invoices(request: Request, oy: str | None = None, dan: str | None = None, gacha: str | None = None,
-                     _=Depends(auth)):
+                     oluvchi: str = "", _=Depends(auth)):
     svc = service()
     filtered = bool(oy or dan or gacha)
     history = svc.spending_history_period()
     p = get_period(oy, dan, gacha) if filtered else history
-    groups = svc.invoice_detail(p)
+    source_period = Period(min(history.start, p.start), max(history.end, p.end))
+    groups = svc.invoice_detail(source_period)
     payments_error = False
     try:
-        payments = svc.counterparty_payments(p, groups)
+        payments = svc.counterparty_payments(source_period, groups)
     except CliniccardsError:
         payments = []
         payments_error = True
-    statements = counterparty_statements(groups, payments)
+    full_history = p == source_period
+    statements = statements_for_period(groups, payments, p, full_history)
     return invoice_report(request, p, [statement.invoices for statement in statements.values()], "moliya",
-                          filtered=filtered, statements=statements, payments_error=payments_error, full_history=p == history)
+                          filtered=filtered, statements=statements, payments_error=payments_error,
+                          full_history=full_history, selected_recipient=name_key(oluvchi))
 
 
-@app.get("/moliya/tolovlar")
-def finance_payments(request: Request, oluvchi: str = "", oy: str | None = None, dan: str | None = None,
+@app.get("/moliya/tolovlar", include_in_schema=False)
+def finance_payments(oluvchi: str = "", oy: str | None = None, dan: str | None = None,
                      gacha: str | None = None, _=Depends(auth)):
-    svc = service()
-    p = get_period(oy, dan, gacha) if oy or dan or gacha else svc.spending_history_period()
-    recipient_filter = name_key(oluvchi)
-    groups = {}
-    for row in svc.counterparty_payments(p):
-        key = name_key(row.recipient)
-        if not recipient_filter or key == recipient_filter:
-            groups.setdefault(key, []).append(row)
-    return templates.TemplateResponse(request, "finance_payments.html", {
-        "groups": [groups[key] for key in sorted(groups)], "recipient_filter": oluvchi.strip(),
-        **nav("moliya"), **period_context(p)})
+    params = [get_period(oy, dan, gacha).query] if oy or dan or gacha else []
+    if oluvchi:
+        params.append("oluvchi=" + quote(oluvchi))
+    return RedirectResponse("/moliya" + ("?" + "&".join(params) if params else ""), status_code=303)
 
 
 @app.get("/tolovlar")

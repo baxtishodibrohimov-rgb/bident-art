@@ -9,7 +9,6 @@
 <div class="titlerow"><h1>{{ heading }}</h1>{% set action = '/moliya' if is_finance else '/material' %}{% include "_period.html" %}</div>
 <div class="bar">
   {% if is_finance %}<div class="controls">
-    <a class="btn" href="/moliya/tolovlar?{{ q }}">Kontragent to'lovlari</a>
     <form class="inline" method="post" action="/yangilash"><button class="btn" type="submit">Cliniccards'dan yangilash</button></form>
     {% if filtered %}<a class="btn" href="/moliya">Barcha davrlar</a>{% endif %}
   </div>{% else %}<a class="btn" href="/xarajatlar?{{ q }}">← Xarajatlar</a>{% endif %}
@@ -17,17 +16,17 @@
 </div>
 <div class="tiles three">
   <div class="tile"><div class="k">Schyotlar jami</div><div class="v num"><span id="mSum">{{ total|pul }}</span><small>so'm</small></div></div>
-  <div class="tile"><div class="k">{{ "Schyotlarga yozilgan to'lov" if is_finance else "To'langan" }}</div><div class="v num"><span id="mPaid">{{ paid|pul }}</span><small>so'm</small></div></div>
-  <div class="tile"><div class="k">{{ 'Schyotlar balansi' if is_finance else 'Balans' }}</div><div class="v num">{{ balance_figure(balance, 'mBalance') }}<small>so'm</small></div></div>
+  <div class="tile"><div class="k">{{ "Jami to'langan" if is_finance else "To'langan" }}</div><div class="v num"><span id="mPaid">{{ paid|pul }}</span><small>so'm</small></div></div>
+  <div class="tile"><div class="k">{{ "Davr balansi" if is_finance and not full_history else "Balans" }}</div><div class="v num">{{ balance_figure(balance, 'mBalance') }}<small>so'm</small></div></div>
 </div>
-{% if is_finance and payments_error %}<p class="warnbox" role="status">Cliniccards kassa operatsiyalarini yuklab bo'lmadi.</p>{% endif %}
-<p class="note">{% if is_finance %}Kassa to'lovlari o'z sanasida alohida qator bo'lib chiqadi. Schyot qoldig'i unga bog'langan to'lovlardan hisoblanadi.{% else %}Balans = to'langan − schyot summasi. Minus — qarz, yashil 0 — qarz yo'q, plus — klinika foydasiga qoldiq.{% endif %}</p>
+{% if is_finance and payments_error %}<p class="warnbox" role="status">Cliniccards kassa operatsiyalarini yuklab bo'lmadi. Hisobda mavjud schyot to'lovlari ko'rsatilgan.</p>{% endif %}
+<p class="note">{% if is_finance %}Jami to'lovga schyotga bog'langan va bog'lanmagan so'm to'lovlari kiradi. Balans — jami to'lovdan schyotlar summasi ayrilgani.{% if not full_history %} Sanasiz to'lovlar barcha davrlar hisobotida ko'rinadi.{% endif %}{% else %}Balans = to'langan − schyot summasi. Minus — qarz, yashil 0 — qarz yo'q, plus — klinika foydasiga qoldiq.{% endif %}</p>
 {% if groups %}
 <form class="controls" id="mFilter" onsubmit="return false">
-  <input class="btn" id="mq" placeholder="{{ 'Oluvchi, schyot raqami, izoh' if is_finance else 'Qidirish: kimga, nima uchun, izoh' }}" aria-label="Qidirish" style="flex:1;min-width:200px">
+  <input class="btn" id="mq" placeholder="{{ 'Oluvchi, sana, schyot raqami, izoh' if is_finance else 'Qidirish: kimga, nima uchun, izoh' }}" aria-label="Qidirish" style="flex:1;min-width:200px">
   <select class="btn" id="mcat" aria-label="Toifa bo'yicha"><option value="">Barcha toifalar</option>{% for v in rows|map(attribute='cat')|unique|sort %}<option>{{ v }}</option>{% endfor %}</select>
   <select class="btn" id="msub" aria-label="Nima uchun"><option value="">Nima uchun — hammasi</option>{% for v in rows|map(attribute='sub')|reject('equalto', '')|unique|sort %}<option>{{ v }}</option>{% endfor %}</select>
-  <select class="btn" id="msup" aria-label="Kimga"><option value="">Kimga — hammasi</option>{% for g in groups %}<option value="{{ loop.index }}">{{ g.name }}</option>{% endfor %}</select>
+  <select class="btn" id="msup" aria-label="Kimga"><option value="">Kimga — hammasi</option>{% for g in groups %}<option value="{{ loop.index }}"{% if is_finance and selected_recipient and selected_recipient == g.key %} selected{% endif %}>{{ g.name }}</option>{% endfor %}</select>
   <input class="btn num" id="mmin" type="number" step="0.01" placeholder="{{ 'Summa dan' if is_finance else 'Schyot summasi dan' }}" aria-label="Summa dan" style="width:155px">
   <input class="btn num" id="mmax" type="number" step="0.01" placeholder="{{ 'Summa gacha' if is_finance else 'Schyot summasi gacha' }}" aria-label="Summa gacha" style="width:155px">
   <button type="button" class="btn" id="mclear" hidden>Tozalash</button>
@@ -35,26 +34,16 @@
 {% endif %}
 {% for g in groups %}
 {% set statement = statements[g.key] if is_finance else none %}
-<details class="panel" data-material-group="{{ loop.index }}"{% if groups|length == 1 %} open{% endif %}>
+<details class="panel" data-material-group="{{ loop.index }}"{% if groups|length == 1 or (is_finance and selected_recipient and selected_recipient == g.key) %} open{% endif %}>
   <summary class="expense-summary">
     <strong>{{ g.name }}</strong>
     <span class="expense-summary-meta num">
       <span class="muted"><span data-group-count>{{ g.rows|length }}</span> {{ 'ta schyot' if is_finance else 'ta' }}</span>
       <span>Schyot <b data-group-sum>{{ g.total|pul }}</b></span>
-      <span>To'langan <b data-group-paid>{{ g.paid_total|pul }}</b></span>
-      <span>{{ "Schyot qoldig'i" if is_finance else 'Balans' }} <b>{{ balance_figure(g.balance) }}</b></span>
+      <span>To'langan <b data-group-paid>{{ (statement.paid_total if is_finance else g.paid_total)|pul }}</b></span>
+      <span>Balans <b>{{ balance_figure(statement.balance if is_finance else g.balance) }}</b></span>
     </span>
   </summary>
-  {% if is_finance and g.key %}
-  {% set cash_total = none if payments_error else statement.payment_total(full_history) %}
-  <div class="panel-h">
-    <a class="rowlink" href="/moliya/tolovlar?oluvchi={{ g.name|urlencode }}&amp;{{ q }}">{{ g.name }} · kontragent to'lovlari →</a>
-    {% if cash_total is not none %}<div class="controls num">
-      <span>Kassa to'lovlari <b>{{ cash_total|pul }}</b></span>
-      <span>{{ 'Kontragent balansi' if full_history else 'Davr balansi' }} <b>{{ balance_figure(cash_total - g.total) }}</b></span>
-    </div>{% else %}<span class="muted">Kassa bo'yicha balans aniqlanmadi</span>{% endif %}
-  </div>
-  {% endif %}
   <div class="scroll"><table>
     <thead><tr><th><button type="button" class="sorth" data-sort="date">{{ 'Sana' if is_finance else 'Schyot sanasi' }}</button></th>
       <th><button type="button" class="sorth" data-sort="cat">Toifa</button></th>
@@ -64,26 +53,28 @@
       <th class="r"><button type="button" class="sorth" data-sort="balance">{{ "Schyot qoldig'i" if is_finance else 'Balans' }}</button></th></tr></thead>
     <tbody>{% for r in (statement.timeline if is_finance else g.rows) %}
     {% if r.operation_type is defined %}
-    {% set label = {'SPENDING': "Kassa to'lovi", 'MONEYBACK': 'Qaytarilgan'}.get(r.operation_type, r.operation_type or 'Kassa operatsiyasi') %}
+    {% set label = 'Qaytarilgan' if r.amount < 0 else ("Schyot to'lovi" if r.invoice_id or r.operation_type == 'SCHYOT' else ("Schyotsiz to'lov" if r.standalone else "Kassa to'lovi")) %}
     {% set day = r.date.split('-')|reverse|join('.') if r.date else '—' %}
-    <tr data-payment="1" data-date="{{ r.date }}" data-cat="" data-sub="{{ label }}"
+    <tr data-payment="1" data-date="{{ r.date }}" data-cat="{{ r.category }}" data-sub="{{ r.subcategory }}"
         data-amount="{{ r.amount }}" data-paid="{{ r.amount }}" data-balance=""
-        data-text="{{ (r.recipient ~ ' ' ~ r.cash_desk ~ ' ' ~ r.note ~ ' ' ~ r.invoice_id ~ ' ' ~ day ~ ' ' ~ label)|lower }}">
+        data-credit="{{ r.amount if r.currency in uzs_currencies else 0 }}"
+        data-text="{{ (g.name ~ ' ' ~ r.recipient ~ ' ' ~ r.cash_desk ~ ' ' ~ r.note ~ ' ' ~ r.invoice_id ~ ' ' ~ r.category ~ ' ' ~ r.subcategory ~ ' ' ~ r.date ~ ' ' ~ day ~ ' ' ~ label)|lower }}">
       <td class="num">{{ day }}</td>
       <td><span class="pill off">{{ label }}</span></td>
-      <td>{% if r.invoice_id %}#{{ r.invoice_id }}{% else %}{{ r.cash_desk or '—' }}{% endif %}</td>
+      <td>{% if r.invoice_id %}#{{ r.invoice_id }}{% if r.cash_desk %} · {{ r.cash_desk }}{% endif %}{% else %}{{ r.cash_desk or '—' }}{% endif %}</td>
       <td class="muted">{{ r.note }}</td><td class="r">—</td>
-      <td class="r"><b>{{ r.amount|pul }}</b>{% if r.currency and r.currency != 'UZS' %} {{ r.currency }}{% endif %}</td>
+      <td class="r"><b>{{ r.amount|pul }}</b>{% if r.currency not in uzs_currencies %} {{ r.currency }}{% endif %}</td>
       <td class="r">—</td>
     </tr>
     {% else %}<tr data-date="{{ r.date }}" data-cat="{{ r.cat }}" data-sub="{{ r.sub }}"
         data-amount="{{ r.amount }}" data-paid="{{ r.paid }}" data-balance="{{ r.balance }}"
-        data-text="{{ (r.cat ~ ' ' ~ r.sub ~ ' ' ~ g.name ~ ' ' ~ r.supplier ~ ' ' ~ r.note ~ ' ' ~ r.id)|lower }}">
+        data-credit="{{ 0 if is_finance else r.paid }}"
+        data-text="{{ (r.cat ~ ' ' ~ r.sub ~ ' ' ~ g.name ~ ' ' ~ r.supplier ~ ' ' ~ r.note ~ ' ' ~ r.id ~ ' ' ~ r.date ~ ' ' ~ (r.date.split('-')|reverse|join('.')))|lower }}">
       <td class="num">{% if r.date %}{{ r.date[8:10] }}.{{ r.date[5:7] }}.{{ r.date[:4] }}{% else %}—{% endif %}
         {% if is_finance and r.id %}<br><span class="muted">#{{ r.id }}</span>{% endif %}</td>
       <td>{{ r.cat }}</td><td>{{ r.sub }}</td><td class="muted">{{ r.note }}</td>
       <td class="r"{% if r.amount < 0 %} style="color:var(--good)" title="Qaytarilgan"{% endif %}>{{ r.amount|pul }}</td>
-      <td class="r">{% if r.payments %}<details class="material-payments"><summary title="To'lov tafsilotlari">{{ r.paid|pul }}</summary>
+      <td class="r">{% if is_finance %}—{% elif r.payments %}<details class="material-payments"><summary title="To'lov tafsilotlari">{{ r.paid|pul }}</summary>
         <ul>{% for payment in r.payments %}<li>{{ payment.cash_desk or 'Kassa' }} <b>{{ payment.amount|pul }}</b></li>{% endfor %}</ul>
       </details>{% else %}{{ r.paid|pul }}{% endif %}</td>
       <td class="r">{{ balance_figure(r.balance) }}</td>
@@ -132,10 +123,10 @@
         row.hidden = !matches;
         if (!matches) continue;
         groupVisible++;
+        groupPaid += cents(d.credit);
         if (!d.payment) {
           groupCount++;
           groupSum += amount;
-          groupPaid += cents(d.paid);
         }
       }
       box.hidden = groupVisible === 0;
@@ -163,7 +154,8 @@
     const group = groups.find(({box}) => box.dataset.materialGroup === $('msup').value);
     if (group) group.box.open = true;
   });
-  $('mclear').addEventListener('click', () => { form.reset(); apply(); });
+  $('mclear').addEventListener('click', () => { form.reset(); $('msup').value = ''; apply(); });
+  if ($('msup').value) apply();
   sortButtons.forEach(button => button.addEventListener('click', () => {
     const field = button.dataset.sort;
     dir = sort === field ? -dir : (numericFields.has(field) ? -1 : 1);
