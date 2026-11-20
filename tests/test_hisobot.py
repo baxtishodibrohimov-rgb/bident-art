@@ -417,6 +417,40 @@ def test_finance_shows_all_cliniccards_invoices_with_date_filter(svc, monkeypatc
     assert "Xodim A" not in c.get("/material?oy=2026-11").text
 
 
+def test_finance_shows_counterparty_payments_without_invoice(svc, monkeypatch):
+    invoice = {"id": "451", "date_issued": "2026-02-20", "supplier": {"name": "Oluvchi A"},
+               "spendings_category": {"name": "Oyliklar"}, "amount": 1243000, "paid": 3000}
+    operations = [
+        {"type": "SPENDING", "date_issued": "02.25.2026", "supplier": "oluvchi  A", "amount": 1240000,
+         "cash_desk_name": "Naqd", "currency": "UZS"},
+        {"type": "SPENDING", "date_issued": "03.06.2026", "supplier": {"name": "Oluvchi A"}, "amount": 3000,
+         "spending_id": "451"},
+        {"type": "MONEYBACK", "date_issued": "02.28.2026", "supplier": "Oluvchi B", "amount": 7000},
+        {"type": "PAYMENT", "date_issued": "02.25.2026", "patient_id": "123", "amount": 500000},
+    ]
+    monkeypatch.setattr(svc.client, "spendings", lambda start, end: [invoice])
+    monkeypatch.setattr(svc.client, "cash_flow_operations", lambda start, end: operations)
+    c = _client(svc, monkeypatch)
+    assert c.get("/moliya/tolovlar", follow_redirects=False).status_code == 303
+    c.post("/login", data={"login": "admin", "parol": "maxfiy"})
+    invoices = c.get("/moliya?oy=2026-02")
+    assert invoices.context["rows"][0]["paid"] == 3000
+    assert '/moliya/tolovlar?oluvchi=Oluvchi%20A&amp;oy=2026-02' in invoices.text
+    assert 'href="/moliya/tolovlar?oy=2026-02"' in invoices.text
+
+    result = c.get("/moliya/tolovlar", params={"oluvchi": "Oluvchi A", "oy": "2026-02"})
+    assert result.status_code == 200
+    [row] = result.context["groups"][0]
+    assert row.date == "2026-02-25" and row.amount == 1240000 and not row.invoice_id
+    assert "25.02.2026" in result.text and "1 240 000 UZS" in result.text
+    assert "06.03.2026" not in result.text and "Oluvchi B" not in result.text and "500 000" not in result.text
+
+    single_day = c.get("/moliya/tolovlar?dan=2026-02-25&gacha=2026-02-25")
+    assert "1 240 000 UZS" in single_day.text
+    all_suppliers = c.get("/moliya/tolovlar?oy=2026-02")
+    assert "Oluvchi B" in all_suppliers.text and "-7 000" in all_suppliers.text
+
+
 def test_material_payments_follow_payment_date_and_debt_follows_invoice(svc, monkeypatch):
     def invoice(id, day, amount, paid, category="Material", payments=()):
         return {"id": id, "date_issued": day, "amount": amount, "paid": paid,

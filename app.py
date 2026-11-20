@@ -20,6 +20,7 @@ from fastapi.templating import Jinja2Templates
 import auth as sessions
 
 from client import CliniccardsClient, CliniccardsError
+from details import name_key
 from excel import report_xlsx
 from report import Period
 import finance
@@ -253,6 +254,22 @@ def finance_invoices(request: Request, oy: str | None = None, dan: str | None = 
     filtered = bool(oy or dan or gacha)
     p = get_period(oy, dan, gacha) if filtered else svc.spending_history_period()
     return invoice_report(request, p, svc.invoice_detail(p), "moliya", filtered=filtered)
+
+
+@app.get("/moliya/tolovlar")
+def finance_payments(request: Request, oluvchi: str = "", oy: str | None = None, dan: str | None = None,
+                     gacha: str | None = None, _=Depends(auth)):
+    svc = service()
+    p = get_period(oy, dan, gacha) if oy or dan or gacha else svc.spending_history_period()
+    recipient_filter = name_key(oluvchi)
+    groups = {}
+    for row in svc.counterparty_payments(p):
+        key = name_key(row.recipient)
+        if not recipient_filter or key == recipient_filter:
+            groups.setdefault(key, []).append(row)
+    return templates.TemplateResponse(request, "finance_payments.html", {
+        "groups": [groups[key] for key in sorted(groups)], "recipient_filter": oluvchi.strip(),
+        **nav("moliya"), **period_context(p)})
 
 
 @app.get("/tolovlar")

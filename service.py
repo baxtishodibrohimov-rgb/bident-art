@@ -242,11 +242,17 @@ class Service:
     def invoice_detail(self, period: Period) -> list[details.Group]:
         return details.expenses_by_recipient(self._spendings_history(period))
 
+    def _cash_flow(self, p: Period) -> list[dict]:
+        return self._cached(f"cash-flow:{p.start}:{p.end}", lambda: [
+            row for a, b in month_ranges(p.start, p.end, 12) for row in self.client.cash_flow_operations(a, b)])
+
+    def counterparty_payments(self, p: Period) -> list[material_payments.Payment]:
+        return material_payments.counterparty_payments(self._cash_flow(p), p)
+
     def material_payment_report(self, period, *, with_invoices: bool = False) -> material_payments.PaymentReport:
         p = as_period(period)
         try:
-            operations = self._cached(f"cash-flow:{p.start}:{p.end}", lambda: [
-                row for a, b in month_ranges(p.start, p.end, 12) for row in self.client.cash_flow_operations(a, b)])
+            operations = self._cash_flow(p)
         except CliniccardsError:
             return material_payments.PaymentReport(error="Cliniccards kassa operatsiyalarini yuklab bo'lmadi.")
         report = material_payments.report(operations, p)

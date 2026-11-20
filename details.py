@@ -128,7 +128,7 @@ class AuditSection:
         return sum((group.paid_total for group in self.recipients), Decimal(0))
 
 
-def _name_key(value: str) -> str:
+def name_key(value: str) -> str:
     return " ".join(value.translate(APOSTROPHES).casefold().split())
 
 
@@ -137,7 +137,7 @@ def expenses_by_recipient(spendings: list[dict]) -> list[Group]:
     for sp in spendings:
         row = expense_row(sp)
         name = " ".join(row["supplier"].split())
-        key = _name_key(name)
+        key = name_key(name)
         if key not in recipients:
             recipients[key] = Group(key, name or "Oluvchi ko'rsatilmagan")
         recipients[key].rows.append(row)
@@ -154,11 +154,11 @@ def audit_sections(groups: dict[str, list[dict]]) -> tuple[dict[str, AuditSectio
         subcategory = sp.get("spendings_subcategory") or {}
         title = text(category.get("name")) or "Toifasiz"
         subtitle = text(subcategory.get("name"))
-        key = (str(category.get("id") or _name_key(title)), str(subcategory.get("id") or _name_key(subtitle)))
+        key = (str(category.get("id") or name_key(title)), str(subcategory.get("id") or name_key(subtitle)))
         name = f"{title} → {subtitle}" if subtitle else title
         by_category.setdefault(key, (name, []))[1].append(sp)
     other = [AuditSection(name, expenses_by_recipient(spendings))
-             for name, spendings in sorted(by_category.values(), key=lambda entry: _name_key(entry[0]))]
+             for name, spendings in sorted(by_category.values(), key=lambda entry: name_key(entry[0]))]
     return main, other
 
 

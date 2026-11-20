@@ -9,6 +9,7 @@
 <div class="titlerow"><h1>{{ heading }}</h1>{% set action = '/moliya' if is_finance else '/material' %}{% include "_period.html" %}</div>
 <div class="bar">
   {% if is_finance %}<div class="controls">
+    <a class="btn" href="/moliya/tolovlar?{{ q }}">Kontragent to'lovlari</a>
     <form class="inline" method="post" action="/yangilash"><button class="btn" type="submit">Cliniccards'dan yangilash</button></form>
     {% if filtered %}<a class="btn" href="/moliya">Barcha davrlar</a>{% endif %}
   </div>{% else %}<a class="btn" href="/xarajatlar?{{ q }}">← Xarajatlar</a>{% endif %}
@@ -16,8 +17,8 @@
 </div>
 <div class="tiles three">
   <div class="tile"><div class="k">Schyotlar jami</div><div class="v num"><span id="mSum">{{ total|pul }}</span><small>so'm</small></div></div>
-  <div class="tile"><div class="k">To'langan</div><div class="v num"><span id="mPaid">{{ paid|pul }}</span><small>so'm</small></div></div>
-  <div class="tile"><div class="k">Balans</div><div class="v num">{{ balance_figure(balance, 'mBalance') }}<small>so'm</small></div></div>
+  <div class="tile"><div class="k">{{ "Schyotlarga yozilgan to'lov" if is_finance else "To'langan" }}</div><div class="v num"><span id="mPaid">{{ paid|pul }}</span><small>so'm</small></div></div>
+  <div class="tile"><div class="k">{{ 'Schyotlar balansi' if is_finance else 'Balans' }}</div><div class="v num">{{ balance_figure(balance, 'mBalance') }}<small>so'm</small></div></div>
 </div>
 <p class="note">Balans = to'langan − schyot summasi. Minus — qarz, yashil 0 — qarz yo'q, plus — klinika foydasiga qoldiq.</p>
 {% if rows %}
@@ -42,6 +43,7 @@
       <span>Balans <b>{{ balance_figure(g.balance) }}</b></span>
     </span>
   </summary>
+  {% if is_finance and g.key %}<div class="panel-h"><a class="rowlink" href="/moliya/tolovlar?oluvchi={{ g.name|urlencode }}&amp;{{ q }}">{{ g.name }} · kontragent to'lovlari →</a></div>{% endif %}
   <div class="scroll"><table>
     <thead><tr><th><button type="button" class="sorth" data-sort="date">Schyot sanasi</button></th>
       <th><button type="button" class="sorth" data-sort="cat">Toifa</button></th>

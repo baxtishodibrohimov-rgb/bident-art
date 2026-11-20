@@ -24,6 +24,7 @@ Masalan, martda qo'yilgan breket uchun noyabrda tushgan 1 000 000 noyabr maoshig
 | **Xarajatlar** (`/xarajatlar`) | Hisoblangan klinika ulushi, shifokor va hamshira maoshlari, ochilgan material schyotlari |
 | **Material rasxod** (`/material`) | Oluvchi bo'yicha guruhlangan schyotlar, to'langan summa va balans |
 | **Moliya** (`/moliya`) | Cliniccards'dan kelgan barcha ochiq va yopilgan schyotlar, oluvchi bo'yicha. Standart davr — `BOSHLANISH_SANA` dan bugungacha |
+| **Kontragent to'lovlari** (`/moliya/tolovlar`) | Cliniccards kassa operatsiyalaridagi oluvchiga yozilgan to'lovlar, shu jumladan schyotga bog'lanmagan operatsiyalar |
 | **To'lovlar** (`/tolovlar`) | Material uchun amaldagi chiqimlar to'lov sanasi bo'yicha, jumladan eski schyotlarga qilingan to'lovlar |
 | **Qarz** (`/tolovlar/qarz`) | Barcha davrlardan qolgan ochiq material schyotlari va bugungi qoldiq |
 | **Sof foyda** (`/foyda`) | Kassadan qolgan 55% dan hamshira maoshi va amaldagi material to'lovlari ayrilgani |

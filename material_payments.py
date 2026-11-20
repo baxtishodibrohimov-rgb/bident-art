@@ -1,4 +1,4 @@
-"""Cliniccards kassa operatsiyalaridan material to'lovlari hisoboti."""
+"""Cliniccards kassa operatsiyalaridan to'lovlar hisoboti."""
 from __future__ import annotations
 
 from collections import Counter, defaultdict
@@ -25,6 +25,7 @@ class Payment:
     invoice_id: str = ""
     invoice_date: str = ""
     reason: str = ""
+    operation_type: str = ""
 
 
 @dataclass
@@ -60,6 +61,40 @@ def _key(row: dict, supplier, amount: Decimal) -> PaymentKey | None:
 
 def _invoice_id(operation: dict) -> str:
     return str(operation.get("spending_id") or operation.get("spendings_id") or operation.get("expense_id") or "")
+
+
+def _payment_amount(operation: dict, kind: str) -> Decimal:
+    amount = money(operation.get("amount"))
+    if kind == "SPENDING":
+        return abs(amount)
+    if kind == "MONEYBACK":
+        return -abs(amount)
+    return amount
+
+
+def _payment(operation: dict, day: str, recipient: str, kind: str, invoice: dict | None = None) -> Payment:
+    bill = invoice or {}
+    return Payment(
+        date=day, recipient=recipient, amount=_payment_amount(operation, kind),
+        cash_desk=spending_name(operation.get("cash_desk_name")), note=spending_name(operation.get("comment")),
+        currency=str(operation.get("currency") or "").strip().upper(),
+        invoice_id=str(bill.get("id") or _invoice_id(operation)), invoice_date=_day(bill.get("date_issued")),
+        operation_type=kind,
+    )
+
+
+def counterparty_payments(operations: list[dict], period: Period) -> list[Payment]:
+    rows = []
+    for operation in operations:
+        recipient = spending_name(operation.get("supplier")) or spending_name(operation.get("supplier_name"))
+        if not recipient or operation.get("patient") or operation.get("patient_id"):
+            continue
+        day = _day(operation.get("date_issued"))
+        if day and not period.contains(day):
+            continue
+        kind = str(operation.get("type") or "").strip().upper()
+        rows.append(_payment(operation, day, recipient, kind))
+    return sorted(rows, key=lambda row: row.date, reverse=True)
 
 
 def _operation_kind(operation: dict) -> str | None:
@@ -104,15 +139,13 @@ def report(operations: list[dict], period: Period, invoices: Sequence[dict] = ()
         day = _day(operation.get("date_issued"))
         if day and not period.contains(day):
             continue
-        amount = abs(money(operation.get("amount")))
-        if kind == "MONEYBACK":
-            amount = -amount
-        expenses.append((operation, category, day, amount, _key(operation, operation.get("supplier"), amount)))
+        amount = _payment_amount(operation, kind)
+        expenses.append((operation, category, day, kind, _key(operation, operation.get("supplier"), amount)))
 
     key_counts = Counter(row[4] for row in expenses)
     day_counts = Counter((row[4], row[2]) for row in expenses)
     result = PaymentReport()
-    for operation, category, day, amount, key in expenses:
+    for operation, category, day, kind, key in expenses:
         invoice_id = _invoice_id(operation)
         invoice = by_id.get(invoice_id)
         if invoice is None and not invoice_id and key is not None:
@@ -126,16 +159,13 @@ def report(operations: list[dict], period: Period, invoices: Sequence[dict] = ()
         if category is not None and category != "material":
             continue
 
-        currency = str(operation.get("currency") or "").strip().upper()
         recipient = spending_name(operation.get("supplier") or (invoice or {}).get("supplier"))
-        row = Payment(day, recipient or "Oluvchi ko'rsatilmagan", amount,
-                      spending_name(operation.get("cash_desk_name")), spending_name(operation.get("comment")), currency,
-                      str((invoice or {}).get("id") or invoice_id), _day((invoice or {}).get("date_issued")))
+        row = _payment(operation, day, recipient or "Oluvchi ko'rsatilmagan", kind, invoice)
         if category is None:
             row.reason = MISSING_CATEGORY
         elif not day:
             row.reason = "To'lov sanasi aniqlanmadi"
-        elif currency and currency not in ("UZS", "СУМ", "SO'M"):
+        elif row.currency and row.currency not in ("UZS", "СУМ", "SO'M"):
             row.reason = "To'lov boshqa valyutada"
         if row.reason:
             result.review.append(row)
