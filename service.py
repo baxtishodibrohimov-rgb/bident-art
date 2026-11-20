@@ -246,8 +246,9 @@ class Service:
         return self._cached(f"cash-flow:{p.start}:{p.end}", lambda: [
             row for a, b in month_ranges(p.start, p.end, 12) for row in self.client.cash_flow_operations(a, b)])
 
-    def counterparty_payments(self, p: Period) -> list[material_payments.Payment]:
-        return material_payments.counterparty_payments(self._cash_flow(p), p)
+    def counterparty_payments(self, p: Period, groups: list[details.Group] | None = None) -> list[material_payments.Payment]:
+        invoices = (row for group in groups or () for row in group.rows)
+        return material_payments.counterparty_payments(self._cash_flow(p), p, invoices)
 
     def material_payment_report(self, period, *, with_invoices: bool = False) -> material_payments.PaymentReport:
         p = as_period(period)

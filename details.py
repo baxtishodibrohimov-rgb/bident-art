@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 
 from finance import AUDIT_LABELS, member_info, spending_name
+from material_payments import Payment, UZS_CURRENCIES
 from report import NO_DOCTOR, dedupe_items, money, staff_name
 
 APOSTROPHES = str.maketrans("‘’ʻʼ", "''''")
@@ -98,6 +99,8 @@ def kassa(payments: list[dict], patients: dict[str, str], doctors_by_payment: di
 
 def expense_row(sp: dict) -> dict:
     _, member = member_info(sp)
+    supplier = sp.get("supplier")
+    supplier_id = (supplier.get("id") if isinstance(supplier, dict) else None) or sp.get("supplier_id")
     amount, paid = money(sp.get("amount")), money(sp.get("paid"))
     # Cliniccards kassadan chiqqan to'lovni minusda qaytaradi.
     payments = [{"cash_desk": text(payment.get("cash_desk_name")), "amount": -money(payment.get("amount"))}
@@ -107,7 +110,8 @@ def expense_row(sp: dict) -> dict:
         "date": str(sp.get("date_issued") or "")[:10],
         "cat": spending_name(sp.get("spendings_category")) or "Toifasiz",
         "sub": spending_name(sp.get("spendings_subcategory")),
-        "supplier": spending_name(sp.get("supplier")) or text(member),
+        "supplier": spending_name(supplier) or text(member),
+        "supplier_id": str(supplier_id or ""),
         "note": text(sp.get("note")), "status": sp.get("payment_status") or "",
         "amount": amount, "paid": paid, "balance": paid - amount, "payments": payments,
     }
@@ -144,6 +148,38 @@ def expenses_by_recipient(spendings: list[dict]) -> list[Group]:
     for group in recipients.values():
         group.rows.sort(key=lambda row: row["date"], reverse=True)
     return sorted(recipients.values(), key=lambda group: (not group.key, group.key))
+
+
+@dataclass
+class CounterpartyStatement:
+    invoices: Group
+    payments: list[Payment] = field(default_factory=list)
+
+    @property
+    def timeline(self) -> list[dict | Payment]:
+        return sorted([*self.invoices.rows, *self.payments],
+                      key=lambda row: row.date if isinstance(row, Payment) else row["date"], reverse=True)
+
+    def payment_total(self, full_history: bool) -> Decimal | None:
+        if not self.invoices.key or any(row.currency not in UZS_CURRENCIES or not row.date
+                                        or row.operation_type not in ("SPENDING", "MONEYBACK") for row in self.payments):
+            return None
+        if full_history:
+            linked = sum((max(row["paid"], 0) for row in self.invoices.rows), Decimal(0))
+            outgoing = sum((max(row.amount, 0) for row in self.payments), Decimal(0))
+            if outgoing < linked:
+                return None
+        return sum((row.amount for row in self.payments), Decimal(0))
+
+
+def counterparty_statements(groups: list[Group], payments: list[Payment]) -> dict[str, CounterpartyStatement]:
+    statements = {group.key: CounterpartyStatement(group) for group in groups}
+    for row in payments:
+        key = name_key(row.recipient)
+        if key not in statements:
+            statements[key] = CounterpartyStatement(Group(key, row.recipient))
+        statements[key].payments.append(row)
+    return dict(sorted(statements.items(), key=lambda entry: (not entry[0], entry[0])))
 
 
 def audit_sections(groups: dict[str, list[dict]]) -> tuple[dict[str, AuditSection], list[AuditSection]]:

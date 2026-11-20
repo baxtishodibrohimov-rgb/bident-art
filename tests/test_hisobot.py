@@ -437,6 +437,8 @@ def test_finance_shows_counterparty_payments_without_invoice(svc, monkeypatch):
     assert invoices.context["rows"][0]["paid"] == 3000
     assert '/moliya/tolovlar?oluvchi=Oluvchi%20A&amp;oy=2026-02' in invoices.text
     assert 'href="/moliya/tolovlar?oy=2026-02"' in invoices.text
+    assert 'data-payment="1" data-date="2026-02-25"' in invoices.text
+    assert "25.02.2026" in invoices.text and "1 240 000" in invoices.text and "Davr balansi" in invoices.text
 
     result = c.get("/moliya/tolovlar", params={"oluvchi": "Oluvchi A", "oy": "2026-02"})
     assert result.status_code == 200
@@ -449,6 +451,29 @@ def test_finance_shows_counterparty_payments_without_invoice(svc, monkeypatch):
     assert "1 240 000 UZS" in single_day.text
     all_suppliers = c.get("/moliya/tolovlar?oy=2026-02")
     assert "Oluvchi B" in all_suppliers.text and "-7 000" in all_suppliers.text
+
+
+def test_finance_combines_dated_payments_without_changing_invoice_balance(svc, monkeypatch):
+    svc.start_date = date(2026, 2, 1)
+    monkeypatch.setattr("db.today", lambda: "2026-03-10")
+    invoice = {"id": "451", "date_issued": "2026-02-20", "supplier": {"id": 51, "name": "Oluvchi A"},
+               "spendings_category": {"name": "Oyliklar"}, "amount": "1243000", "paid": "3000"}
+    operations = [
+        {"type": "SPENDING", "date_issued": "02.25.2026", "supplier_id": 51, "amount": "1240000", "currency": "UZS"},
+        {"type": "SPENDING", "date_issued": "03.06.2026", "spending_id": 451, "amount": "3000", "currency": "UZS"},
+    ]
+    monkeypatch.setattr(svc.client, "spendings", lambda start, end: [invoice])
+    monkeypatch.setattr(svc.client, "cash_flow_operations", lambda start, end: operations)
+    c = _client(svc, monkeypatch)
+    c.post("/login", data={"login": "admin", "parol": "maxfiy"})
+    page = c.get("/moliya")
+    assert page.status_code == 200 and "Kontragent balansi" in page.text
+    account = page.context["statements"]["oluvchi a"]
+    assert account.invoices.balance == -1240000
+    assert account.payment_total(full_history=True) == account.invoices.total == 1243000
+    assert page.text.index('data-date="2026-03-06"') < page.text.index('data-date="2026-02-25"') < page.text.index('data-date="2026-02-20"')
+    assert "Kassa to'lovlari <b>1 243 000</b>" in page.text
+    assert "Kontragent balansi <b><span data-balance-figure class=\"material-balance-ok\">0</span>" in page.text
 
 
 def test_material_payments_follow_payment_date_and_debt_follows_invoice(svc, monkeypatch):

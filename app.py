@@ -20,7 +20,7 @@ from fastapi.templating import Jinja2Templates
 import auth as sessions
 
 from client import CliniccardsClient, CliniccardsError
-from details import name_key
+from details import Group, counterparty_statements, name_key
 from excel import report_xlsx
 from report import Period
 import finance
@@ -233,13 +233,13 @@ def expenses(request: Request, p: Period = Depends(get_period), _=Depends(auth))
     return templates.TemplateResponse(request, "detail_expenses.html", {"o": o, **nav("bosh"), **period_context(p)})
 
 
-def invoice_report(request: Request, p: Period, groups: list, section: str, *, filtered: bool = False):
+def invoice_report(request: Request, p: Period, groups: list[Group], section: str, **context):
     rows = [row for group in groups for row in group.rows]
     total = sum((row["amount"] for row in rows), Decimal(0))
     paid = sum((row["paid"] for row in rows), Decimal(0))
     return templates.TemplateResponse(request, "detail_material.html", {
         "groups": groups, "rows": rows, "total": total, "paid": paid, "balance": paid - total,
-        "filtered": filtered, **nav(section), **period_context(p)})
+        **context, **nav(section), **period_context(p)})
 
 
 @app.get("/material")
@@ -252,8 +252,18 @@ def finance_invoices(request: Request, oy: str | None = None, dan: str | None = 
                      _=Depends(auth)):
     svc = service()
     filtered = bool(oy or dan or gacha)
-    p = get_period(oy, dan, gacha) if filtered else svc.spending_history_period()
-    return invoice_report(request, p, svc.invoice_detail(p), "moliya", filtered=filtered)
+    history = svc.spending_history_period()
+    p = get_period(oy, dan, gacha) if filtered else history
+    groups = svc.invoice_detail(p)
+    payments_error = False
+    try:
+        payments = svc.counterparty_payments(p, groups)
+    except CliniccardsError:
+        payments = []
+        payments_error = True
+    statements = counterparty_statements(groups, payments)
+    return invoice_report(request, p, [statement.invoices for statement in statements.values()], "moliya",
+                          filtered=filtered, statements=statements, payments_error=payments_error, full_history=p == history)
 
 
 @app.get("/moliya/tolovlar")

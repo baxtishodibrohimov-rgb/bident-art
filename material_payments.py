@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
@@ -11,6 +11,7 @@ from finance import member_info, spending_kind, spending_name
 from report import Period, money
 
 MISSING_CATEGORY = "Xarajat toifasi aniqlanmadi"
+UZS_CURRENCIES = ("", "UZS", "СУМ", "SO'M")
 PaymentKey = tuple[str, str, Decimal]
 
 
@@ -83,11 +84,24 @@ def _payment(operation: dict, day: str, recipient: str, kind: str, invoice: dict
     )
 
 
-def counterparty_payments(operations: list[dict], period: Period) -> list[Payment]:
+def counterparty_payments(operations: list[dict], period: Period, invoices: Iterable[dict] = ()) -> list[Payment]:
+    invoice_names, supplier_names = {}, {}
+    for invoice in invoices:
+        if not invoice["supplier"]:
+            continue
+        if invoice["id"]:
+            invoice_names[invoice["id"]] = invoice["supplier"]
+        if invoice["supplier_id"]:
+            supplier_names[invoice["supplier_id"]] = invoice["supplier"]
     rows = []
     for operation in operations:
-        recipient = spending_name(operation.get("supplier")) or spending_name(operation.get("supplier_name"))
-        if not recipient or operation.get("patient") or operation.get("patient_id"):
+        if operation.get("patient") or operation.get("patient_id"):
+            continue
+        supplier = operation.get("supplier")
+        supplier_id = (supplier.get("id") if isinstance(supplier, dict) else None) or operation.get("supplier_id")
+        recipient = (spending_name(supplier) or spending_name(operation.get("supplier_name"))
+                     or supplier_names.get(str(supplier_id or "")) or invoice_names.get(_invoice_id(operation)))
+        if not recipient:
             continue
         day = _day(operation.get("date_issued"))
         if day and not period.contains(day):
@@ -165,7 +179,7 @@ def report(operations: list[dict], period: Period, invoices: Sequence[dict] = ()
             row.reason = MISSING_CATEGORY
         elif not day:
             row.reason = "To'lov sanasi aniqlanmadi"
-        elif row.currency and row.currency not in ("UZS", "СУМ", "SO'M"):
+        elif row.currency not in UZS_CURRENCIES:
             row.reason = "To'lov boshqa valyutada"
         if row.reason:
             result.review.append(row)

@@ -20,38 +20,63 @@
   <div class="tile"><div class="k">{{ "Schyotlarga yozilgan to'lov" if is_finance else "To'langan" }}</div><div class="v num"><span id="mPaid">{{ paid|pul }}</span><small>so'm</small></div></div>
   <div class="tile"><div class="k">{{ 'Schyotlar balansi' if is_finance else 'Balans' }}</div><div class="v num">{{ balance_figure(balance, 'mBalance') }}<small>so'm</small></div></div>
 </div>
-<p class="note">Balans = to'langan − schyot summasi. Minus — qarz, yashil 0 — qarz yo'q, plus — klinika foydasiga qoldiq.</p>
-{% if rows %}
+{% if is_finance and payments_error %}<p class="warnbox" role="status">Cliniccards kassa operatsiyalarini yuklab bo'lmadi.</p>{% endif %}
+<p class="note">{% if is_finance %}Kassa to'lovlari o'z sanasida alohida qator bo'lib chiqadi. Schyot qoldig'i unga bog'langan to'lovlardan hisoblanadi.{% else %}Balans = to'langan − schyot summasi. Minus — qarz, yashil 0 — qarz yo'q, plus — klinika foydasiga qoldiq.{% endif %}</p>
+{% if groups %}
 <form class="controls" id="mFilter" onsubmit="return false">
   <input class="btn" id="mq" placeholder="{{ 'Oluvchi, schyot raqami, izoh' if is_finance else 'Qidirish: kimga, nima uchun, izoh' }}" aria-label="Qidirish" style="flex:1;min-width:200px">
   <select class="btn" id="mcat" aria-label="Toifa bo'yicha"><option value="">Barcha toifalar</option>{% for v in rows|map(attribute='cat')|unique|sort %}<option>{{ v }}</option>{% endfor %}</select>
   <select class="btn" id="msub" aria-label="Nima uchun"><option value="">Nima uchun — hammasi</option>{% for v in rows|map(attribute='sub')|reject('equalto', '')|unique|sort %}<option>{{ v }}</option>{% endfor %}</select>
   <select class="btn" id="msup" aria-label="Kimga"><option value="">Kimga — hammasi</option>{% for g in groups %}<option value="{{ loop.index }}">{{ g.name }}</option>{% endfor %}</select>
-  <input class="btn num" id="mmin" type="number" step="0.01" placeholder="Schyot summasi dan" aria-label="Schyot summasi dan" style="width:155px">
-  <input class="btn num" id="mmax" type="number" step="0.01" placeholder="Schyot summasi gacha" aria-label="Schyot summasi gacha" style="width:155px">
+  <input class="btn num" id="mmin" type="number" step="0.01" placeholder="{{ 'Summa dan' if is_finance else 'Schyot summasi dan' }}" aria-label="Summa dan" style="width:155px">
+  <input class="btn num" id="mmax" type="number" step="0.01" placeholder="{{ 'Summa gacha' if is_finance else 'Schyot summasi gacha' }}" aria-label="Summa gacha" style="width:155px">
   <button type="button" class="btn" id="mclear" hidden>Tozalash</button>
 </form>
 {% endif %}
 {% for g in groups %}
+{% set statement = statements[g.key] if is_finance else none %}
 <details class="panel" data-material-group="{{ loop.index }}"{% if groups|length == 1 %} open{% endif %}>
   <summary class="expense-summary">
     <strong>{{ g.name }}</strong>
     <span class="expense-summary-meta num">
-      <span class="muted"><span data-group-count>{{ g.rows|length }}</span> ta</span>
+      <span class="muted"><span data-group-count>{{ g.rows|length }}</span> {{ 'ta schyot' if is_finance else 'ta' }}</span>
       <span>Schyot <b data-group-sum>{{ g.total|pul }}</b></span>
       <span>To'langan <b data-group-paid>{{ g.paid_total|pul }}</b></span>
-      <span>Balans <b>{{ balance_figure(g.balance) }}</b></span>
+      <span>{{ "Schyot qoldig'i" if is_finance else 'Balans' }} <b>{{ balance_figure(g.balance) }}</b></span>
     </span>
   </summary>
-  {% if is_finance and g.key %}<div class="panel-h"><a class="rowlink" href="/moliya/tolovlar?oluvchi={{ g.name|urlencode }}&amp;{{ q }}">{{ g.name }} · kontragent to'lovlari →</a></div>{% endif %}
+  {% if is_finance and g.key %}
+  {% set cash_total = none if payments_error else statement.payment_total(full_history) %}
+  <div class="panel-h">
+    <a class="rowlink" href="/moliya/tolovlar?oluvchi={{ g.name|urlencode }}&amp;{{ q }}">{{ g.name }} · kontragent to'lovlari →</a>
+    {% if cash_total is not none %}<div class="controls num">
+      <span>Kassa to'lovlari <b>{{ cash_total|pul }}</b></span>
+      <span>{{ 'Kontragent balansi' if full_history else 'Davr balansi' }} <b>{{ balance_figure(cash_total - g.total) }}</b></span>
+    </div>{% else %}<span class="muted">Kassa bo'yicha balans aniqlanmadi</span>{% endif %}
+  </div>
+  {% endif %}
   <div class="scroll"><table>
-    <thead><tr><th><button type="button" class="sorth" data-sort="date">Schyot sanasi</button></th>
+    <thead><tr><th><button type="button" class="sorth" data-sort="date">{{ 'Sana' if is_finance else 'Schyot sanasi' }}</button></th>
       <th><button type="button" class="sorth" data-sort="cat">Toifa</button></th>
       <th><button type="button" class="sorth" data-sort="sub">Nima uchun</button></th><th>Izoh</th>
       <th class="r"><button type="button" class="sorth" data-sort="amount">Schyot summasi</button></th>
       <th class="r"><button type="button" class="sorth" data-sort="paid">To'langan</button></th>
-      <th class="r"><button type="button" class="sorth" data-sort="balance">Balans</button></th></tr></thead>
-    <tbody>{% for r in g.rows %}<tr data-date="{{ r.date }}" data-cat="{{ r.cat }}" data-sub="{{ r.sub }}"
+      <th class="r"><button type="button" class="sorth" data-sort="balance">{{ "Schyot qoldig'i" if is_finance else 'Balans' }}</button></th></tr></thead>
+    <tbody>{% for r in (statement.timeline if is_finance else g.rows) %}
+    {% if r.operation_type is defined %}
+    {% set label = {'SPENDING': "Kassa to'lovi", 'MONEYBACK': 'Qaytarilgan'}.get(r.operation_type, r.operation_type or 'Kassa operatsiyasi') %}
+    {% set day = r.date.split('-')|reverse|join('.') if r.date else '—' %}
+    <tr data-payment="1" data-date="{{ r.date }}" data-cat="" data-sub="{{ label }}"
+        data-amount="{{ r.amount }}" data-paid="{{ r.amount }}" data-balance=""
+        data-text="{{ (r.recipient ~ ' ' ~ r.cash_desk ~ ' ' ~ r.note ~ ' ' ~ r.invoice_id ~ ' ' ~ day ~ ' ' ~ label)|lower }}">
+      <td class="num">{{ day }}</td>
+      <td><span class="pill off">{{ label }}</span></td>
+      <td>{% if r.invoice_id %}#{{ r.invoice_id }}{% else %}{{ r.cash_desk or '—' }}{% endif %}</td>
+      <td class="muted">{{ r.note }}</td><td class="r">—</td>
+      <td class="r"><b>{{ r.amount|pul }}</b>{% if r.currency and r.currency != 'UZS' %} {{ r.currency }}{% endif %}</td>
+      <td class="r">—</td>
+    </tr>
+    {% else %}<tr data-date="{{ r.date }}" data-cat="{{ r.cat }}" data-sub="{{ r.sub }}"
         data-amount="{{ r.amount }}" data-paid="{{ r.paid }}" data-balance="{{ r.balance }}"
         data-text="{{ (r.cat ~ ' ' ~ r.sub ~ ' ' ~ g.name ~ ' ' ~ r.supplier ~ ' ' ~ r.note ~ ' ' ~ r.id)|lower }}">
       <td class="num">{% if r.date %}{{ r.date[8:10] }}.{{ r.date[5:7] }}.{{ r.date[:4] }}{% else %}—{% endif %}
@@ -62,13 +87,13 @@
         <ul>{% for payment in r.payments %}<li>{{ payment.cash_desk or 'Kassa' }} <b>{{ payment.amount|pul }}</b></li>{% endfor %}</ul>
       </details>{% else %}{{ r.paid|pul }}{% endif %}</td>
       <td class="r">{{ balance_figure(r.balance) }}</td>
-    </tr>{% endfor %}</tbody>
+    </tr>{% endif %}{% endfor %}</tbody>
   </table></div>
 </details>
-{% else %}<p class="muted">{% if is_finance %}Bu davrda schyot topilmadi.{% else %}Bu davrda material rasxod yo'q.{% endif %}</p>{% endfor %}
-<p class="muted" id="mNone" hidden>Filtrga mos schyot topilmadi.</p>
-<p class="note">Davr schyot sanasi bo'yicha tanlanadi. To'langan summa shu schyotga bog'langan jami to'lovni ko'rsatadi.
-  {% if not is_finance %}Klinika ulushi va oylik to'lovlari <a class="rowlink" href="/audit?{{ q }}">Auditda</a> ko'rinadi.{% endif %}</p>
+{% else %}<p class="muted">{% if is_finance %}Bu davrda schyot yoki to'lov topilmadi.{% else %}Bu davrda material rasxod yo'q.{% endif %}</p>{% endfor %}
+<p class="muted" id="mNone" hidden>Filtrga mos yozuv topilmadi.</p>
+{% if not is_finance %}<p class="note">Davr schyot sanasi bo'yicha tanlanadi. To'langan summa shu schyotga bog'langan jami to'lovni ko'rsatadi.
+  Klinika ulushi va oylik to'lovlari <a class="rowlink" href="/audit?{{ q }}">Auditda</a> ko'rinadi.</p>{% endif %}
 <script>
 (() => {
   const $ = id => document.getElementById(id), form = $("mFilter");
@@ -96,22 +121,24 @@
     const category = $('mcat').value, purpose = $('msub').value, recipient = $('msup').value;
     const min = $('mmin').value === '' ? -Infinity : cents($('mmin').value);
     const max = $('mmax').value === '' ? Infinity : cents($('mmax').value);
-    let count = 0, sum = 0, paid = 0;
+    let count = 0, sum = 0, paid = 0, visible = 0;
     for (const {box, rows} of groups) {
       const matchesRecipient = !recipient || box.dataset.materialGroup === recipient;
-      let groupCount = 0, groupSum = 0, groupPaid = 0;
+      let groupCount = 0, groupSum = 0, groupPaid = 0, groupVisible = 0;
       for (const row of rows) {
         const d = row.dataset, amount = cents(d.amount);
         const matches = matchesRecipient && (!query || d.text.includes(query)) && (!category || d.cat === category)
           && (!purpose || d.sub === purpose) && amount >= min && amount <= max;
         row.hidden = !matches;
-        if (matches) {
+        if (!matches) continue;
+        groupVisible++;
+        if (!d.payment) {
           groupCount++;
           groupSum += amount;
           groupPaid += cents(d.paid);
         }
       }
-      box.hidden = groupCount === 0;
+      box.hidden = groupVisible === 0;
       box.querySelector('[data-group-count]').textContent = groupCount;
       box.querySelector('[data-group-sum]').textContent = pul(groupSum);
       box.querySelector('[data-group-paid]').textContent = pul(groupPaid);
@@ -119,12 +146,13 @@
       count += groupCount;
       sum += groupSum;
       paid += groupPaid;
+      visible += groupVisible;
     }
     $('mCount').textContent = count;
     $('mSum').textContent = pul(sum);
     $('mPaid').textContent = pul(paid);
     showBalance($('mBalance'), paid - sum);
-    $('mNone').hidden = count > 0;
+    $('mNone').hidden = visible > 0;
     $('mclear').hidden = !(query || category || purpose || recipient || $('mmin').value !== '' || $('mmax').value !== '');
   }
 
